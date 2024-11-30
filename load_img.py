@@ -111,7 +111,7 @@ class LoadImage:
         return {"required": {
             "Load_url": ("BOOLEAN", {"default": True},),
             "Url": ("STRING", {"default": "", "multiline": False},),
-            "image": (sorted(file_list) if file_list else ["No files available"], {"image_upload": True})
+            "image": (sorted(file_list), {"image_upload": True})
 
         }
         }
