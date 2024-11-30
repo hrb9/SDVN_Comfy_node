@@ -78,10 +78,13 @@ def token(link):
     return token
 
 
-def download_model(url, name):
+def download_model(url, name, type):
     url = url.replace("&", "\&").split("?")[0]
     url = check_link(url)
-    checkpoint_path = os.path.join(folder_paths.models_dir, "checkpoints")
+    if type == "ckpt":
+        checkpoint_path = os.path.join(folder_paths.models_dir, "checkpoints")
+    if type == "lora":
+        checkpoint_path = os.path.join(folder_paths.models_dir, "loras")
     command = ['aria2c', '-c', '-x', '16', '-s', '16',
                '-k', '1M', f'{url}{token(url)}', '-d', checkpoint_path, '-o', name]
     subprocess.run(command, check=True, text=True, capture_output=True)
@@ -178,7 +181,7 @@ class CheckpointLoaderDownload:
 
     def load_checkpoint(self, Download, Download_url, Ckpt_url_name, Ckpt_name):
         if Download and Download_url != "":
-            download_model(Download_url, Ckpt_url_name)
+            download_model(Download_url, Ckpt_url_name, "ckpt")
             ckpt_path = folder_paths.get_full_path_or_raise(
                 "checkpoints", Ckpt_url_name)
         else:
@@ -189,14 +192,76 @@ class CheckpointLoaderDownload:
         return out[:3]
 
 
+class LoraLoader:
+    def __init__(self):
+        self.loaded_lora = None
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "model": ("MODEL", {"tooltip": "The diffusion model the LoRA will be applied to."}),
+                "Download": ("BOOLEAN", {"default": True},),
+                "Download_url": ("STRING", {"default": "", "multiline": False},),
+                "Lora_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
+                "lora_name": (folder_paths.get_filename_list("loras"), {"tooltip": "The name of the LoRA."}),
+                "strength_model": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
+                "strength_clip": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the CLIP model. This value can be negative."}),
+            },
+            "optional": {
+                "clip": ("CLIP", {"default": None, "tooltip": "The CLIP model the LoRA will be applied to."})
+            }
+        }
+
+    RETURN_TYPES = ("MODEL", "CLIP")
+    OUTPUT_TOOLTIPS = ("The modified diffusion model.",
+                       "The modified CLIP model.")
+    FUNCTION = "load_lora"
+
+    CATEGORY = "SDVN"
+    DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
+
+    def load_lora(self, model, clip, Download, Download_url, Lora_url_name, lora_name, strength_model, strength_clip):
+        if Download and Download_url != "":
+            download_model(Download_url, Lora_url_name, "Lora")
+            ckpt_path = folder_paths.get_full_path_or_raise(
+                "loras", Lora_url_name)
+            lora_path = folder_paths.get_full_path_or_raise(
+                "loras", Lora_url_name)
+        else:
+            lora_path = folder_paths.get_full_path_or_raise("loras", lora_name)
+
+        if strength_model == 0 and strength_clip == 0:
+            return (model, clip)
+
+        lora = None
+        if self.loaded_lora is not None:
+            if self.loaded_lora[0] == lora_path:
+                lora = self.loaded_lora[1]
+            else:
+                temp = self.loaded_lora
+                self.loaded_lora = None
+                del temp
+
+        if lora is None:
+            lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
+            self.loaded_lora = (lora_path, lora)
+
+        model_lora, clip_lora = comfy.sd.load_lora_for_models(
+            model, clip, lora, strength_model, strength_clip)
+        return (model_lora, clip_lora)
+
+
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
     "SDVN Load Image": LoadImage,
     "SDVN Load Checkpoint": CheckpointLoaderDownload,
+    "SDVN Load Lora": LoraLoader,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Load Image": "Load Image",
-    "SDVN Load Checkpoint": "Load Checkpoint"
+    "SDVN Load Checkpoint": "Load Checkpoint",
+    "SDVN Load Lora": "Load Lora"
 }
