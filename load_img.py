@@ -1,6 +1,6 @@
 import comfy.sd
 import requests
-import os
+import os, re
 import sys
 from PIL import Image, ImageOps
 import torch
@@ -39,13 +39,12 @@ def run_gallery_dl(url):
 def download(url, name):
     input_dir = folder_paths.get_input_directory()
     command = ['wget', url, '-O', f'{input_dir}/{name}']
-    result = subprocess.run(command, check=True,
-                            text=True, capture_output=True)
-    return result.stdout.strip()
+    subprocess.run(command, check=True, text=True, capture_output=True)
 
 
 def civit_downlink(link):
     command = ['wget', link, '-O', 'model.html']
+    subprocess.run(command, check=True, text=True, capture_output=True)
     try:
         # Mở tệp và đọc nội dung
         with open('model.html', 'r', encoding='utf-8') as file:
@@ -88,8 +87,9 @@ def download_model(url, name):
     url = url.replace("&", "\&").split("?")[0]
     url = check_link(url)
     checkpoint_path = os.path.join(folder_paths.models_dir, "checkpoints")
-    command = ['aria2c', url, '-c', '-x', '16', '-s', '16',
-               '-k', '1M', f'{url}{token(url)}', '-d', '', '-o', name]
+    command = ['aria2c', '-c', '-x', '16', '-s', '16',
+               '-k', '1M', f'{url}{token(url)}', '-d', checkpoint_path, '-o', name]
+    subprocess.run(command, check=True, text=True, capture_output=True)
 
 
 class download_img:
