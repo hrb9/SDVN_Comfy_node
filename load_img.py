@@ -111,7 +111,7 @@ class LoadImage:
         return {"required": {
             "Load_url": ("BOOLEAN", {"default": True},),
             "Url": ("STRING", {"default": "", "multiline": False},),
-            "image": (sorted(file_list), {"image_upload": True})
+            "image": (sorted(file_list) if file_list else ["No files available"], {"image_upload": True})
 
         }
         }
@@ -192,6 +192,57 @@ class CheckpointLoaderDownload:
         return out[:3]
 
 
+class LoraDownload:
+    def __init__(self):
+        self.loaded_lora = None
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "model": ("MODEL", {"tooltip": "The diffusion model the LoRA will be applied to."}),
+                "clip": ("CLIP", {"default": None, "tooltip": "The CLIP model the LoRA will be applied to."}),
+                "Download_url": ("STRING", {"default": "", "multiline": False},),
+                "Lora_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
+                "strength_model": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
+                "strength_clip": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the CLIP model. This value can be negative."}),
+            },
+        }
+
+    RETURN_TYPES = ("MODEL", "CLIP")
+    OUTPUT_TOOLTIPS = ("The modified diffusion model.",
+                       "The modified CLIP model.")
+    FUNCTION = "load_lora"
+
+    CATEGORY = "SDVN"
+    DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
+
+    def load_lora(self, model, clip, Download_url, Lora_url_name, strength_model, strength_clip):
+        download_model(Download_url, Lora_url_name, "lora")
+        lora_path = folder_paths.get_full_path_or_raise(
+            "loras", Lora_url_name)
+
+        if strength_model == 0 and strength_clip == 0:
+            return (model, clip)
+
+        lora = None
+        if self.loaded_lora is not None:
+            if self.loaded_lora[0] == lora_path:
+                lora = self.loaded_lora[1]
+            else:
+                temp = self.loaded_lora
+                self.loaded_lora = None
+                del temp
+
+        if lora is None:
+            lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
+            self.loaded_lora = (lora_path, lora)
+
+        model_lora, clip_lora = comfy.sd.load_lora_for_models(
+            model, clip, lora, strength_model, strength_clip)
+        return (model_lora, clip_lora)
+
+
 class LoraLoader:
     def __init__(self):
         self.loaded_lora = None
@@ -201,6 +252,7 @@ class LoraLoader:
         return {
             "required": {
                 "model": ("MODEL", {"tooltip": "The diffusion model the LoRA will be applied to."}),
+                "clip": ("CLIP", {"default": None, "tooltip": "The CLIP model the LoRA will be applied to."}),
                 "Download": ("BOOLEAN", {"default": True},),
                 "Download_url": ("STRING", {"default": "", "multiline": False},),
                 "Lora_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
@@ -208,9 +260,6 @@ class LoraLoader:
                 "strength_model": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
                 "strength_clip": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the CLIP model. This value can be negative."}),
             },
-            "optional": {
-                "clip": ("CLIP", {"default": None, "tooltip": "The CLIP model the LoRA will be applied to."})
-            }
         }
 
     RETURN_TYPES = ("MODEL", "CLIP")
@@ -222,15 +271,13 @@ class LoraLoader:
     DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
 
     def load_lora(self, model, clip, Download, Download_url, Lora_url_name, lora_name, strength_model, strength_clip):
-        if Download and Download_url != "":
-            download_model(Download_url, Lora_url_name, "Lora")
-            ckpt_path = folder_paths.get_full_path_or_raise(
-                "loras", Lora_url_name)
+        if Download and Download_url != '':
+            download_model(Download_url, Lora_url_name, "lora")
             lora_path = folder_paths.get_full_path_or_raise(
                 "loras", Lora_url_name)
         else:
-            lora_path = folder_paths.get_full_path_or_raise("loras", lora_name)
-
+            lora_path = folder_paths.get_full_path_or_raise(
+                "loras", lora_name)
         if strength_model == 0 and strength_clip == 0:
             return (model, clip)
 
@@ -256,6 +303,7 @@ class LoraLoader:
 NODE_CLASS_MAPPINGS = {
     "SDVN Load Image": LoadImage,
     "SDVN Load Checkpoint": CheckpointLoaderDownload,
+    "SDVN Lora Download": LoraDownload,
     "SDVN Load Lora": LoraLoader,
 }
 
@@ -263,5 +311,6 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Load Image": "Load Image",
     "SDVN Load Checkpoint": "Load Checkpoint",
-    "SDVN Load Lora": "Load Lora"
+    "SDVN Lora Download": "Lora Download",
+    "SDVN Load Lora": "Load Lora",
 }
