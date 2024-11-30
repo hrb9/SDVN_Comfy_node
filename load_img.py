@@ -159,6 +159,27 @@ class LoadImage:
         return True
 
 
+class LoadImageUrl:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+            "Url": ("STRING", {"default": "", "multiline": False},)
+        }
+        }
+
+    CATEGORY = "SDVN"
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "load_image_url"
+
+    def load_image_url(self, Url):
+        if 'pinterest.com' in Url:
+            Url = run_gallery_dl(Url)
+        image = Image.open(requests.get(Url, stream=True).raw)
+        image = ImageOps.exif_transpose(image)
+        return (pil2tensor(image),)
+
+
 class CheckpointLoaderDownload:
     @classmethod
     def INPUT_TYPES(s):
@@ -187,6 +208,33 @@ class CheckpointLoaderDownload:
         else:
             ckpt_path = folder_paths.get_full_path_or_raise(
                 "checkpoints", Ckpt_name)
+        out = comfy.sd.load_checkpoint_guess_config(
+            ckpt_path, output_vae=True, output_clip=True, embedding_directory=folder_paths.get_folder_paths("embeddings"))
+        return out[:3]
+
+
+class CheckpointDownload:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "Download_url": ("STRING", {"default": "", "multiline": False},),
+                "Ckpt_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
+            }
+        }
+    RETURN_TYPES = ("MODEL", "CLIP", "VAE")
+    OUTPUT_TOOLTIPS = ("The model used for denoising latents.",
+                       "The CLIP model used for encoding text prompts.",
+                       "The VAE model used for encoding and decoding images to and from latent space.")
+    FUNCTION = "checkpoint_download"
+
+    CATEGORY = "SDVN"
+    DESCRIPTION = "Loads a diffusion model checkpoint, diffusion models are used to denoise latents."
+
+    def checkpoint_download(self, Download_url, Ckpt_url_name):
+        download_model(Download_url, Ckpt_url_name, "ckpt")
+        ckpt_path = folder_paths.get_full_path_or_raise(
+            "checkpoints", Ckpt_url_name)
         out = comfy.sd.load_checkpoint_guess_config(
             ckpt_path, output_vae=True, output_clip=True, embedding_directory=folder_paths.get_folder_paths("embeddings"))
         return out[:3]
@@ -301,16 +349,20 @@ class LoraLoader:
 
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
-    "SDVN Load Image": LoadImage,
     "SDVN Load Checkpoint": CheckpointLoaderDownload,
-    "SDVN Lora Download": LoraDownload,
     "SDVN Load Lora": LoraLoader,
+    "SDVN Load Image": LoadImage,
+    "SDVN Load Image Url": LoadImageUrl,
+    "SDVN Checkpoint Download": CheckpointDownload,
+    "SDVN Lora Download": LoraDownload,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SDVN Load Image": "Load Image",
     "SDVN Load Checkpoint": "Load Checkpoint",
-    "SDVN Lora Download": "Lora Download",
     "SDVN Load Lora": "Load Lora",
+    "SDVN Load Image": "Load Image",
+    "SDVN Load Image Url": "Load Image Url",
+    "SDVN Checkpoint Download": "Download Checkpoint",
+    "SDVN Lora Download": "Download Lora",
 }
