@@ -1,5 +1,7 @@
+import comfy.sd
 import requests
 import os
+import sys
 from PIL import Image, ImageOps
 import torch
 import subprocess
@@ -7,6 +9,8 @@ import numpy as np
 import folder_paths
 import hashlib
 from PIL.PngImagePlugin import PngInfo
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
 
 def pil2tensor(images: Image.Image | list[Image.Image]) -> torch.Tensor:
@@ -32,6 +36,91 @@ def run_gallery_dl(url):
     return result.stdout.strip()
 
 
+def download(url, name):
+    input_dir = folder_paths.get_input_directory()
+    command = ['wget', url, '-O', f'{input_dir}/{name}']
+    result = subprocess.run(command, check=True,
+                            text=True, capture_output=True)
+    return result.stdout.strip()
+
+
+def civit_downlink(link):
+    command = ['wget', link, '-O', 'model.html']
+    try:
+        # Mở tệp và đọc nội dung
+        with open('model.html', 'r', encoding='utf-8') as file:
+            html_content = file.read()
+        pattern = r'"modelVersionId":(\d+),'
+        model_id = re.findall(pattern, html_content)
+        if model_id:
+            api_link = f'https://civitai.com/api/download/models/{model_id[0]}'
+            print(f'Download model id_link: {api_link}')
+            return api_link
+        else:
+            return "Không tìm thấy đoạn nội dung phù hợp."
+    except requests.RequestException as e:
+        return f"Lỗi khi tải trang: {e}"
+
+
+def check_link(link):
+    if 'huggingface.co' in link:
+        if 'blob' in link:
+            link = link.replace('blob', 'resolve')
+            return link
+        else:
+            return link
+    if 'civitai.com' in link:
+        if 'civitai.com/models' in link:
+            return civit_downlink(link)
+        else:
+            return link
+
+
+def token(link):
+    if "civitai" in link:
+        token = f'?token=8c7337ac0c39fe4133ae19a3d65b806f'
+    else:
+        token = ""
+    return token
+
+
+def download_model(url, name):
+    url = url.replace("&", "\&").split("?")[0]
+    url = check_link(url)
+    checkpoint_path = os.path.join(folder_paths.models_dir, "checkpoints")
+    command = ['aria2c', url, '-c', '-x', '16', '-s', '16',
+               '-k', '1M', f'{url}{token(url)}', '-d', '', '-o', name]
+
+
+class download_img:
+
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "Image_url": ("STRING", {"default": "", "multiline": False},),
+                "Name": ("STRING", {"default": "image.jpg", "multiline": False},)
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "load"
+    CATEGORY = "SDVN"
+
+    def load(self, Image_url, Name):
+        # get the image from the url
+        if 'pinterest.com' in Image_url:
+            Image_url = run_gallery_dl(Image_url)
+        download(Image_url, Name)
+        image_path = f'{folder_paths.get_input_directory()}/{Name}'
+        image = Image.open(image_path)
+        image = ImageOps.exif_transpose(image)
+        return (pil2tensor(image),)
+
+
 class load_image_url:
 
     def __init__(self):
@@ -41,13 +130,7 @@ class load_image_url:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "Image_url": (
-                    "STRING",
-                    {
-                        "default": "",
-                        "multiline": True
-                    },
-                ),
+                "Image_url": ("STRING", {"default": "", "multiline": True},),
             }
         }
 
@@ -133,15 +216,45 @@ class LoadImage:
         return True
 
 
-# A dictionary that contains all nodes you want to export with their names
+class CheckpointLoaderDownload:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "Url": ("STRING", {"default": "", "multiline": False},),
+                "ckpt_name": ("STRING", {"default": "model.safetensors", "multiline": False},)
+            }
+        }
+    RETURN_TYPES = ("MODEL", "CLIP", "VAE")
+    OUTPUT_TOOLTIPS = ("The model used for denoising latents.",
+                       "The CLIP model used for encoding text prompts.",
+                       "The VAE model used for encoding and decoding images to and from latent space.")
+    FUNCTION = "load_checkpoint"
+
+    CATEGORY = "SDVN"
+    DESCRIPTION = "Loads a diffusion model checkpoint, diffusion models are used to denoise latents."
+
+    def load_checkpoint(self, Url, ckpt_name):
+        download_model(Url, ckpt_name)
+        ckpt_path = folder_paths.get_full_path_or_raise(
+            "checkpoints", ckpt_name)
+        out = comfy.sd.load_checkpoint_guess_config(
+            ckpt_path, output_vae=True, output_clip=True, embedding_directory=folder_paths.get_folder_paths("embeddings"))
+        return out[:3]
+
+
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
-    "Load Image Url": load_image_url,
-    "Load Image (SubFolder)": LoadImage
+    "SDVN Load Image": LoadImage,
+    "SDVN Load Image Url": load_image_url,
+    "SDVN Load Image Down": download_img,
+    "SDVN Checkpoint Down": CheckpointLoaderDownload,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "Load Image Url": "SDVN Load Image Url",
-    "Load Image (SubFolder)": "SDVN Load Image"
+    "SDVN Load Image": "Load Image",
+    "SDVN Load Image Url": "Load Image Url",
+    "SDVN Load Image Down": "Load Image Down",
+    "SDVN Checkpoint Down": "Checkpoint Download"
 }
