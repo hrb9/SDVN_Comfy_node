@@ -1,6 +1,7 @@
 import comfy.sd
 import requests
-import os, re
+import os
+import re
 import sys
 from PIL import Image, ImageOps
 import torch
@@ -34,12 +35,6 @@ def run_gallery_dl(url):
     result = subprocess.run(command, check=True,
                             text=True, capture_output=True)
     return result.stdout.strip()
-
-
-def download(url, name):
-    input_dir = folder_paths.get_input_directory()
-    command = ['wget', url, '-O', f'{input_dir}/{name}']
-    subprocess.run(command, check=True, text=True, capture_output=True)
 
 
 def civit_downlink(link):
@@ -90,61 +85,6 @@ def download_model(url, name):
     command = ['aria2c', '-c', '-x', '16', '-s', '16',
                '-k', '1M', f'{url}{token(url)}', '-d', checkpoint_path, '-o', name]
     subprocess.run(command, check=True, text=True, capture_output=True)
-
-
-class download_img:
-
-    def __init__(self):
-        pass
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "Image_url": ("STRING", {"default": "", "multiline": False},),
-                "Name": ("STRING", {"default": "image.jpg", "multiline": False},)
-            }
-        }
-
-    RETURN_TYPES = ("IMAGE",)
-    FUNCTION = "load"
-    CATEGORY = "SDVN"
-
-    def load(self, Image_url, Name):
-        # get the image from the url
-        if 'pinterest.com' in Image_url:
-            Image_url = run_gallery_dl(Image_url)
-        download(Image_url, Name)
-        image_path = f'{folder_paths.get_input_directory()}/{Name}'
-        image = Image.open(image_path)
-        image = ImageOps.exif_transpose(image)
-        return (pil2tensor(image),)
-
-
-class load_image_url:
-
-    def __init__(self):
-        pass
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "Image_url": ("STRING", {"default": "", "multiline": True},),
-            }
-        }
-
-    RETURN_TYPES = ("IMAGE",)
-    FUNCTION = "load"
-    CATEGORY = "SDVN"
-
-    def load(self, Image_url):
-        # get the image from the url
-        if 'pinterest.com' in Image_url:
-            Image_url = run_gallery_dl(Image_url)
-        image = Image.open(requests.get(Image_url, stream=True).raw)
-        image = ImageOps.exif_transpose(image)
-        return (pil2tensor(image),)
 
 
 class LoadImage:
@@ -221,8 +161,10 @@ class CheckpointLoaderDownload:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "Url": ("STRING", {"default": "", "multiline": False},),
-                "ckpt_name": ("STRING", {"default": "model.safetensors", "multiline": False},)
+                "Download": ("BOOLEAN", {"default": True},),
+                "Download_url": ("STRING", {"default": "", "multiline": False},),
+                "Ckpt_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
+                "Ckpt_name": (folder_paths.get_filename_list("checkpoints"), {"tooltip": "The name of the checkpoint (model) to load."})
             }
         }
     RETURN_TYPES = ("MODEL", "CLIP", "VAE")
@@ -234,10 +176,14 @@ class CheckpointLoaderDownload:
     CATEGORY = "SDVN"
     DESCRIPTION = "Loads a diffusion model checkpoint, diffusion models are used to denoise latents."
 
-    def load_checkpoint(self, Url, ckpt_name):
-        download_model(Url, ckpt_name)
-        ckpt_path = folder_paths.get_full_path_or_raise(
-            "checkpoints", ckpt_name)
+    def load_checkpoint(self, Download, Download_url, Ckpt_url_name, Ckpt_name):
+        if Download and Download_url != "":
+            download_model(Download_url, Ckpt_url_name)
+            ckpt_path = folder_paths.get_full_path_or_raise(
+                "checkpoints", Ckpt_url_name)
+        else:
+            ckpt_path = folder_paths.get_full_path_or_raise(
+                "checkpoints", Ckpt_name)
         out = comfy.sd.load_checkpoint_guess_config(
             ckpt_path, output_vae=True, output_clip=True, embedding_directory=folder_paths.get_folder_paths("embeddings"))
         return out[:3]
@@ -246,15 +192,11 @@ class CheckpointLoaderDownload:
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
     "SDVN Load Image": LoadImage,
-    "SDVN Load Image Url": load_image_url,
-    "SDVN Load Image Down": download_img,
-    "SDVN Checkpoint Down": CheckpointLoaderDownload,
+    "SDVN Load Checkpoint": CheckpointLoaderDownload,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Load Image": "Load Image",
-    "SDVN Load Image Url": "Load Image Url",
-    "SDVN Load Image Down": "Load Image Down",
-    "SDVN Checkpoint Down": "Checkpoint Download"
+    "SDVN Load Checkpoint": "Load Checkpoint"
 }
