@@ -44,7 +44,7 @@ class ModelMergeBlocks:
                 else:
                     kwargs[i][j] = float(kwargs[i][j])
                     hargs[f'{i}.{j}'] = kwargs[i][j]
-            hargs[i] = num if '-' in kwargs[i][0] else kwargs[i][j]
+            hargs[i] = num if '-' in str(kwargs[i][0]) else kwargs[i][j]
         default_ratio = next(iter(hargs.values()))
         for k in kp:
             ratio = default_ratio
