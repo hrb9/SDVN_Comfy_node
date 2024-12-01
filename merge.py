@@ -24,7 +24,7 @@ class ModelMergeBlocks:
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "merge"
 
-    CATEGORY = "advanced/model_merging"
+    CATEGORY = "SDVN/Merge"
 
     def merge(self, model1, model2, **kwargs):
         m = model1.clone()
