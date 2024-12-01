@@ -15,7 +15,7 @@ class Easy_IPA_weight:
     FUNCTION = "convert_wright"
 
     def convert_wright(self, SDXL, Weight):
-        max_block = 10 if SDXL else 10
+        max_block = 10 if SDXL else 15
         Weight = Weight.split(",")
         index = 0
         convert = []
