@@ -116,7 +116,7 @@ class LoadImage:
         }
         }
 
-    CATEGORY = "SDVN"
+    CATEGORY = "✨ SDVN"
 
     RETURN_TYPES = ("IMAGE", "MASK")
     FUNCTION = "load_image"
@@ -167,7 +167,7 @@ class LoadImageUrl:
         }
         }
 
-    CATEGORY = "SDVN"
+    CATEGORY = "✨ SDVN"
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "load_image_url"
@@ -197,7 +197,7 @@ class CheckpointLoaderDownload:
                        "The VAE model used for encoding and decoding images to and from latent space.")
     FUNCTION = "load_checkpoint"
 
-    CATEGORY = "SDVN"
+    CATEGORY = "✨ SDVN"
     DESCRIPTION = "Loads a diffusion model checkpoint, diffusion models are used to denoise latents."
 
     def load_checkpoint(self, Download, Download_url, Ckpt_url_name, Ckpt_name):
