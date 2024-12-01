@@ -228,7 +228,7 @@ class CheckpointDownload:
                        "The VAE model used for encoding and decoding images to and from latent space.")
     FUNCTION = "checkpoint_download"
 
-    CATEGORY = "SDVN"
+    CATEGORY = "✨ SDVN"
     DESCRIPTION = "Loads a diffusion model checkpoint, diffusion models are used to denoise latents."
 
     def checkpoint_download(self, Download_url, Ckpt_url_name):
@@ -262,7 +262,7 @@ class LoraDownload:
                        "The modified CLIP model.")
     FUNCTION = "load_lora"
 
-    CATEGORY = "SDVN"
+    CATEGORY = "✨ SDVN"
     DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
 
     def load_lora(self, model, clip, Download_url, Lora_url_name, strength_model, strength_clip):
@@ -315,7 +315,7 @@ class LoraLoader:
                        "The modified CLIP model.")
     FUNCTION = "load_lora"
 
-    CATEGORY = "SDVN"
+    CATEGORY = "✨ SDVN"
     DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
 
     def load_lora(self, model, clip, Download, Download_url, Lora_url_name, lora_name, strength_model, strength_clip):

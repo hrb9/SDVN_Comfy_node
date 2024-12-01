@@ -24,7 +24,7 @@ class ModelMergeBlocks:
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "merge"
 
-    CATEGORY = "SDVN/Merge"
+    CATEGORY = "✨ SDVN/Merge"
 
     def merge(self, model1, model2, **kwargs):
         m = model1.clone()
@@ -62,7 +62,7 @@ class ModelMergeBlocks:
 
 
 class ModelMergeSD1(ModelMergeBlocks):
-    CATEGORY = "SDVN/Merge"
+    CATEGORY = "✨ SDVN/Merge"
 
     @classmethod
     def INPUT_TYPES(s):
@@ -78,7 +78,7 @@ class ModelMergeSD1(ModelMergeBlocks):
 
 
 class ModelMergeSDXL(ModelMergeBlocks):
-    CATEGORY = "SDVN/Merge"
+    CATEGORY = "✨ SDVN/Merge"
 
     @classmethod
     def INPUT_TYPES(s):
@@ -94,7 +94,7 @@ class ModelMergeSDXL(ModelMergeBlocks):
 
 
 class ModelMergeFlux1(ModelMergeBlocks):
-    CATEGORY = "SDVN/Merge"
+    CATEGORY = "✨ SDVN/Merge"
 
     @classmethod
     def INPUT_TYPES(s):
