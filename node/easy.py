@@ -2,7 +2,7 @@ class Easy_IPA_weight:
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
-            "SDXL": ("BOOLEAN", {"default": True},),
+            "SDXL": ("BOOLEAN", {"default": False},),
             "Weight": ("STRING", {"default": "", "multiline": False, "placeholder": "Ex: 0-4:1,6:1,1,1 or 0-15:1 or 1,1,1,1,1 or 1:1,5:1,7:1"})
         }
         }
