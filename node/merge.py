@@ -30,20 +30,28 @@ class ModelMergeBlocks:
         m = model1.clone()
         kp = model2.get_key_patches("diffusion_model.")
         for i in kwargs:
-            kwargs[i] = str(kwargs[i])
             kwargs[i] = kwargs[i].split(',')
         hargs = {}
         for i in kwargs:
+            index = 0
             for j in range(len(kwargs[i])):
                 if '-' in kwargs[i][j]:
                     ran, num = kwargs[i][j].split(':')
                     min, max = ran.split('-')
                     num = float(num)
+                    index = int(min)
                     for a in range(int(min), int(max)+1):
-                        hargs[f'{i}.{a}'] = num
+                        hargs[f'{i}.{index}'] = num
+                        index += 1
+                elif ':' in kwargs[i][j]:
+                    index, num = kwargs[i][j].split(':')
+                    index = int(index)
+                    hargs[f'{i}.{index}'] = float(num)
+                    index += 1
                 else:
                     kwargs[i][j] = float(kwargs[i][j])
-                    hargs[f'{i}.{j}'] = kwargs[i][j]
+                    hargs[f'{i}.{index}'] = kwargs[i][j]
+                    index += 1
             hargs[i] = num if '-' in str(kwargs[i][0]) else kwargs[i][j]
         print(f'Final blocks:\n{hargs}')
         default_ratio = next(iter(hargs.values()))
