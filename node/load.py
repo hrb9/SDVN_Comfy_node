@@ -188,6 +188,8 @@ class CheckpointLoaderDownload:
                 "Download": ("BOOLEAN", {"default": True},),
                 "Download_url": ("STRING", {"default": "", "multiline": False},),
                 "Ckpt_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
+            },
+            "optional": {
                 "Ckpt_name": (folder_paths.get_filename_list("checkpoints"), {"tooltip": "The name of the checkpoint (model) to load."})
             }
         }
@@ -200,7 +202,7 @@ class CheckpointLoaderDownload:
     CATEGORY = "✨ SDVN"
     DESCRIPTION = "Loads a diffusion model checkpoint, diffusion models are used to denoise latents."
 
-    def load_checkpoint(self, Download, Download_url, Ckpt_url_name, Ckpt_name):
+    def load_checkpoint(self, Download, Download_url, Ckpt_url_name, Ckpt_name=None):
         if Download and Download_url != "":
             download_model(Download_url, Ckpt_url_name, "ckpt")
             ckpt_path = folder_paths.get_full_path_or_raise(
@@ -304,10 +306,12 @@ class LoraLoader:
                 "Download": ("BOOLEAN", {"default": True},),
                 "Download_url": ("STRING", {"default": "", "multiline": False},),
                 "Lora_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
+            },
+            "optional": {
                 "lora_name": (folder_paths.get_filename_list("loras"), {"tooltip": "The name of the LoRA."}),
                 "strength_model": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
                 "strength_clip": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the CLIP model. This value can be negative."}),
-            },
+            }
         }
 
     RETURN_TYPES = ("MODEL", "CLIP")
@@ -318,7 +322,7 @@ class LoraLoader:
     CATEGORY = "✨ SDVN"
     DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
 
-    def load_lora(self, model, clip, Download, Download_url, Lora_url_name, lora_name, strength_model, strength_clip):
+    def load_lora(self, model, clip, Download, Download_url, Lora_url_name, lora_name=None, strength_model=1, strength_clip=1):
         if Download and Download_url != '':
             download_model(Download_url, Lora_url_name, "lora")
             lora_path = folder_paths.get_full_path_or_raise(
