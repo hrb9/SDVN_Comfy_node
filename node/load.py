@@ -14,20 +14,12 @@ sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
 
-def pil2tensor(images: Image.Image | list[Image.Image]) -> torch.Tensor:
-    """Converts a PIL Image or a list of PIL Images to a tensor."""
-
-    def single_pil2tensor(image: Image.Image) -> torch.Tensor:
-        np_image = np.array(image).astype(np.float32) / 255.0
-        if np_image.ndim == 2:  # Grayscale
-            return torch.from_numpy(np_image).unsqueeze(0)  # (1, H, W)
-        else:  # RGB or RGBA
-            return torch.from_numpy(np_image).unsqueeze(0)  # (1, H, W, C)
-
-    if isinstance(images, Image.Image):
-        return single_pil2tensor(images)
-    else:
-        return torch.cat([single_pil2tensor(img) for img in images], dim=0)
+def i2tensor(i) -> torch.Tensor:
+    i = ImageOps.exif_transpose(i)
+    image = i.convert("RGB")
+    image = np.array(image).astype(np.float32) / 255.0
+    image = torch.from_numpy(image)[None,]
+    return image
 
 
 def run_gallery_dl(url):
@@ -108,12 +100,12 @@ class LoadImage:
                 file_path = file_path.replace("\\", "/")
                 file_list.append(file_path)
 
-        return {"required": {
-            "Load_url": ("BOOLEAN", {"default": True},),
-            "Url": ("STRING", {"default": "", "multiline": False},),
-            "image": (sorted(file_list), {"image_upload": True})
-
-        }
+        return {
+            "required": {
+                "Load_url": ("BOOLEAN", {"default": True},),
+                "Url": ("STRING", {"default": "", "multiline": False},),
+                "image": (sorted(file_list), {"image_upload": True})
+            }
         }
 
     CATEGORY = "✨ SDVN"
@@ -121,30 +113,24 @@ class LoadImage:
     RETURN_TYPES = ("IMAGE", "MASK")
     FUNCTION = "load_image"
 
-    def load_image(self, image, Url, Load_url):
+    def load_image(self, Url, Load_url, image=None):
         if Url != '' and Load_url:
             if 'pinterest.com' in Url:
                 Url = run_gallery_dl(Url)
-            image = Image.open(requests.get(Url, stream=True).raw)
-            image = ImageOps.exif_transpose(image)
-            return (pil2tensor(image),)
-
+            i = Image.open(requests.get(Url, stream=True).raw)
         else:
             image_path = folder_paths.get_annotated_filepath(image)
             i = Image.open(image_path)
-            i = ImageOps.exif_transpose(i)
-            image = i.convert("RGB")
-            image = np.array(image).astype(np.float32) / 255.0
-            image = torch.from_numpy(image)[None,]
-            if 'A' in i.getbands():
-                mask = np.array(i.getchannel('A')).astype(np.float32) / 255.0
-                mask = 1. - torch.from_numpy(mask)
-            else:
-                mask = torch.zeros((64, 64), dtype=torch.float32, device="cpu")
-            return (image, mask.unsqueeze(0))
+        ii = ImageOps.exif_transpose(i)
+        if 'A' in ii.getbands():
+            mask = np.array(ii.getchannel('A')).astype(np.float32) / 255.0
+            mask = 1. - torch.from_numpy(mask)
+        else:
+            mask = torch.zeros((64, 64), dtype=torch.float32, device="cpu")
+        return (i2tensor(i), mask.unsqueeze(0))
 
     @classmethod
-    def IS_CHANGED(s, image, Url, Load_url):
+    def IS_CHANGED(self, Url, Load_url, image=None):
         image_path = folder_paths.get_annotated_filepath(image)
         m = hashlib.sha256()
         with open(image_path, 'rb') as f:
@@ -152,7 +138,7 @@ class LoadImage:
         return m.digest().hex()
 
     @classmethod
-    def VALIDATE_INPUTS(s, image, Url, Load_url):
+    def VALIDATE_INPUTS(self, Url, Load_url, image=None):
         if not folder_paths.exists_annotated_filepath(image):
             return "Invalid image file: {}".format(image)
 
@@ -176,8 +162,7 @@ class LoadImageUrl:
         if 'pinterest.com' in Url:
             Url = run_gallery_dl(Url)
         image = Image.open(requests.get(Url, stream=True).raw)
-        image = ImageOps.exif_transpose(image)
-        return (pil2tensor(image),)
+        return (i2tensor(image),)
 
 
 class CheckpointLoaderDownload:
