@@ -21,14 +21,12 @@ class ModelMergeBlocks:
                              "middle": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
                              "output": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01})
                              }}
-    RETURN_TYPES = ("MODEL",)
+    RETURN_TYPES = ("MODEL", "STRING")
     FUNCTION = "merge"
 
     CATEGORY = "✨ SDVN/Merge"
 
-    def merge(self, model1, model2, **kwargs):
-        m = model1.clone()
-        kp = model2.get_key_patches("diffusion_model.")
+    def merge(self, model1=None, model2=None, **kwargs):
         for i in kwargs:
             kwargs[i] = kwargs[i].split(',')
         hargs = {}
@@ -54,19 +52,23 @@ class ModelMergeBlocks:
                     index += 1
             hargs[i] = num if '-' in str(kwargs[i][0]) else kwargs[i][j]
         print(f'Final blocks:\n{hargs}')
-        default_ratio = next(iter(hargs.values()))
-        for k in kp:
-            ratio = default_ratio
-            k_unet = k[len("diffusion_model."):]
+        if model1 != None and model2 != None:
+            m = model1.clone()
+            kp = model2.get_key_patches("diffusion_model.")
+            default_ratio = next(iter(hargs.values()))
+            for k in kp:
+                ratio = default_ratio
+                k_unet = k[len("diffusion_model."):]
 
-            last_arg_size = 0
-            for arg in hargs:
-                if k_unet.startswith(arg) and last_arg_size < len(arg):
-                    ratio = hargs[arg]
-                    last_arg_size = len(arg)
+                last_arg_size = 0
+                for arg in hargs:
+                    if k_unet.startswith(arg) and last_arg_size < len(arg):
+                        ratio = hargs[arg]
+                        last_arg_size = len(arg)
 
-            m.add_patches({k: kp[k]}, 1.0 - ratio, ratio)
-        return (m, )
+                m.add_patches({k: kp[k]}, 1.0 - ratio, ratio)
+            return (m, str(hargs))
+        return (None, str(hargs))
 
 
 class ModelMergeSD1(ModelMergeBlocks):
@@ -75,13 +77,16 @@ class ModelMergeSD1(ModelMergeBlocks):
     @classmethod
     def INPUT_TYPES(s):
 
-        return {"required": {
-            "model1": ("MODEL",),
-            "model2": ("MODEL",),
-            "input_blocks": ("STRING", {"default": "0-6:1,7-11:1"},),
-            "middle_block": ("STRING", {"default": "1"},),
-            "output_blocks": ("STRING", {"default": "1,1,1,1,1,1,1,1,1,1,1,1"},)
-        }
+        return {
+            "required": {
+                "input_blocks": ("STRING", {"default": "0-6:1,7-11:1"},),
+                "middle_block": ("STRING", {"default": "1"},),
+                "output_blocks": ("STRING", {"default": "1,1,1,1,1,1,1,1,1,1,1,1"},)
+            },
+            "optional": {
+                "model1": ("MODEL",),
+                "model2": ("MODEL",),
+            }
         }
 
 
@@ -91,13 +96,16 @@ class ModelMergeSDXL(ModelMergeBlocks):
     @classmethod
     def INPUT_TYPES(s):
 
-        return {"required": {
-            "model1": ("MODEL",),
-            "model2": ("MODEL",),
-            "input_blocks": ("STRING", {"default": "0-4:1,5-8:1"},),
-            "middle_block": ("STRING", {"default": "1"},),
-            "output_blocks": ("STRING", {"default": "1,1,1,1,1,1,1,1,1"},)
-        }
+        return {
+            "required": {
+                "input_blocks": ("STRING", {"default": "0-4:1,5-8:1"},),
+                "middle_block": ("STRING", {"default": "1"},),
+                "output_blocks": ("STRING", {"default": "1,1,1,1,1,1,1,1,1"},)
+            },
+            "optional": {
+                "model1": ("MODEL",),
+                "model2": ("MODEL",),
+            }
         }
 
 
@@ -109,12 +117,15 @@ class ModelMergeFlux1(ModelMergeBlocks):
         arg_dict = {"model1": ("MODEL",),
                     "model2": ("MODEL",)}
 
-        return {"required": {
-            "model1": ("MODEL",),
-            "model2": ("MODEL",),
-            "double_blocks": ("STRING", {"default": "0-9:1,10-18:1"},),
-            "single_blocks": ("STRING", {"default": "0-37:1"},),
-        }
+        return {
+            "required": {
+                "double_blocks": ("STRING", {"default": "0-9:1,10-18:1"},),
+                "single_blocks": ("STRING", {"default": "0-37:1"},),
+            },
+            "optional": {
+                "model1": ("MODEL",),
+                "model2": ("MODEL",),
+            }
         }
 
 
