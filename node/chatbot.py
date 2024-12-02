@@ -1,18 +1,38 @@
 import google.generativeai as genai
 from openai import OpenAI
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE_CLASS_MAPPINGS
+from torchvision.transforms import ToPILImage
+import torch
+from PIL import Image
+import numpy as np
+
+
+def tensor2pil(tensor: torch.Tensor) -> Image.Image:
+    if tensor.ndim == 4:
+        tensor = tensor.squeeze(0)
+    if tensor.ndim == 3 and tensor.shape[-1] == 3:
+        np_image = (tensor.numpy() * 255).astype(np.uint8)
+    else:
+        raise ValueError(
+            "Tensor phải có shape [H, W, C] hoặc [1, H, W, C] với C = 3 (RGB).")
+    pil_image = Image.fromarray(np_image)
+    return pil_image
 
 
 class API_chatbot:
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": {
-            "chatbot": (["Gemini 1.5 Flash", "Gemini 1.5 Pro", "HuggingFace | Meta Llama-3.2"],),
-            "APIkey": ("STRING", {"default": "", "multiline": False, "tooltip": "Chatbot API"}),
-            "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
-            "main_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "Chatbot prompt"}),
-            "sub_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "Chatbot prompt"})
-        }
+        return {
+            "required": {
+                "chatbot": (["Gemini 1.5 Flash", "Gemini 1.5 Pro", "HuggingFace | Meta Llama-3.2"],),
+                "APIkey": ("STRING", {"default": "", "multiline": False, "tooltip": "Chatbot API"}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
+                "main_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "Chatbot prompt"}),
+                "sub_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "Chatbot prompt"})
+            },
+            "optional": {
+                "image": ("IMAGE", {"tooltip": "The for gemini model"})
+            }
         }
 
     CATEGORY = "✨ SDVN/API"
@@ -20,7 +40,7 @@ class API_chatbot:
     RETURN_TYPES = ("STRING",)
     FUNCTION = "api_chatbot"
 
-    def api_chatbot(self, chatbot, APIkey, seed, main_prompt, sub_prompt):
+    def api_chatbot(self, chatbot, APIkey, seed, main_prompt, sub_prompt, image=None):
         model_list = {
             "Gemini 1.5 Flash": "gemini-1.5-flash",
             "Gemini 1.5 Pro": "gemini-1.5-pro",
@@ -35,7 +55,11 @@ class API_chatbot:
         if 'Gemini' in chatbot:
             genai.configure(api_key=APIkey)
             model = genai.GenerativeModel(model_name)
-            response = model.generate_content(prompt)
+            if image == None:
+                response = model.generate_content(prompt)
+            else:
+                image = tensor2pil(image)
+                response = model.generate_content([prompt, image])
             answer = response.text
         if "HuggingFace" in chatbot:
             answer = ""
