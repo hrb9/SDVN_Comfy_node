@@ -24,7 +24,7 @@ class API_chatbot:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "chatbot": (["Gemini 1.5 Flash", "Gemini 1.5 Pro", "HuggingFace | Meta Llama-3.2"],),
+                "chatbot": (["Gemini | 1.5 Flash", "Gemini | 1.5 Pro", "OpenAI | GPT 4-0 mini", "HuggingFace | Meta Llama-3.2"],),
                 "APIkey": ("STRING", {"default": "", "multiline": False, "tooltip": "Chatbot API"}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
                 "main_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "Chatbot prompt"}),
@@ -42,8 +42,9 @@ class API_chatbot:
 
     def api_chatbot(self, chatbot, APIkey, seed, main_prompt, sub_prompt, image=None):
         model_list = {
-            "Gemini 1.5 Flash": "gemini-1.5-flash",
-            "Gemini 1.5 Pro": "gemini-1.5-pro",
+            "Gemini | 1.5 Flash": "gemini-1.5-flash",
+            "Gemini | 1.5 Pro": "gemini-1.5-pro",
+            "OpenAI | GPT 4-0 mini": "gpt-4o-mini",
             "HuggingFace | Meta Llama-3.2": "meta-llama/Llama-3.2-3B-Instruct"
         }
         if "DPRandomGenerator" in ALL_NODE_CLASS_MAPPINGS:
@@ -71,13 +72,25 @@ class API_chatbot:
             stream = client.chat.completions.create(
                 model=model_name,
                 messages=messages,
-                temperature=0.5,
-                max_tokens=2048,
-                top_p=0.7,
                 stream=True
             )
             for chunk in stream:
                 answer += chunk.choices[0].delta.content
+        if "OpenAI" in chatbot:
+            answer = ""
+            client = OpenAI(
+                api_key=APIkey)
+            messages = [
+                {"role": "assistant", "content": prompt}
+            ]
+            stream = client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                stream=True
+            )
+            for chunk in stream:
+                if chunk.choices[0].delta.content is not None:
+                    answer += chunk.choices[0].delta.content
         return (answer.strip(),)
 
 
