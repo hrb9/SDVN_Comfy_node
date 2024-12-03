@@ -37,7 +37,7 @@ class API_chatbot:
         return {
             "required": {
                 "chatbot": (["Gemini | 1.5 Flash", "Gemini | 1.5 Pro", "OpenAI | GPT 4-o mini", "OpenAI | GPT 4-o", "OpenAI | GPT 3.5 Turbo", "HuggingFace | Meta Llama-3.2"],),
-                "preset": (["None", "Python Function"],),
+                "preset": (["None", "Python Function | vi"],),
                 "APIkey": ("STRING", {"default": "", "multiline": False, "tooltip": "Chatbot API"}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
                 "main_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "Chatbot prompt"}),
@@ -65,7 +65,7 @@ class API_chatbot:
         }
         preset_prompt = {
             "None": [],
-            "Python Function": [
+            "Python Function | vi": [
                 {"role": "user", "content": "Tôi sẽ yêu cầu một hàm def python với nhiệm vụ bất kỳ, hãy cho tôi câu trả lời là hàm python đó,viết thật đơn giản, và không cần bất kỳ hướng dẫn nào khác, các import đặt trong hàm. Đối với yêu cầu đầu vào hoặc đầu ra là hình ảnh, hãy nhớ ảnh ở dạng tensor"},
                 {"role": "assistant", "content": "Đồng ý! Hãy đưa ra yêu cầu của bạn."}
             ]
