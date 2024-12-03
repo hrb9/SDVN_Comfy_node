@@ -1,18 +1,3 @@
-import re
-
-
-class AnyType(str):
-    """A special class that is always equal in not equal comparisons. Credit to pythongosssss"""
-
-    def __eq__(self, _) -> bool:
-        return True
-
-    def __ne__(self, __value: object) -> bool:
-        return False
-
-
-any = AnyType("*")
-
 
 class Easy_IPA_weight:
     @classmethod
@@ -54,45 +39,10 @@ class Easy_IPA_weight:
         return (final_weight,)
 
 
-class run_python_code:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "input": (any,),
-                "function": ("STRING", {"default": """
-def function(input):
-    output = input.strip()                               
-    return output                       
-                """, "multiline": True, })
-            }
-        }
-
-    CATEGORY = "✨ SDVN/Dev"
-
-    RETURN_TYPES = (any,)
-    RETURN_NAMES = ("output",)
-    FUNCTION = "python_function"
-
-    def python_function(self, input, function):
-        pattern = r"def.*?return[^\n]*"
-        match = re.search(pattern, function, re.DOTALL)
-        function = match.group(0) if match else ""
-        pattern = r"def\s+(\w+)\s*\("
-        matches = re.findall(pattern, function)[0]
-        local_context = {}
-        exec(function, {}, local_context)
-        function = local_context[matches]
-        output = function(input)
-        return (output,)
-
-
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
-    "SDVN Run Python Code": run_python_code,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Easy IPAdapter weight": "✨ IPAdapter weight",
-    "SDVN Run Python Code": "👨🏻‍💻 Run Python Code"
 }
