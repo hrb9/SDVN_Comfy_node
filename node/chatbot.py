@@ -83,7 +83,7 @@ class API_chatbot:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "chatbot": (["Gemini | 1.5 Flash", "Gemini | 1.5 Pro", "OpenAI | GPT 4-o mini", "OpenAI | GPT 4-o", "OpenAI | GPT 3.5 Turbo", "HuggingFace | Meta Llama-3.2", "Qwen/Qwen2.5-72B-Instruct"],),
+                "chatbot": (["Gemini | 1.5 Flash", "Gemini | 1.5 Pro", "OpenAI | GPT 4-o mini", "OpenAI | GPT 4-o", "OpenAI | GPT 3.5 Turbo", "HuggingFace | Meta Llama-3.2", "HuggingFace | Qwen 2.5-72B"],),
                 "preset": (["None", "Python Function | vi"],),
                 "APIkey": ("STRING", {"default": "", "multiline": False, "tooltip": """
 Get API Gemini: https://aistudio.google.com/app/apikey
