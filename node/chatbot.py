@@ -85,7 +85,11 @@ class API_chatbot:
             "required": {
                 "chatbot": (["Gemini | 1.5 Flash", "Gemini | 1.5 Pro", "OpenAI | GPT 4-o mini", "OpenAI | GPT 4-o", "OpenAI | GPT 3.5 Turbo", "HuggingFace | Meta Llama-3.2"],),
                 "preset": (["None", "Python Function | vi"],),
-                "APIkey": ("STRING", {"default": "", "multiline": False, "tooltip": "Chatbot API"}),
+                "APIkey": ("STRING", {"default": "", "multiline": False, "tooltip": """
+Get API Gemini: https://aistudio.google.com/app/apikey
+Get API OpenAI: https://platform.openai.com/settings/organization/api-keys
+Get API HugggingFace: https://huggingface.co/settings/tokens
+                                      """}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
                 "main_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "Chatbot prompt"}),
                 "sub_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "Chatbot prompt"})
@@ -178,11 +182,11 @@ class API_DALLE:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "OpenAI_API": ("STRING", {"default": "", "multiline": False, "tooltip": "Chatbot API"}),
+                "OpenAI_API": ("STRING", {"default": "", "multiline": False, "tooltip": "Get API: https://platform.openai.com/settings/organization/api-keys"}),
                 "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 64, "display": "slider", "lazy": True}),
                 "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 64, "display": "slider", "lazy": True}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
-                "prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "Image prompt"}),
+                "prompt": ("STRING", {"default": "", "multiline": True, "placeholder": "Image size ['256x256', '512x512', '1024x1024', '1024x1792', '1792x1024']", "tooltip": "Image size ['256x256', '512x512', '1024x1024', '1024x1792', '1792x1024']"}),
             }
         }
 
