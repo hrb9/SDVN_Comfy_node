@@ -148,6 +148,9 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
             stream = client.chat.completions.create(
                 model=model_name,
                 messages=messages,
+                temperature=0.5,
+                max_tokens=2048,
+                top_p=0.7,
                 stream=True
             )
             for chunk in stream:
