@@ -60,7 +60,8 @@ class API_chatbot:
             "OpenAI | GPT 4-o mini": "gpt-4o-mini",
             "OpenAI | GPT 4-o": "gpt-4o",
             "OpenAI | GPT 3.5 Turbo": "gpt-3.5-turbo-0125",
-            "HuggingFace | Meta Llama-3.2": "meta-llama/Llama-3.2-3B-Instruct"
+            "HuggingFace | Meta Llama-3.2": "meta-llama/Llama-3.2-3B-Instruct",
+            "HuggingFace | Qwen 2.5-72B": "Qwen/Qwen2.5-72B-Instruct"
         }
         preset_prompt = {
             "None": [],
