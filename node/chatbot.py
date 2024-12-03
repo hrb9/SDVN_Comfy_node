@@ -5,6 +5,8 @@ from torchvision.transforms import ToPILImage
 import torch
 from PIL import Image
 import numpy as np
+import io
+import base64
 
 
 def tensor2pil(tensor: torch.Tensor) -> Image.Image:
@@ -17,6 +19,16 @@ def tensor2pil(tensor: torch.Tensor) -> Image.Image:
             "Tensor phải có shape [H, W, C] hoặc [1, H, W, C] với C = 3 (RGB).")
     pil_image = Image.fromarray(np_image)
     return pil_image
+
+
+def encode_image(image_tensor):
+    image = tensor2pil(image_tensor)
+    with io.BytesIO() as image_buffer:
+        image.save(image_buffer, format="PNG")
+        image_buffer.seek(0)
+        encoded_image = base64.b64encode(image_buffer.read()).decode('utf-8')
+
+    return encoded_image
 
 
 class API_chatbot:
@@ -92,6 +104,10 @@ class API_chatbot:
             answer = ""
             client = OpenAI(
                 api_key=APIkey)
+            if image != None:
+                image = encode_image(image)
+                prompt = [{"type": "text", "text": prompt, }, {
+                    "type": "image_url", "image_url": {"url":  f"data:image/jpeg;base64,{image}"}, },]
             messages = [
                 {"role": "user", "content": prompt}
             ]
@@ -104,6 +120,8 @@ class API_chatbot:
             for chunk in stream:
                 if chunk.choices[0].delta.content is not None:
                     answer += chunk.choices[0].delta.content
+            if image != None:
+                answer = answer.split('return True')[-1]
         return (answer.strip(),)
 
 
