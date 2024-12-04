@@ -23,7 +23,7 @@ class Easy_IPA_weight:
         }
         }
 
-    CATEGORY = "✨ SDVN"
+    CATEGORY = "✨ SDVN/Creative"
 
     RETURN_TYPES = ("STRING",)
     OUTPUT_TOOLTIPS = (
@@ -62,7 +62,7 @@ class AnyInput:
             "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
         }}
 
-    CATEGORY = "✨ SDVN"
+    CATEGORY = "✨ SDVN/Creative"
     RETURN_TYPES = ("STRING", "FLOAT", "INT", "BOOL")
     FUNCTION = "any_return"
 

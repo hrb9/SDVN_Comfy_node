@@ -403,16 +403,17 @@ class Easy_KSampler:
 
     def sample(self, model, positive, ModelType, StepsType, Tiled, tile_width, tile_height, steps, cfg, sampler_name, scheduler, seed, denoise=1.0, negative=None, latent_image=None, vae=None):
         ModelType_list = {
-            "SD 1.5": ["7", "euler_ancestral", "normal"],
-            "SDXL": ["9", "dpmpp_2m_sde", "karras"],
-            "Flux": ["1", "euler", "simple"],
-            "SD 1.5 Hyper": ["1", "euler_ancestral", "sgm_uniform"],
-            "SDXL Hyper": ["1", "euler_ancestral", "sgm_uniform"],
-            "SDXL Lightning": ["1", "dpmpp_2m_sde", "sgm_uniform"],
+            "SD 1.5": [7.0, "euler_ancestral", "normal"],
+            "SDXL": [9.0, "dpmpp_2m_sde", "karras"],
+            "Flux": [1.0, "euler", "simple"],
+            "SD 1.5 Hyper": [1.0, "euler_ancestral", "sgm_uniform"],
+            "SDXL Hyper": [1.0, "euler_ancestral", "sgm_uniform"],
+            "SDXL Lightning": [1.0, "dpmpp_2m_sde", "sgm_uniform"],
         }
         if ModelType != 'None':
             cfg, sampler_name, scheduler = ModelType_list[ModelType]
         StepsType_list = {
+            "Denoise": steps,
             "Lightning 8steps": 8,
             "Hyper 8steps": 8,
             "Lightning 4steps": 8,
@@ -421,17 +422,21 @@ class Easy_KSampler:
             "Flux schnell": 4,
         }
         if negative == None:
-            cls_zero_negative = ALL_NODE_CLASS_MAPPINGS["ConditioningSetAreaStrength"]
-            negative = cls_zero_negative().append(positive, 0)[0]
+            cls_zero_negative = ALL_NODE_CLASS_MAPPINGS["ConditioningZeroOut"]
+            negative = cls_zero_negative().zero_out(positive)[0]
         if latent_image == None:
             cls_emply = ALL_NODE_CLASS_MAPPINGS["EmptyLatentImage"]
-            latent_image = cls_emply().generate(tile_width, tile_height, 1)
-            tile_width = tile_width/2
-            tile_height = tile_height/2
+            latent_image = cls_emply().generate(tile_width, tile_height, 1)[0]
+            tile_width = int(math.ceil(tile_width/2))
+            tile_height = int(math.ceil(tile_height/2))
         if Tiled == True:
-            cls_tiled = ALL_NODE_CLASS_MAPPINGS["TiledDiffusion"]
-            model = cls_tiled().apply(model, "Mixture of Diffusers",
-                                      tile_width, tile_height, 96, 4)[0]
+            if "TiledDiffusion" in ALL_NODE_CLASS_MAPPINGS:
+                cls_tiled = ALL_NODE_CLASS_MAPPINGS["TiledDiffusion"]
+                model = cls_tiled().apply(model, "Mixture of Diffusers",
+                                          tile_width, tile_height, 96, 4)[0]
+            else:
+                print(
+                    'Not install TiledDiffusion node (https://github.com/shiimizu/ComfyUI-TiledDiffusion)')
         if StepsType != 'None':
             steps = int(math.ceil(StepsType_list[StepsType]*denoise))
         cls = ALL_NODE_CLASS_MAPPINGS["KSampler"]
@@ -439,8 +444,9 @@ class Easy_KSampler:
                                scheduler, positive, negative, latent_image, denoise)[0]
         if vae != None:
             cls_decode = ALL_NODE_CLASS_MAPPINGS["VAEDecode"]
-            images = cls_decode().decode(vae, samples)
-
+            images = cls_decode().decode(vae, samples)[0]
+        else:
+            images = None
         return (samples, images,)
 
 

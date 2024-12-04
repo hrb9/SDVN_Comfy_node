@@ -59,7 +59,7 @@ def function(input):
             }
         }
 
-    CATEGORY = "✨ SDVN/Dev"
+    CATEGORY = "✨ SDVN/Creative"
 
     RETURN_TYPES = (any,)
     RETURN_NAMES = ("output",)
