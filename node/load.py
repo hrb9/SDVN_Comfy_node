@@ -10,6 +10,7 @@ import numpy as np
 import folder_paths
 import hashlib
 from PIL.PngImagePlugin import PngInfo
+from nodes import NODE_CLASS_MAPPINGS as ALL_NODE_CLASS_MAPPINGS
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
@@ -336,6 +337,36 @@ class LoraLoader:
         return (model_lora, clip_lora)
 
 
+class CLIPTextEncode:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "positive": ("STRING", {"multiline": True, "dynamicPrompts": True, "tooltip": "The text to be encoded."}),
+                "negative": ("STRING", {"multiline": True, "dynamicPrompts": True, "tooltip": "The text to be encoded."}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
+                "clip": ("CLIP", {"tooltip": "The CLIP model used for encoding the text."})
+            }
+        }
+    RETURN_TYPES = ("CONDITIONING", "CONDITIONING",)
+    RETURN_NAMES = ("positive", "negative",)
+    OUTPUT_TOOLTIPS = (
+        "A conditioning containing the embedded text used to guide the diffusion model.",)
+    FUNCTION = "encode"
+
+    CATEGORY = "✨ SDVN"
+    DESCRIPTION = "Encodes a text prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images."
+
+    def encode(self, clip, positive, negative, seed):
+        if "DPRandomGenerator" in ALL_NODE_CLASS_MAPPINGS:
+            cls = ALL_NODE_CLASS_MAPPINGS["DPRandomGenerator"]
+            positive = cls().get_prompt(positive, seed, 'No')[0]
+            negative = cls().get_prompt(negative, seed, 'No')[0]
+        token_p = clip.tokenize(positive)
+        token_n = clip.tokenize(negative)
+        return (clip.encode_from_tokens_scheduled(token_p), clip.encode_from_tokens_scheduled(token_n), )
+
+
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
     "SDVN Load Checkpoint": CheckpointLoaderDownload,
@@ -344,6 +375,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Load Image Url": LoadImageUrl,
     "SDVN Checkpoint Download": CheckpointDownload,
     "SDVN Lora Download": LoraDownload,
+    "SDVN Clip Text Encode": CLIPTextEncode,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -354,4 +386,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Load Image Url": "Load Image Url",
     "SDVN Checkpoint Download": "Download Checkpoint",
     "SDVN Lora Download": "Download Lora",
+    "SDVN Clip Text Encode": "Clip Text Encode"
 }
