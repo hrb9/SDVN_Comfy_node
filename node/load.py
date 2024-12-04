@@ -9,6 +9,7 @@ import torch
 import subprocess
 import numpy as np
 import folder_paths
+import comfy.utils
 import hashlib
 from PIL.PngImagePlugin import PngInfo
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE_CLASS_MAPPINGS, MAX_RESOLUTION
@@ -450,6 +451,84 @@ class Easy_KSampler:
         return (samples, images,)
 
 
+listmodel = folder_paths.get_filename_list("upscale_models")
+listmodel += ["None"]
+
+
+class UpscaleImage:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+            "mode": (["Maxsize", "Resize", "Scale"], ),
+            "model_name": (listmodel, {"default": "None", }),
+            "scale": ("FLOAT", {"default": 1, "min": 0, "max": 10, "step": 0.01, }),
+            "width": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
+            "height": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
+            "image": ("IMAGE",),
+        }}
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "upscale"
+
+    CATEGORY = "✨ SDVN/Image"
+
+    def upscale(self, mode, width, height, scale, model_name, image):
+        if width == 0 and height == 0:
+            s = image
+        else:
+            samples = image.movedim(-1, 1)
+            w = samples.shape[3]
+            h = samples.shape[2]
+            if mode == 'Maxsize':
+                if width/height < w/h:
+                    height = round(h * width / w)
+                else:
+                    width = round(w * height / h)
+            if mode == 'Scale':
+                width = round(w * scale)
+                height = round(h * scale)
+            if width == 0:
+                width = max(1, round(w * height / h))
+            elif height == 0:
+                height = max(1, round(h * width / w))
+            if model_name != "None":
+                upscale_model = ALL_NODE_CLASS_MAPPINGS["UpscaleModelLoader"](
+                ).load_model(model_name)[0]
+                image = ALL_NODE_CLASS_MAPPINGS["ImageUpscaleWithModel"]().upscale(
+                    upscale_model, image)[0]
+            samples = image.movedim(-1, 1)
+            s = comfy.utils.common_upscale(
+                samples, width, height, "nearest-exact", "disabled")
+            s = s.movedim(1, -1)
+        return (s,)
+
+
+class UpscaleLatentImage():
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+            "mode": (["Maxsize", "Resize", "Scale"], ),
+            "model_name": (listmodel, {"default": "None", }),
+            "scale": ("FLOAT", {"default": 1, "min": 0, "max": 10, "step": 0.01, }),
+            "width": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
+            "height": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
+            "latent": ("LATENT",),
+            "vae": ("VAE",),
+        }}
+
+    RETURN_TYPES = ("LATENT",)
+    FUNCTION = "upscale"
+
+    CATEGORY = "✨ SDVN/Image"
+
+    def upscale_latent(self, mode, width, height, scale, model_name, latent, vae):
+        image = ALL_NODE_CLASS_MAPPINGS["VAEDecode"]().decode(latent, vae)[0]
+        s = UpscaleImage().upscale(mode, width, height,
+                                   scale, model_name, image)[0]
+        l = ALL_NODE_CLASS_MAPPINGS["VAEEncode"]().encode(s, vae)[0]
+        return (l,)
+
+
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
     "SDVN Load Checkpoint": CheckpointLoaderDownload,
@@ -458,8 +537,10 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Load Image Url": LoadImageUrl,
     "SDVN Checkpoint Download": CheckpointDownload,
     "SDVN Lora Download": LoraDownload,
-    "SDVN Clip Text Encode": CLIPTextEncode,
+    "SDVN CLIP Text Encode": CLIPTextEncode,
     "SDVN KSampler": Easy_KSampler,
+    "SDVN Upscale Image": UpscaleImage,
+    "SDVN UPscale Latent": UpscaleLatentImage,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -470,6 +551,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Load Image Url": "Load Image Url",
     "SDVN Checkpoint Download": "Download Checkpoint",
     "SDVN Lora Download": "Download Lora",
-    "SDVN Clip Text Encode": "Clip Text Encode",
+    "SDVN CLIP Text Encode": "CLIP Text Encode",
     "SDVN KSampler": "KSampler",
+    "SDVN Upscale Image": "↗️ Upscale Image",
+    "SDVN UPscale Latent": "↗️ Upscale Latent",
 }
