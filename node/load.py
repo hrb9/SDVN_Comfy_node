@@ -511,14 +511,14 @@ class UpscaleLatentImage():
         return {"required": {
             "mode": (["Maxsize", "Resize", "Scale"], ),
             "model_name": (listmodel, {"default": "None", }),
-            "scale": ("FLOAT", {"default": 1, "min": 0, "max": 10, "step": 0.01, }),
+            "scale": ("FLOAT", {"default": 2, "min": 0, "max": 10, "step": 0.01, }),
             "width": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
             "height": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
             "latent": ("LATENT",),
             "vae": ("VAE",),
         }}
 
-    RETURN_TYPES = ("LATENT","VAE",)
+    RETURN_TYPES = ("LATENT", "VAE",)
     FUNCTION = "upscale_latent"
 
     CATEGORY = "✨ SDVN/Image"
@@ -528,7 +528,7 @@ class UpscaleLatentImage():
         s = UpscaleImage().upscale(mode, width, height,
                                    scale, model_name, image)[0]
         l = ALL_NODE_CLASS_MAPPINGS["VAEEncode"]().encode(vae, s)[0]
-        return (l,vae,)
+        return (l, vae,)
 
 
 # NOTE: names should be globally unique
