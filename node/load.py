@@ -376,7 +376,7 @@ class Easy_KSampler:
                 "model": ("MODEL", {"tooltip": "The model used for denoising the input latent."}),
                 "positive": ("CONDITIONING", {"tooltip": "The conditioning describing the attributes you want to include in the image."}),
                 "ModelType": (["None", "SD 1.5", "SDXL", "Flux", "SD 1.5 Hyper", "SDXL Hyper", "SDXL Lightning"],),
-                "StepsType": (["None", "Lightning 8steps", "Hyper 8steps", "Lightning 4steps", "Hyper 4steps", "Flux dev turbo (hyper 8steps)", "Flux schnell"],),
+                "StepsType": (["None", "Denoise", "Lightning 8steps", "Hyper 8steps", "Lightning 4steps", "Hyper 4steps", "Flux dev turbo (hyper 8steps)", "Flux schnell"],),
                 "denoise": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01, "tooltip": "The amount of denoising applied, lower values will maintain the structure of the initial image allowing for image to image sampling."}),
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
                 "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
