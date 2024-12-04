@@ -50,12 +50,16 @@ class run_python_code:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "input": (any,),
                 "function": ("STRING", {"default": """
 def function(input):
     output = input.strip()                               
     return output                       
                 """, "multiline": True, })
+            },
+            "optional": {
+                "input": (any,),
+                "input2": (any,),
+                "input3": (any,),
             }
         }
 
@@ -65,7 +69,16 @@ def function(input):
     RETURN_NAMES = ("output",)
     FUNCTION = "python_function"
 
-    def python_function(self, input, function):
+    def python_function(self, function, input=None, input2=None, input3=None):
+        check_list = [input, input2, input3]
+        b = 3
+        new_list = []
+        for i in check_list:
+            if i == None:
+                b -= 1
+            else:
+                new_list += [i]
+
         pattern = r"def.*?return[^\n]*"
         match = re.search(pattern, function, re.DOTALL)
         function = match.group(0) if match else ""
@@ -74,7 +87,14 @@ def function(input):
         local_context = {}
         exec(function, {}, local_context)
         function = local_context[matches]
-        output = function(input)
+        if b == 3:
+            output = function(new_list[0], new_list[1], new_list[2])
+        elif b == 2:
+            output = function(new_list[0], new_list[1])
+        elif b == 1:
+            output = function(new_list[0])
+        elif b == 0:
+            output = function()
         return (output,)
 
 
