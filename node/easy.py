@@ -109,8 +109,8 @@ class ImageSize:
             w = samples.shape[3]
             h = samples.shape[2]
         elif latent != None:
-            w = latent["samples"].shape[-1]
-            h = latent["samples"].shape[-2]
+            w = latent["samples"].shape[-1] * 8
+            h = latent["samples"].shape[-2] * 8
         else:
             w = h = 0
         return (w, h,)
