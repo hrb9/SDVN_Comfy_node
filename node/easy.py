@@ -90,12 +90,39 @@ class AnyInput:
         return (input, f, i, b,)
 
 
+class ImageSize:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "image": ("IMAGE",),
+                "latent": ("LATENT",)
+            }}
+    CATEGORY = "✨ SDVN/Creative"
+    RETURN_TYPES = ("width", "height",)
+    FUNCTION = "imagesize"
+
+    def imagesize(s, image=None, latent=None):
+        if image != None:
+            samples = image.movedim(-1, 1)
+            w = samples.shape[3]
+            h = samples.shape[2]
+        elif latent != None:
+            w = latent["samples"].shape[-1]
+            h = latent["samples"].shape[-2]
+        else:
+            w = h = 0
+        return (w, h,)
+
+
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
     "SDVN Any Input Type": AnyInput,
+    "SDVN ImageSize": ImageSize,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Easy IPAdapter weight": "✨ IPAdapter weight",
     "SDVN Any Input Type": "🔡 Any Input Type",
+    "SDVN ImageSize": "📐 ImageSize",
 }
