@@ -385,13 +385,13 @@ class Easy_KSampler:
                 "scheduler": (comfy.samplers.KSampler.SCHEDULERS, {"tooltip": "The scheduler controls how noise is gradually removed to form the image."}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed used for creating the noise."}),
                 "Tiled": ("BOOLEAN", {"default": False},),
-                "tile_width": ("INT", {"default": 1024, "min": 512, "max": 4096, "step": 64, "display": "slider", "lazy": True}),
-                "tile_height": ("INT", {"default": 1024, "min": 512, "max": 4096, "step": 64, "display": "slider", "lazy": True}),
             },
             "optional": {
                 "negative": ("CONDITIONING", {"tooltip": "The conditioning describing the attributes you want to exclude from the image."}),
                 "latent_image": ("LATENT", {"tooltip": "The latent image to denoise."}),
-                "vae": ("VAE", {"tooltip": "The VAE model used for decoding the latent."})
+                "vae": ("VAE", {"tooltip": "The VAE model used for decoding the latent."}),
+                "tile_width": ("INT", {"default": 1024, "min": 512, "max": 4096, "step": 64, "display": "slider", "lazy": True}),
+                "tile_height": ("INT", {"default": 1024, "min": 512, "max": 4096, "step": 64, "display": "slider", "lazy": True}),
             }
         }
 
@@ -402,7 +402,7 @@ class Easy_KSampler:
     CATEGORY = "✨ SDVN"
     DESCRIPTION = "Uses the provided model, positive and negative conditioning to denoise the latent image."
 
-    def sample(self, model, positive, ModelType, StepsType, Tiled, tile_width, tile_height, steps, cfg, sampler_name, scheduler, seed, denoise=1.0, negative=None, latent_image=None, vae=None):
+    def sample(self, model, positive, ModelType, StepsType, sampler_name, scheduler, seed, Tiled = False, tile_width = None, tile_height = None, steps = 20, cfg = 7, denoise=1.0, negative=None, latent_image=None, vae=None):
         ModelType_list = {
             "SD 1.5": [7.0, "euler_ancestral", "normal"],
             "SDXL": [9.0, "dpmpp_2m_sde", "karras"],
@@ -425,11 +425,13 @@ class Easy_KSampler:
         if negative == None:
             cls_zero_negative = ALL_NODE_CLASS_MAPPINGS["ConditioningZeroOut"]
             negative = cls_zero_negative().zero_out(positive)[0]
+        if tile_width == None or tile_height == None:
+            tile_width = tile_height = 1024
         if latent_image == None:
             cls_emply = ALL_NODE_CLASS_MAPPINGS["EmptyLatentImage"]
             latent_image = cls_emply().generate(tile_width, tile_height, 1)[0]
             tile_width = int(math.ceil(tile_width/2))
-            tile_height = int(math.ceil(tile_height/2))
+            tile_height = int(math.ceil(tile_width/2))
         if Tiled == True:
             if "TiledDiffusion" in ALL_NODE_CLASS_MAPPINGS:
                 cls_tiled = ALL_NODE_CLASS_MAPPINGS["TiledDiffusion"]
@@ -517,15 +519,15 @@ class UpscaleLatentImage():
         }}
 
     RETURN_TYPES = ("LATENT",)
-    FUNCTION = "upscale"
+    FUNCTION = "upscale_latent"
 
     CATEGORY = "✨ SDVN/Image"
 
     def upscale_latent(self, mode, width, height, scale, model_name, latent, vae):
-        image = ALL_NODE_CLASS_MAPPINGS["VAEDecode"]().decode(latent, vae)[0]
+        image = ALL_NODE_CLASS_MAPPINGS["VAEDecode"]().decode(vae, latent)[0]
         s = UpscaleImage().upscale(mode, width, height,
                                    scale, model_name, image)[0]
-        l = ALL_NODE_CLASS_MAPPINGS["VAEEncode"]().encode(s, vae)[0]
+        l = ALL_NODE_CLASS_MAPPINGS["VAEEncode"]().encode(vae, s)[0]
         return (l,)
 
 

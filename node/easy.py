@@ -91,6 +91,7 @@ class AnyInput:
 
 
 class ImageSize:
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -113,6 +114,7 @@ class ImageSize:
             h = latent["samples"].shape[-2] * 8
         else:
             w = h = 0
+        print(f"Image width: {w} | Image height: {h}")
         return (w, h,)
 
 
