@@ -1,5 +1,6 @@
 import comfy.sd
 import requests
+import math
 import os
 import re
 import sys
@@ -10,7 +11,7 @@ import numpy as np
 import folder_paths
 import hashlib
 from PIL.PngImagePlugin import PngInfo
-from nodes import NODE_CLASS_MAPPINGS as ALL_NODE_CLASS_MAPPINGS
+from nodes import NODE_CLASS_MAPPINGS as ALL_NODE_CLASS_MAPPINGS, MAX_RESOLUTION
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
@@ -367,6 +368,82 @@ class CLIPTextEncode:
         return (clip.encode_from_tokens_scheduled(token_p), clip.encode_from_tokens_scheduled(token_n), )
 
 
+class Easy_KSampler:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "model": ("MODEL", {"tooltip": "The model used for denoising the input latent."}),
+                "positive": ("CONDITIONING", {"tooltip": "The conditioning describing the attributes you want to include in the image."}),
+                "ModelType": (["None", "SD 1.5", "SDXL", "Flux", "SD 1.5 Hyper", "SDXL Hyper", "SDXL Lightning"],),
+                "StepsType": (["None", "Lightning 8steps", "Hyper 8steps", "Lightning 4steps", "Hyper 4steps", "Flux dev turbo (hyper 8steps)", "Flux schnell"],),
+                "denoise": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01, "tooltip": "The amount of denoising applied, lower values will maintain the structure of the initial image allowing for image to image sampling."}),
+                "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
+                "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
+                "sampler_name": (comfy.samplers.KSampler.SAMPLERS, {"tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
+                "scheduler": (comfy.samplers.KSampler.SCHEDULERS, {"tooltip": "The scheduler controls how noise is gradually removed to form the image."}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed used for creating the noise."}),
+                "Tiled": ("BOOLEAN", {"default": False},),
+                "tile_width": ("INT", {"default": 1024, "min": 512, "max": 4096, "step": 64, "display": "slider", "lazy": True}),
+                "tile_height": ("INT", {"default": 1024, "min": 512, "max": 4096, "step": 64, "display": "slider", "lazy": True}),
+            },
+            "optional": {
+                "negative": ("CONDITIONING", {"tooltip": "The conditioning describing the attributes you want to exclude from the image."}),
+                "latent_image": ("LATENT", {"tooltip": "The latent image to denoise."}),
+                "vae": ("VAE", {"tooltip": "The VAE model used for decoding the latent."})
+            }
+        }
+
+    RETURN_TYPES = ("LATENT", "IMAGE",)
+    OUTPUT_TOOLTIPS = ("The denoised latent.",)
+    FUNCTION = "sample"
+
+    CATEGORY = "✨ SDVN"
+    DESCRIPTION = "Uses the provided model, positive and negative conditioning to denoise the latent image."
+
+    def sample(self, model, positive, ModelType, StepsType, Tiled, tile_width, tile_height, steps, cfg, sampler_name, scheduler, seed, denoise=1.0, negative=None, latent_image=None, vae=None):
+        ModelType_list = {
+            "SD 1.5": ["7", "euler_ancestral", "normal"],
+            "SDXL": ["9", "dpmpp_2m_sde", "karras"],
+            "Flux": ["1", "euler", "simple"],
+            "SD 1.5 Hyper": ["1", "euler_ancestral", "sgm_uniform"],
+            "SDXL Hyper": ["1", "euler_ancestral", "sgm_uniform"],
+            "SDXL Lightning": ["1", "dpmpp_2m_sde", "sgm_uniform"],
+        }
+        if ModelType != 'None':
+            cfg, sampler_name, scheduler = ModelType_list[ModelType]
+        StepsType_list = {
+            "Lightning 8steps": 8,
+            "Hyper 8steps": 8,
+            "Lightning 4steps": 8,
+            "Hyper 4steps": 8,
+            "Flux dev turbo (hyper 8steps)": 8,
+            "Flux schnell": 4,
+        }
+        if negative == None:
+            cls_zero_negative = ALL_NODE_CLASS_MAPPINGS["ConditioningSetAreaStrength"]
+            negative = cls_zero_negative().append(positive, 0)[0]
+        if latent_image == None:
+            cls_emply = ALL_NODE_CLASS_MAPPINGS["EmptyLatentImage"]
+            latent_image = cls_emply().generate(tile_width, tile_height, 1)
+            tile_width = tile_width/2
+            tile_height = tile_height/2
+        if Tiled == True:
+            cls_tiled = ALL_NODE_CLASS_MAPPINGS["TiledDiffusion"]
+            model = cls_tiled().apply(model, "Mixture of Diffusers",
+                                      tile_width, tile_height, 96, 4)[0]
+        if StepsType != 'None':
+            steps = int(math.ceil(StepsType_list[StepsType]*denoise))
+        cls = ALL_NODE_CLASS_MAPPINGS["KSampler"]
+        samples = cls().sample(model, seed, steps, cfg, sampler_name,
+                               scheduler, positive, negative, latent_image, denoise)[0]
+        if vae != None:
+            cls_decode = ALL_NODE_CLASS_MAPPINGS["VAEDecode"]
+            images = cls_decode().decode(vae, samples)
+
+        return (samples, images,)
+
+
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
     "SDVN Load Checkpoint": CheckpointLoaderDownload,
@@ -376,6 +453,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Checkpoint Download": CheckpointDownload,
     "SDVN Lora Download": LoraDownload,
     "SDVN Clip Text Encode": CLIPTextEncode,
+    "SDVN KSampler": Easy_KSampler,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -386,5 +464,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Load Image Url": "Load Image Url",
     "SDVN Checkpoint Download": "Download Checkpoint",
     "SDVN Lora Download": "Download Lora",
-    "SDVN Clip Text Encode": "Clip Text Encode"
+    "SDVN Clip Text Encode": "Clip Text Encode",
+    "SDVN KSampler": "KSampler",
 }
