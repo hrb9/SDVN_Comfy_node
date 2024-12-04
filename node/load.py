@@ -390,8 +390,8 @@ class Easy_KSampler:
                 "negative": ("CONDITIONING", {"tooltip": "The conditioning describing the attributes you want to exclude from the image."}),
                 "latent_image": ("LATENT", {"tooltip": "The latent image to denoise."}),
                 "vae": ("VAE", {"tooltip": "The VAE model used for decoding the latent."}),
-                "tile_width": ("INT", {"default": 1024, "min": 512, "max": 4096, "step": 64, "display": "slider", "lazy": True}),
-                "tile_height": ("INT", {"default": 1024, "min": 512, "max": 4096, "step": 64, "display": "slider", "lazy": True}),
+                "tile_width": ("INT", {"default": 1024, "min": 512, "max": 4096, "step": 64, }),
+                "tile_height": ("INT", {"default": 1024, "min": 512, "max": 4096, "step": 64, }),
             }
         }
 
@@ -402,7 +402,7 @@ class Easy_KSampler:
     CATEGORY = "✨ SDVN"
     DESCRIPTION = "Uses the provided model, positive and negative conditioning to denoise the latent image."
 
-    def sample(self, model, positive, ModelType, StepsType, sampler_name, scheduler, seed, Tiled = False, tile_width = None, tile_height = None, steps = 20, cfg = 7, denoise=1.0, negative=None, latent_image=None, vae=None):
+    def sample(self, model, positive, ModelType, StepsType, sampler_name, scheduler, seed, Tiled=False, tile_width=None, tile_height=None, steps=20, cfg=7, denoise=1.0, negative=None, latent_image=None, vae=None):
         ModelType_list = {
             "SD 1.5": [7.0, "euler_ancestral", "normal"],
             "SDXL": [9.0, "dpmpp_2m_sde", "karras"],
@@ -518,7 +518,7 @@ class UpscaleLatentImage():
             "vae": ("VAE",),
         }}
 
-    RETURN_TYPES = ("LATENT",)
+    RETURN_TYPES = ("LATENT","VAE",)
     FUNCTION = "upscale_latent"
 
     CATEGORY = "✨ SDVN/Image"
@@ -528,7 +528,7 @@ class UpscaleLatentImage():
         s = UpscaleImage().upscale(mode, width, height,
                                    scale, model_name, image)[0]
         l = ALL_NODE_CLASS_MAPPINGS["VAEEncode"]().encode(vae, s)[0]
-        return (l,)
+        return (l,vae,)
 
 
 # NOTE: names should be globally unique
