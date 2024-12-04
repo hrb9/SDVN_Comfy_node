@@ -99,7 +99,8 @@ class ImageSize:
                 "latent": ("LATENT",)
             }}
     CATEGORY = "✨ SDVN/Creative"
-    RETURN_TYPES = ("width", "height",)
+    RETURN_TYPES = ("INT", "INT",)
+    RETURN_NAMES = ("width", "height",)
     FUNCTION = "imagesize"
 
     def imagesize(s, image=None, latent=None):
@@ -118,11 +119,11 @@ class ImageSize:
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
     "SDVN Any Input Type": AnyInput,
-    "SDVN ImageSize": ImageSize,
+    "SDVN Image Size": ImageSize,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Easy IPAdapter weight": "✨ IPAdapter weight",
     "SDVN Any Input Type": "🔡 Any Input Type",
-    "SDVN ImageSize": "📐 ImageSize",
+    "SDVN Image Size": "📐 Image Size",
 }
