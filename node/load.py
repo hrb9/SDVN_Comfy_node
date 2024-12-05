@@ -531,7 +531,7 @@ class UpscaleLatentImage:
         return (l, vae,)
 
 
-preprocessor_list = ["none"]
+preprocessor_list = ["None"]
 AIO_NOT_SUPPORTED = ["InpaintPreprocessor",
                      "MeshGraphormer+ImpactDetector-DepthMapPreprocessor", "DiffusionEdge_Preprocessor"]
 AIO_NOT_SUPPORTED += ["SavePoseKpsAsJsonFile", "FacialPartColoringFromPoseKps",
@@ -560,20 +560,25 @@ class AutoControlNetApply:
                              }
                 }
 
-    RETURN_TYPES = ("CONDITIONING", "CONDITIONING")
-    RETURN_NAMES = ("positive", "negative")
+    RETURN_TYPES = ("CONDITIONING", "CONDITIONING", "IMAGE")
+    RETURN_NAMES = ("positive", "negative", "image")
     FUNCTION = "apply_controlnet"
 
     CATEGORY = "✨ SDVN"
 
     def apply_controlnet(self, positive, negative, control_net, preprocessor, resolution, image, strength, start_percent, end_percent, vae=None, extra_concat=[]):
-        image = ALL_NODE_CLASS_MAPPINGS["AIO_Preprocessor"]().execute(
-            preprocessor, image, resolution)[0]
+        if preprocessor != "None":
+            if "AIO_Preprocessor" in ALL_NODE_CLASS_MAPPINGS:
+                image = ALL_NODE_CLASS_MAPPINGS["AIO_Preprocessor"]().execute(
+                    preprocessor, image, resolution)[0]
+            else:
+                print(
+                    "You have not installed it yet Controlnet Aux (https://github.com/Fannovel16/comfyui_controlnet_aux)")
         control_net = ALL_NODE_CLASS_MAPPINGS["ControlNetLoader"](
         ).load_controlnet(control_net)[0]
         p, n = ALL_NODE_CLASS_MAPPINGS["ControlNetApplyAdvanced"]().apply_controlnet(
             positive, negative, control_net, image, strength, start_percent, end_percent, vae)
-        return (p, n)
+        return (p, n, image)
 
 
 # NOTE: names should be globally unique
