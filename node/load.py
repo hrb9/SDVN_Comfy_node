@@ -17,6 +17,12 @@ sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
 
+def list_model(folderlist):
+    list = ["None"]
+    list += folderlist
+    return list
+
+
 def i2tensor(i) -> torch.Tensor:
     i = ImageOps.exif_transpose(i)
     image = i.convert("RGB")
@@ -178,7 +184,7 @@ class CheckpointLoaderDownload:
                 "Ckpt_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
             },
             "optional": {
-                "Ckpt_name": (folder_paths.get_filename_list("checkpoints"), {"tooltip": "The name of the checkpoint (model) to load."})
+                "Ckpt_name": (list_model(folder_paths.get_filename_list("checkpoints")), {"tooltip": "The name of the checkpoint (model) to load."})
             }
         }
     RETURN_TYPES = ("MODEL", "CLIP", "VAE")
@@ -294,9 +300,9 @@ class LoraLoader:
                 "Download": ("BOOLEAN", {"default": True},),
                 "Download_url": ("STRING", {"default": "", "multiline": False},),
                 "Lora_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
+                "lora_name": (list_model(folder_paths.get_filename_list("loras")), {"default": "None", "tooltip": "The name of the LoRA."}),
             },
             "optional": {
-                "lora_name": (folder_paths.get_filename_list("loras"), {"tooltip": "The name of the LoRA."}),
                 "strength_model": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
                 "strength_clip": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the CLIP model. This value can be negative."}),
             }
@@ -310,7 +316,9 @@ class LoraLoader:
     CATEGORY = "✨ SDVN"
     DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
 
-    def load_lora(self, model, clip, Download, Download_url, Lora_url_name, lora_name=None, strength_model=1, strength_clip=1):
+    def load_lora(self, model, clip, Download, Download_url, Lora_url_name, lora_name, strength_model=1, strength_clip=1):
+        if not Download and Download_url == '' and lora_name == "None":
+            return (model, clip)
         if Download and Download_url != '':
             download_model(Download_url, Lora_url_name, "lora")
             lora_path = folder_paths.get_full_path_or_raise(
@@ -320,7 +328,6 @@ class LoraLoader:
                 "loras", lora_name)
         if strength_model == 0 and strength_clip == 0:
             return (model, clip)
-
         lora = None
         if self.loaded_lora is not None:
             if self.loaded_lora[0] == lora_path:
@@ -453,16 +460,12 @@ class Easy_KSampler:
         return (samples, images,)
 
 
-listmodel = folder_paths.get_filename_list("upscale_models")
-listmodel += ["None"]
-
-
 class UpscaleImage:
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
             "mode": (["Maxsize", "Resize", "Scale"], ),
-            "model_name": (listmodel, {"default": "None", }),
+            "model_name": (list_model(folder_paths.get_filename_list("upscale_models")), {"default": "None", }),
             "scale": ("FLOAT", {"default": 1, "min": 0, "max": 10, "step": 0.01, }),
             "width": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
             "height": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
@@ -510,7 +513,7 @@ class UpscaleLatentImage:
     def INPUT_TYPES(s):
         return {"required": {
             "mode": (["Maxsize", "Resize", "Scale"], ),
-            "model_name": (listmodel, {"default": "None", }),
+            "model_name": (list_model(folder_paths.get_filename_list("upscale_models")), {"default": "None", }),
             "scale": ("FLOAT", {"default": 2, "min": 0, "max": 10, "step": 0.01, }),
             "width": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
             "height": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
