@@ -12,7 +12,7 @@ import folder_paths
 import comfy.utils
 import hashlib
 from PIL.PngImagePlugin import PngInfo
-from nodes import NODE_CLASS_MAPPINGS as ALL_NODE_CLASS_MAPPINGS
+from nodes import NODE_CLASS_MAPPINGS as ALL_NODE_CLASS_MAPPINGS, PreviewImage, SaveImage
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
@@ -171,7 +171,9 @@ class LoadImageUrl:
         if 'pinterest.com' in Url:
             Url = run_gallery_dl(Url)
         image = Image.open(requests.get(Url, stream=True).raw)
-        return (i2tensor(image),)
+        image = i2tensor(image)
+        results = ALL_NODE_CLASS_MAPPINGS["PreviewImage"]().save_images(image)
+        return {"ui": {"images": results}, "result": (image,)}
 
 
 class CheckpointLoaderDownload:
@@ -596,7 +598,8 @@ class AutoControlNetApply:
         ).load_controlnet(control_net)[0]
         p, n = ALL_NODE_CLASS_MAPPINGS["ControlNetApplyAdvanced"]().apply_controlnet(
             positive, negative, control_net, image, strength, start_percent, end_percent, vae)
-        return (p, n, image)
+        results = ALL_NODE_CLASS_MAPPINGS["PreviewImage"]().save_images(image)
+        return {"ui": {"images": results}, "result": (p, n, image)}
 
 
 # NOTE: names should be globally unique
