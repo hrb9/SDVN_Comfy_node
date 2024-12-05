@@ -12,7 +12,7 @@ import folder_paths
 import comfy.utils
 import hashlib
 from PIL.PngImagePlugin import PngInfo
-from nodes import NODE_CLASS_MAPPINGS as ALL_NODE_CLASS_MAPPINGS, PreviewImage, SaveImage
+from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
@@ -78,14 +78,10 @@ def token(link):
         token = ""
     return token
 
-
 def download_model(url, name, type):
     url = url.replace("&", "\&").split("?")[0]
     url = check_link(url)
-    if type == "ckpt":
-        checkpoint_path = os.path.join(folder_paths.models_dir, "checkpoints")
-    if type == "lora":
-        checkpoint_path = os.path.join(folder_paths.models_dir, "loras")
+    checkpoint_path = os.path.join(folder_paths.models_dir, type)
     command = ['aria2c', '-c', '-x', '16', '-s', '16',
                '-k', '1M', f'{url}{token(url)}', '-d', checkpoint_path, '-o', name]
     subprocess.run(command, check=True, text=True, capture_output=True)
@@ -172,7 +168,7 @@ class LoadImageUrl:
             Url = run_gallery_dl(Url)
         image = Image.open(requests.get(Url, stream=True).raw)
         image = i2tensor(image)
-        results = ALL_NODE_CLASS_MAPPINGS["PreviewImage"]().save_images(image)
+        results = ALL_NODE["PreviewImage"]().save_images(image)
         results["result"] = (image,)
         return results
 
@@ -200,99 +196,12 @@ class CheckpointLoaderDownload:
 
     def load_checkpoint(self, Download, Download_url, Ckpt_url_name, Ckpt_name=None):
         if Download and Download_url != "":
-            download_model(Download_url, Ckpt_url_name, "ckpt")
-            ckpt_path = folder_paths.get_full_path_or_raise(
-                "checkpoints", Ckpt_url_name)
-        else:
-            ckpt_path = folder_paths.get_full_path_or_raise(
-                "checkpoints", Ckpt_name)
-        out = comfy.sd.load_checkpoint_guess_config(
-            ckpt_path, output_vae=True, output_clip=True, embedding_directory=folder_paths.get_folder_paths("embeddings"))
-        return out[:3]
-
-
-class CheckpointDownload:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "Download_url": ("STRING", {"default": "", "multiline": False},),
-                "Ckpt_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
-            }
-        }
-    RETURN_TYPES = ("MODEL", "CLIP", "VAE")
-    OUTPUT_TOOLTIPS = ("The model used for denoising latents.",
-                       "The CLIP model used for encoding text prompts.",
-                       "The VAE model used for encoding and decoding images to and from latent space.")
-    FUNCTION = "checkpoint_download"
-
-    CATEGORY = "✨ SDVN"
-    DESCRIPTION = "Loads a diffusion model checkpoint, diffusion models are used to denoise latents."
-
-    def checkpoint_download(self, Download_url, Ckpt_url_name):
-        download_model(Download_url, Ckpt_url_name, "ckpt")
-        ckpt_path = folder_paths.get_full_path_or_raise(
-            "checkpoints", Ckpt_url_name)
-        out = comfy.sd.load_checkpoint_guess_config(
-            ckpt_path, output_vae=True, output_clip=True, embedding_directory=folder_paths.get_folder_paths("embeddings"))
-        return out[:3]
-
-
-class LoraDownload:
-    def __init__(self):
-        self.loaded_lora = None
-
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "model": ("MODEL", {"tooltip": "The diffusion model the LoRA will be applied to."}),
-                "clip": ("CLIP", {"default": None, "tooltip": "The CLIP model the LoRA will be applied to."}),
-                "Download_url": ("STRING", {"default": "", "multiline": False},),
-                "Lora_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
-                "strength_model": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
-                "strength_clip": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the CLIP model. This value can be negative."}),
-            },
-        }
-
-    RETURN_TYPES = ("MODEL", "CLIP")
-    OUTPUT_TOOLTIPS = ("The modified diffusion model.",
-                       "The modified CLIP model.")
-    FUNCTION = "load_lora"
-
-    CATEGORY = "✨ SDVN"
-    DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
-
-    def load_lora(self, model, clip, Download_url, Lora_url_name, strength_model, strength_clip):
-        download_model(Download_url, Lora_url_name, "lora")
-        lora_path = folder_paths.get_full_path_or_raise(
-            "loras", Lora_url_name)
-
-        if strength_model == 0 and strength_clip == 0:
-            return (model, clip)
-
-        lora = None
-        if self.loaded_lora is not None:
-            if self.loaded_lora[0] == lora_path:
-                lora = self.loaded_lora[1]
-            else:
-                temp = self.loaded_lora
-                self.loaded_lora = None
-                del temp
-
-        if lora is None:
-            lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
-            self.loaded_lora = (lora_path, lora)
-
-        model_lora, clip_lora = comfy.sd.load_lora_for_models(
-            model, clip, lora, strength_model, strength_clip)
-        return (model_lora, clip_lora)
-
+            download_model(Download_url, Ckpt_url_name, "checkpoints")
+            Ckpt_name = Ckpt_url_name
+        results = ALL_NODE["Lora_url_name"]().load_checkpoint(Ckpt_name)
+        return results
 
 class LoraLoader:
-    def __init__(self):
-        self.loaded_lora = None
-
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -311,42 +220,17 @@ class LoraLoader:
         }
 
     RETURN_TYPES = ("MODEL", "CLIP")
-    OUTPUT_TOOLTIPS = ("The modified diffusion model.",
-                       "The modified CLIP model.")
     FUNCTION = "load_lora"
-
     CATEGORY = "✨ SDVN"
-    DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
 
     def load_lora(self, model, clip, Download, Download_url, Lora_url_name, lora_name, strength_model=1, strength_clip=1):
         if not Download and Download_url == '' and lora_name == "None":
             return (model, clip)
         if Download and Download_url != '':
-            download_model(Download_url, Lora_url_name, "lora")
-            lora_path = folder_paths.get_full_path_or_raise(
-                "loras", Lora_url_name)
-        else:
-            lora_path = folder_paths.get_full_path_or_raise(
-                "loras", lora_name)
-        if strength_model == 0 and strength_clip == 0:
-            return (model, clip)
-        lora = None
-        if self.loaded_lora is not None:
-            if self.loaded_lora[0] == lora_path:
-                lora = self.loaded_lora[1]
-            else:
-                temp = self.loaded_lora
-                self.loaded_lora = None
-                del temp
-
-        if lora is None:
-            lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
-            self.loaded_lora = (lora_path, lora)
-
-        model_lora, clip_lora = comfy.sd.load_lora_for_models(
-            model, clip, lora, strength_model, strength_clip)
-        return (model_lora, clip_lora)
-
+            download_model(Download_url, Lora_url_name, "loras")
+            lora_name = Lora_url_name
+        results = ALL_NODE["LoraLoader"]().load_lora[model, clip, lora_name, strength_model, strength_clip]
+        return results
 
 class CLIPTextEncode:
     @classmethod
@@ -369,8 +253,8 @@ class CLIPTextEncode:
     DESCRIPTION = "Encodes a text prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images."
 
     def encode(self, clip, positive, negative, seed):
-        if "DPRandomGenerator" in ALL_NODE_CLASS_MAPPINGS:
-            cls = ALL_NODE_CLASS_MAPPINGS["DPRandomGenerator"]
+        if "DPRandomGenerator" in ALL_NODE:
+            cls = ALL_NODE["DPRandomGenerator"]
             positive = cls().get_prompt(positive, seed, 'No')[0]
             negative = cls().get_prompt(negative, seed, 'No')[0]
         token_p = clip.tokenize(positive)
@@ -443,18 +327,18 @@ class Easy_KSampler:
             cfg, sampler_name, scheduler = ModelType_list[ModelType]
         StepsType_list["Denoise"] = steps
         if negative == None:
-            cls_zero_negative = ALL_NODE_CLASS_MAPPINGS["ConditioningZeroOut"]
+            cls_zero_negative = ALL_NODE["ConditioningZeroOut"]
             negative = cls_zero_negative().zero_out(positive)[0]
         if tile_width == None or tile_height == None:
             tile_width = tile_height = 1024
         if latent_image == None:
-            cls_emply = ALL_NODE_CLASS_MAPPINGS["EmptyLatentImage"]
+            cls_emply = ALL_NODE["EmptyLatentImage"]
             latent_image = cls_emply().generate(tile_width, tile_height, 1)[0]
             tile_width = int(math.ceil(tile_width/2))
             tile_height = int(math.ceil(tile_width/2))
         if Tiled == True:
-            if "TiledDiffusion" in ALL_NODE_CLASS_MAPPINGS:
-                cls_tiled = ALL_NODE_CLASS_MAPPINGS["TiledDiffusion"]
+            if "TiledDiffusion" in ALL_NODE:
+                cls_tiled = ALL_NODE["TiledDiffusion"]
                 model = cls_tiled().apply(model, "Mixture of Diffusers",
                                           tile_width, tile_height, 96, 4)[0]
             else:
@@ -462,11 +346,11 @@ class Easy_KSampler:
                     'Not install TiledDiffusion node (https://github.com/shiimizu/ComfyUI-TiledDiffusion)')
         if StepsType != 'None':
             steps = int(math.ceil(StepsType_list[StepsType]*denoise))
-        cls = ALL_NODE_CLASS_MAPPINGS["KSampler"]
+        cls = ALL_NODE["KSampler"]
         samples = cls().sample(model, seed, steps, cfg, sampler_name,
                                scheduler, positive, negative, latent_image, denoise)[0]
         if vae != None:
-            cls_decode = ALL_NODE_CLASS_MAPPINGS["VAEDecode"]
+            cls_decode = ALL_NODE["VAEDecode"]
             images = cls_decode().decode(vae, samples)[0]
         else:
             images = None
@@ -510,9 +394,9 @@ class UpscaleImage:
             elif height == 0:
                 height = max(1, round(h * width / w))
             if model_name != "None":
-                upscale_model = ALL_NODE_CLASS_MAPPINGS["UpscaleModelLoader"](
+                upscale_model = ALL_NODE["UpscaleModelLoader"](
                 ).load_model(model_name)[0]
-                image = ALL_NODE_CLASS_MAPPINGS["ImageUpscaleWithModel"]().upscale(
+                image = ALL_NODE["ImageUpscaleWithModel"]().upscale(
                     upscale_model, image)[0]
             samples = image.movedim(-1, 1)
             s = comfy.utils.common_upscale(
@@ -540,10 +424,10 @@ class UpscaleLatentImage:
     CATEGORY = "✨ SDVN/Image"
 
     def upscale_latent(self, mode, width, height, scale, model_name, latent, vae):
-        image = ALL_NODE_CLASS_MAPPINGS["VAEDecode"]().decode(vae, latent)[0]
+        image = ALL_NODE["VAEDecode"]().decode(vae, latent)[0]
         s = UpscaleImage().upscale(mode, width, height,
                                    scale, model_name, image)[0]
-        l = ALL_NODE_CLASS_MAPPINGS["VAEEncode"]().encode(vae, s)[0]
+        l = ALL_NODE["VAEEncode"]().encode(vae, s)[0]
         return (l, vae,)
 
 
@@ -554,7 +438,7 @@ def preprocessor_list():
     AIO_NOT_SUPPORTED += ["SavePoseKpsAsJsonFile", "FacialPartColoringFromPoseKps",
                           "UpperBodyTrackingFromPoseKps", "RenderPeopleKps", "RenderAnimalKps"]
     AIO_NOT_SUPPORTED += ["Unimatch_OptFlowPreprocessor", "MaskOptFlow"]
-    for k in ALL_NODE_CLASS_MAPPINGS:
+    for k in ALL_NODE:
         if "Preprocessor" in k:
             if k not in AIO_NOT_SUPPORTED:
                 preprocessor_list += [k]
@@ -588,34 +472,184 @@ class AutoControlNetApply:
         if control_net == "None":
             return (positive, negative, image)
         if preprocessor != "None":
-            if "AIO_Preprocessor" in ALL_NODE_CLASS_MAPPINGS:
-                image = ALL_NODE_CLASS_MAPPINGS["AIO_Preprocessor"]().execute(
+            if "AIO_Preprocessor" in ALL_NODE:
+                image = ALL_NODE["AIO_Preprocessor"]().execute(
                     preprocessor, image, resolution)[0]
             else:
                 print(
                     "You have not installed it yet Controlnet Aux (https://github.com/Fannovel16/comfyui_controlnet_aux)")
-        control_net = ALL_NODE_CLASS_MAPPINGS["ControlNetLoader"](
+        control_net = ALL_NODE["ControlNetLoader"](
         ).load_controlnet(control_net)[0]
-        p, n = ALL_NODE_CLASS_MAPPINGS["ControlNetApplyAdvanced"]().apply_controlnet(
+        p, n = ALL_NODE["ControlNetApplyAdvanced"]().apply_controlnet(
             positive, negative, control_net, image, strength, start_percent, end_percent, vae)
-        results = ALL_NODE_CLASS_MAPPINGS["PreviewImage"]().save_images(image)
+        results = ALL_NODE["PreviewImage"]().save_images(image)
         results["result"] = (p, n, image)
         return results
 
+class CheckpointDownload:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "Download_url": ("STRING", {"default": "", "multiline": False},),
+                "Ckpt_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
+            }
+        }
+    RETURN_TYPES = ("MODEL", "CLIP", "VAE")
+    OUTPUT_TOOLTIPS = ("The model used for denoising latents.",
+                       "The CLIP model used for encoding text prompts.",
+                       "The VAE model used for encoding and decoding images to and from latent space.")
+    FUNCTION = "checkpoint_download"
 
+    CATEGORY = "✨ SDVN/Download"
+
+    def checkpoint_download(self, Download_url, Ckpt_url_name):
+        download_model(Download_url, Ckpt_url_name, "checkpoints")
+        return ALL_NODE["Lora_url_name"]().load_checkpoint(Ckpt_url_name)
+
+class LoraDownload:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "model": ("MODEL", {"tooltip": "The diffusion model the LoRA will be applied to."}),
+                "clip": ("CLIP", {"default": None, "tooltip": "The CLIP model the LoRA will be applied to."}),
+                "Download_url": ("STRING", {"default": "", "multiline": False},),
+                "Lora_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
+                "strength_model": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
+                "strength_clip": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the CLIP model. This value can be negative."}),
+            },
+        }
+
+    RETURN_TYPES = ("MODEL", "CLIP")
+    OUTPUT_TOOLTIPS = ("The modified diffusion model.",
+                       "The modified CLIP model.")
+    FUNCTION = "load_lora"
+
+    CATEGORY = "✨ SDVN/Download"
+    DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
+
+    def load_lora(self, model, clip, Download_url, Lora_url_name, strength_model, strength_clip):
+        download_model(Download_url, Lora_url_name, "loras")
+        return ALL_NODE["LoraLoader"]().load_lora(model, clip, Lora_url_name, strength_model, strength_clip)
+
+class CLIPVisionDownload:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": { 
+                    "Download_url": ("STRING", {"default": "", "multiline": False},),
+                    "Url_name": ("STRING", {"default": "model.safetensors", "multiline": False},)
+                             }}
+    RETURN_TYPES = ("CLIP_VISION",)
+    FUNCTION = "download"
+
+    CATEGORY = "✨ SDVN/Download"
+
+    def download(self, Download_url, Url_name):
+        download_model(Download_url, Url_name, "clip_vision")
+        return ALL_NODE["CLIPVisionLoader"]().load_clip(Url_name)
+
+class UpscaleModelDownload:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": { 
+                    "Download_url": ("STRING", {"default": "", "multiline": False},),
+                    "Url_name": ("STRING", {"default": "model.safetensors", "multiline": False},)
+                             }}
+    RETURN_TYPES = ("UPSCALE_MODEL",)
+    FUNCTION = "download"
+
+    CATEGORY = "✨ SDVN/Download"
+
+    def download(self, Download_url, Url_name):
+        download_model(Download_url, Url_name, "upscale_models")
+        return ALL_NODE["UpscaleModelLoader"]().load_model(Url_name)
+
+class VAEDownload:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": { 
+                    "Download_url": ("STRING", {"default": "", "multiline": False},),
+                    "Url_name": ("STRING", {"default": "model.safetensors", "multiline": False},)
+                             }}
+    RETURN_TYPES = ("VAE",)
+    FUNCTION = "download"
+
+    CATEGORY = "✨ SDVN/Download"
+
+    def download(self, Download_url, Url_name):
+        download_model(Download_url, Url_name, "vae")
+        return ALL_NODE["VAELoader"]().load_vae(Url_name)
+
+class ControlNetDownload:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": { 
+                    "Download_url": ("STRING", {"default": "", "multiline": False},),
+                    "Url_name": ("STRING", {"default": "model.safetensors", "multiline": False},)
+                             }}
+    RETURN_TYPES = ("CONTROL_NET",)
+    FUNCTION = "download"
+
+    CATEGORY = "✨ SDVN/Download"
+
+    def download(self, Download_url, Url_name):
+        download_model(Download_url, Url_name, "controlnet")
+        return ALL_NODE["ControlNetLoader"]().load_controlnet(Url_name)
+
+class UNETDownload:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": { 
+                    "Download_url": ("STRING", {"default": "", "multiline": False},),
+                    "Url_name": ("STRING", {"default": "model.safetensors", "multiline": False}),
+                    "weight_dtype": (["default", "fp8_e4m3fn", "fp8_e4m3fn_fast", "fp8_e5m2"],)
+                             }}
+    RETURN_TYPES = ("MODEL",)
+    FUNCTION = "download"
+
+    CATEGORY = "✨ SDVN/Download"
+
+    def download(self, Download_url, Url_name, weight_dtype):
+        download_model(Download_url, Url_name, "diffusion_models")
+        return ALL_NODE["UNETLoader"]().load_unet(Url_name,weight_dtype)
+
+class CLIPDownload:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": { 
+                    "Download_url": ("STRING", {"default": "", "multiline": False},),
+                    "Url_name": ("STRING", {"default": "model.safetensors", "multiline": False}),
+                    "type": (["stable_diffusion", "stable_cascade", "sd3", "stable_audio", "mochi", "ltxv"],)
+                             }}
+    RETURN_TYPES = ("CLIP",)
+    FUNCTION = "download"
+
+    CATEGORY = "✨ SDVN/Download"
+
+    def download(self, Download_url, Url_name, type):
+        download_model(Download_url, Url_name, "text_encoders")
+        return ALL_NODE["CLIPLoader"]().load_clip(Url_name,type)
+            
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
     "SDVN Load Checkpoint": CheckpointLoaderDownload,
     "SDVN Load Lora": LoraLoader,
     "SDVN Load Image": LoadImage,
     "SDVN Load Image Url": LoadImageUrl,
-    "SDVN Checkpoint Download": CheckpointDownload,
-    "SDVN Lora Download": LoraDownload,
     "SDVN CLIP Text Encode": CLIPTextEncode,
     "SDVN KSampler": Easy_KSampler,
     "SDVN Upscale Image": UpscaleImage,
     "SDVN UPscale Latent": UpscaleLatentImage,
     "SDVN Controlnet Apply": AutoControlNetApply,
+    "SDVN Checkpoint Download": CheckpointDownload,
+    "SDVN Lora Download": LoraDownload,
+    "SDVN CLIPVision Download":CLIPVisionDownload,
+    "SDVN UpscaleModel Download":UpscaleModelDownload,
+    "SDVN VAE Download":VAEDownload,
+    "SDVN ControlNet Download":ControlNetDownload,
+    "SDVN UNET Download":UNETDownload,
+    "SDVN CLIP Download":CLIPDownload,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -624,11 +658,18 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Load Lora": "Load Lora",
     "SDVN Load Image": "Load Image",
     "SDVN Load Image Url": "Load Image Url",
-    "SDVN Checkpoint Download": "Download Checkpoint",
-    "SDVN Lora Download": "Download Lora",
     "SDVN CLIP Text Encode": "CLIP Text Encode",
     "SDVN KSampler": "KSampler",
     "SDVN Upscale Image": "↗️ Upscale Image",
     "SDVN UPscale Latent": "↗️ Upscale Latent",
-    "SDVN Controlnet Apply": "Controlnet Apply"
+    "SDVN Controlnet Apply": "Controlnet Apply",
+    "SDVN Checkpoint Download": "Download Checkpoint",
+    "SDVN Lora Download": "Download Lora",
+    "SDVN Lora Download": "Lora Download",
+    "SDVN CLIPVision Download":"CLIPVision Download",
+    "SDVN UpscaleModel Download":"UpscaleModel Download",
+    "SDVN VAE Download":"VAE Download",
+    "SDVN ControlNet Download":"ControlNet Download",
+    "SDVN UNET Download":"UNET Download",
+    "SDVN CLIP Download":"CLIP Download",
 }
