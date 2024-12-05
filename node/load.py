@@ -173,8 +173,8 @@ class LoadImageUrl:
         image = Image.open(requests.get(Url, stream=True).raw)
         image = i2tensor(image)
         results = ALL_NODE_CLASS_MAPPINGS["PreviewImage"]().save_images(image)
-        return {"ui": {"images": results}, "result": (image,)}
-
+        results["result"] = (image,)
+        return results
 
 class CheckpointLoaderDownload:
     @classmethod
@@ -599,7 +599,8 @@ class AutoControlNetApply:
         p, n = ALL_NODE_CLASS_MAPPINGS["ControlNetApplyAdvanced"]().apply_controlnet(
             positive, negative, control_net, image, strength, start_percent, end_percent, vae)
         results = ALL_NODE_CLASS_MAPPINGS["PreviewImage"]().save_images(image)
-        return {"ui": {"images": results}, "result": (p, n, image)}
+        results["result"] = (p, n, image)
+        return results
 
 
 # NOTE: names should be globally unique
