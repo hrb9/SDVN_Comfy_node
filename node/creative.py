@@ -1,5 +1,4 @@
-from nodes import NODE_CLASS_MAPPINGS as ALL_NODE_CLASS_MAPPINGS
-
+from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 
 class AnyType(str):
     """A special class that is always equal in not equal comparisons. Credit to pythongosssss"""
@@ -23,7 +22,7 @@ class Easy_IPA_weight:
         }
         }
 
-    CATEGORY = "✨ SDVN/Creative"
+    CATEGORY = "📂 SDVN/💡 Creative"
 
     RETURN_TYPES = ("STRING",)
     OUTPUT_TOOLTIPS = (
@@ -62,13 +61,13 @@ class AnyInput:
             "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
         }}
 
-    CATEGORY = "✨ SDVN/Creative"
+    CATEGORY = "📂 SDVN/💡 Creative"
     RETURN_TYPES = ("STRING", "FLOAT", "INT", "BOOL")
     FUNCTION = "any_return"
 
     def any_return(self, input, seed):
-        if "DPRandomGenerator" in ALL_NODE_CLASS_MAPPINGS:
-            cls = ALL_NODE_CLASS_MAPPINGS["DPRandomGenerator"]
+        if "DPRandomGenerator" in ALL_NODE:
+            cls = ALL_NODE["DPRandomGenerator"]
             input = cls().get_prompt(input, seed, 'No')[0]
         try:
             i = int(eval(input))
@@ -99,7 +98,7 @@ class ImageSize:
                 "image": ("IMAGE",),
                 "latent": ("LATENT",)
             }}
-    CATEGORY = "✨ SDVN/Creative"
+    CATEGORY = "📂 SDVN/💡 Creative"
     RETURN_TYPES = ("INT", "INT",)
     RETURN_NAMES = ("width", "height",)
     FUNCTION = "imagesize"
@@ -125,7 +124,7 @@ class Seed:
             "required": {
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, }),
             }}
-    CATEGORY = "✨ SDVN/Creative"
+    CATEGORY = "📂 SDVN/💡 Creative"
     RETURN_TYPES = ("INT",)
     RETURN_NAMES = ("seed",)
     FUNCTION = "seed"
@@ -143,7 +142,7 @@ class Switch:
                 "false": (any,),
                 "target":  ("BOOLEAN", {"default": True},),
             }}
-    CATEGORY = "✨ SDVN/Creative"
+    CATEGORY = "📂 SDVN/💡 Creative"
     RETURN_TYPES = (any,)
     RETURN_NAMES = ("output",)
     FUNCTION = "switch"
@@ -154,13 +153,13 @@ class Switch:
         else:
             return (false,)
 
-
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
     "SDVN Any Input Type": AnyInput,
     "SDVN Image Size": ImageSize,
     "SDVN Seed": Seed,
     "SDVN Switch": Switch,
+    "Test": Show,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {

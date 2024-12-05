@@ -113,7 +113,7 @@ class LoadImage:
             }
         }
 
-    CATEGORY = "✨ SDVN"
+    CATEGORY = "📂 SDVN"
 
     RETURN_TYPES = ("IMAGE", "MASK")
     FUNCTION = "load_image"
@@ -158,7 +158,7 @@ class LoadImageUrl:
         }
         }
 
-    CATEGORY = "✨ SDVN"
+    CATEGORY = "📂 SDVN"
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "load_image_url"
@@ -191,7 +191,7 @@ class CheckpointLoaderDownload:
                        "The VAE model used for encoding and decoding images to and from latent space.")
     FUNCTION = "load_checkpoint"
 
-    CATEGORY = "✨ SDVN"
+    CATEGORY = "📂 SDVN"
     DESCRIPTION = "Loads a diffusion model checkpoint, diffusion models are used to denoise latents."
 
     def load_checkpoint(self, Download, Download_url, Ckpt_url_name, Ckpt_name=None):
@@ -221,7 +221,7 @@ class LoraLoader:
 
     RETURN_TYPES = ("MODEL", "CLIP")
     FUNCTION = "load_lora"
-    CATEGORY = "✨ SDVN"
+    CATEGORY = "📂 SDVN"
 
     def load_lora(self, model, clip, Download, Download_url, Lora_url_name, lora_name, strength_model=1, strength_clip=1):
         if not Download and Download_url == '' and lora_name == "None":
@@ -249,7 +249,7 @@ class CLIPTextEncode:
         "A conditioning containing the embedded text used to guide the diffusion model.",)
     FUNCTION = "encode"
 
-    CATEGORY = "✨ SDVN"
+    CATEGORY = "📂 SDVN"
     DESCRIPTION = "Encodes a text prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images."
 
     def encode(self, clip, positive, negative, seed):
@@ -319,7 +319,7 @@ class Easy_KSampler:
     OUTPUT_TOOLTIPS = ("The denoised latent.",)
     FUNCTION = "sample"
 
-    CATEGORY = "✨ SDVN"
+    CATEGORY = "📂 SDVN"
     DESCRIPTION = "Uses the provided model, positive and negative conditioning to denoise the latent image."
 
     def sample(self, model, positive, ModelType, StepsType, sampler_name, scheduler, seed, Tiled=False, tile_width=None, tile_height=None, steps=20, cfg=7, denoise=1.0, negative=None, latent_image=None, vae=None):
@@ -372,7 +372,7 @@ class UpscaleImage:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "upscale"
 
-    CATEGORY = "✨ SDVN/Image"
+    CATEGORY = "📂 SDVN/🏞️ Image"
 
     def upscale(self, mode, width, height, scale, model_name, image):
         if width == 0 and height == 0:
@@ -421,7 +421,7 @@ class UpscaleLatentImage:
     RETURN_TYPES = ("LATENT", "VAE",)
     FUNCTION = "upscale_latent"
 
-    CATEGORY = "✨ SDVN/Image"
+    CATEGORY = "📂 SDVN/🏞️ Image"
 
     def upscale_latent(self, mode, width, height, scale, model_name, latent, vae):
         image = ALL_NODE["VAEDecode"]().decode(vae, latent)[0]
@@ -466,7 +466,7 @@ class AutoControlNetApply:
     RETURN_NAMES = ("positive", "negative", "image")
     FUNCTION = "apply_controlnet"
 
-    CATEGORY = "✨ SDVN"
+    CATEGORY = "📂 SDVN"
 
     def apply_controlnet(self, positive, negative, control_net, preprocessor, resolution, image, strength, start_percent, end_percent, vae=None, extra_concat=[]):
         if control_net == "None":
@@ -501,7 +501,7 @@ class CheckpointDownload:
                        "The VAE model used for encoding and decoding images to and from latent space.")
     FUNCTION = "checkpoint_download"
 
-    CATEGORY = "✨ SDVN/Download"
+    CATEGORY = "📂 SDVN/📥 Download"
 
     def checkpoint_download(self, Download_url, Ckpt_url_name):
         download_model(Download_url, Ckpt_url_name, "checkpoints")
@@ -526,7 +526,7 @@ class LoraDownload:
                        "The modified CLIP model.")
     FUNCTION = "load_lora"
 
-    CATEGORY = "✨ SDVN/Download"
+    CATEGORY = "📂 SDVN/📥 Download"
     DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
 
     def load_lora(self, model, clip, Download_url, Lora_url_name, strength_model, strength_clip):
@@ -543,7 +543,7 @@ class CLIPVisionDownload:
     RETURN_TYPES = ("CLIP_VISION",)
     FUNCTION = "download"
 
-    CATEGORY = "✨ SDVN/Download"
+    CATEGORY = "📂 SDVN/📥 Download"
 
     def download(self, Download_url, Url_name):
         download_model(Download_url, Url_name, "clip_vision")
@@ -559,7 +559,7 @@ class UpscaleModelDownload:
     RETURN_TYPES = ("UPSCALE_MODEL",)
     FUNCTION = "download"
 
-    CATEGORY = "✨ SDVN/Download"
+    CATEGORY = "📂 SDVN/📥 Download"
 
     def download(self, Download_url, Url_name):
         download_model(Download_url, Url_name, "upscale_models")
@@ -575,7 +575,7 @@ class VAEDownload:
     RETURN_TYPES = ("VAE",)
     FUNCTION = "download"
 
-    CATEGORY = "✨ SDVN/Download"
+    CATEGORY = "📂 SDVN/📥 Download"
 
     def download(self, Download_url, Url_name):
         download_model(Download_url, Url_name, "vae")
@@ -591,7 +591,7 @@ class ControlNetDownload:
     RETURN_TYPES = ("CONTROL_NET",)
     FUNCTION = "download"
 
-    CATEGORY = "✨ SDVN/Download"
+    CATEGORY = "📂 SDVN/📥 Download"
 
     def download(self, Download_url, Url_name):
         download_model(Download_url, Url_name, "controlnet")
@@ -608,7 +608,7 @@ class UNETDownload:
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "download"
 
-    CATEGORY = "✨ SDVN/Download"
+    CATEGORY = "📂 SDVN/📥 Download"
 
     def download(self, Download_url, Url_name, weight_dtype):
         download_model(Download_url, Url_name, "diffusion_models")
@@ -625,7 +625,7 @@ class CLIPDownload:
     RETURN_TYPES = ("CLIP",)
     FUNCTION = "download"
 
-    CATEGORY = "✨ SDVN/Download"
+    CATEGORY = "📂 SDVN/📥 Download"
 
     def download(self, Download_url, Url_name, type):
         download_model(Download_url, Url_name, "text_encoders")
@@ -638,10 +638,10 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Load Image": LoadImage,
     "SDVN Load Image Url": LoadImageUrl,
     "SDVN CLIP Text Encode": CLIPTextEncode,
+    "SDVN Controlnet Apply": AutoControlNetApply,
     "SDVN KSampler": Easy_KSampler,
     "SDVN Upscale Image": UpscaleImage,
     "SDVN UPscale Latent": UpscaleLatentImage,
-    "SDVN Controlnet Apply": AutoControlNetApply,
     "SDVN Checkpoint Download": CheckpointDownload,
     "SDVN Lora Download": LoraDownload,
     "SDVN CLIPVision Download":CLIPVisionDownload,
@@ -654,22 +654,22 @@ NODE_CLASS_MAPPINGS = {
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SDVN Load Checkpoint": "Load Checkpoint",
-    "SDVN Load Lora": "Load Lora",
-    "SDVN Load Image": "Load Image",
-    "SDVN Load Image Url": "Load Image Url",
-    "SDVN CLIP Text Encode": "CLIP Text Encode",
-    "SDVN KSampler": "KSampler",
+    "SDVN Load Checkpoint": "📀 Load Checkpoint",
+    "SDVN Load Lora": "🎨 Load Lora",
+    "SDVN Load Image": "🏞️ Load Image",
+    "SDVN Load Image Url": "📥 Load Image Url",
+    "SDVN CLIP Text Encode": "🔡 CLIP Text Encode",
+    "SDVN KSampler": "⌛️ KSampler",
+    "SDVN Controlnet Apply": "🎚️ Controlnet Apply",
     "SDVN Upscale Image": "↗️ Upscale Image",
     "SDVN UPscale Latent": "↗️ Upscale Latent",
-    "SDVN Controlnet Apply": "Controlnet Apply",
-    "SDVN Checkpoint Download": "Download Checkpoint",
-    "SDVN Lora Download": "Download Lora",
-    "SDVN Lora Download": "Lora Download",
-    "SDVN CLIPVision Download":"CLIPVision Download",
-    "SDVN UpscaleModel Download":"UpscaleModel Download",
-    "SDVN VAE Download":"VAE Download",
-    "SDVN ControlNet Download":"ControlNet Download",
-    "SDVN UNET Download":"UNET Download",
-    "SDVN CLIP Download":"CLIP Download",
+    "SDVN Checkpoint Download": "📥 Download Checkpoint",
+    "SDVN Lora Download": "📥 Download Lora",
+    "SDVN Lora Download": "📥 Lora Download",
+    "SDVN CLIPVision Download":"📥 CLIPVision Download",
+    "SDVN UpscaleModel Download":"📥 UpscaleModel Download",
+    "SDVN VAE Download":"📥 VAE Download",
+    "SDVN ControlNet Download":"📥 ControlNet Download",
+    "SDVN UNET Download":"📥 UNET Download",
+    "SDVN CLIP Download":"📥 CLIP Download",
 }

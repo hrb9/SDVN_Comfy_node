@@ -24,7 +24,7 @@ class ModelMergeBlocks:
     RETURN_TYPES = ("MODEL", "STRING")
     FUNCTION = "merge"
 
-    CATEGORY = "✨ SDVN/Merge"
+    CATEGORY = "📂 SDVN/🧬 Merge"
 
     def merge(self, model1=None, model2=None, **kwargs):
         for i in kwargs:
@@ -72,7 +72,7 @@ class ModelMergeBlocks:
 
 
 class ModelMergeSD1(ModelMergeBlocks):
-    CATEGORY = "✨ SDVN/Merge"
+    CATEGORY = "📂 SDVN/🧬 Merge"
 
     @classmethod
     def INPUT_TYPES(s):
@@ -91,7 +91,7 @@ class ModelMergeSD1(ModelMergeBlocks):
 
 
 class ModelMergeSDXL(ModelMergeBlocks):
-    CATEGORY = "✨ SDVN/Merge"
+    CATEGORY = "📂 SDVN/🧬 Merge"
 
     @classmethod
     def INPUT_TYPES(s):
@@ -110,7 +110,7 @@ class ModelMergeSDXL(ModelMergeBlocks):
 
 
 class ModelMergeFlux1(ModelMergeBlocks):
-    CATEGORY = "✨ SDVN/Merge"
+    CATEGORY = "📂 SDVN/🧬 Merge"
 
     @classmethod
     def INPUT_TYPES(s):
@@ -138,7 +138,7 @@ NODE_CLASS_MAPPINGS = {
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SDVN Merge SD1": "Merge SD1",
-    "SDVN Merge SDXL": "Merge SDXL",
-    "SDVN Merge Flux": "Merge Flux"
+    "SDVN Merge SD1": "🧬 Merge SD1",
+    "SDVN Merge SDXL": "🧬 Merge SDXL",
+    "SDVN Merge Flux": "🧬 Merge Flux"
 }

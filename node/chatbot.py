@@ -1,6 +1,6 @@
 import google.generativeai as genai
 from openai import OpenAI
-from nodes import NODE_CLASS_MAPPINGS as ALL_NODE_CLASS_MAPPINGS
+from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 from torchvision.transforms import ToPILImage
 import torch
 import re
@@ -63,7 +63,7 @@ def function(input):
             }
         }
 
-    CATEGORY = "✨ SDVN/Creative"
+    CATEGORY = "📂 SDVN/💡 Creative"
 
     RETURN_TYPES = (any,)
     RETURN_NAMES = ("output",)
@@ -119,7 +119,7 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
             }
         }
 
-    CATEGORY = "✨ SDVN/API"
+    CATEGORY = "📂 SDVN/👨🏻‍💻 API"
 
     RETURN_TYPES = ("STRING",)
     FUNCTION = "api_chatbot"
@@ -141,8 +141,8 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
                 {"role": "assistant", "content": "Đồng ý! Hãy đưa ra yêu cầu của bạn."}
             ]
         }
-        if "DPRandomGenerator" in ALL_NODE_CLASS_MAPPINGS:
-            cls = ALL_NODE_CLASS_MAPPINGS["DPRandomGenerator"]
+        if "DPRandomGenerator" in ALL_NODE:
+            cls = ALL_NODE["DPRandomGenerator"]
             main_prompt = cls().get_prompt(main_prompt, seed, 'No')[0]
             sub_prompt = cls().get_prompt(sub_prompt, seed, 'No')[0]
         prompt = f"{main_prompt}.{sub_prompt}"
@@ -213,7 +213,7 @@ class API_DALLE:
             }
         }
 
-    CATEGORY = "✨ SDVN/API"
+    CATEGORY = "📂 SDVN/👨🏻‍💻 API"
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "api_dalle"
@@ -229,7 +229,7 @@ class API_DALLE:
             quality="standard",
             n=1,
         )
-        cls = ALL_NODE_CLASS_MAPPINGS["SDVN Load Image Url"]
+        cls = ALL_NODE["SDVN Load Image Url"]
         image_url = response.data[0].url
         print(image_url)
         image = cls().load_image_url(image_url)[0]
