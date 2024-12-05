@@ -531,16 +531,18 @@ class UpscaleLatentImage:
         return (l, vae,)
 
 
-preprocessor_list = ["None"]
-AIO_NOT_SUPPORTED = ["InpaintPreprocessor",
-                     "MeshGraphormer+ImpactDetector-DepthMapPreprocessor", "DiffusionEdge_Preprocessor"]
-AIO_NOT_SUPPORTED += ["SavePoseKpsAsJsonFile", "FacialPartColoringFromPoseKps",
-                      "UpperBodyTrackingFromPoseKps", "RenderPeopleKps", "RenderAnimalKps"]
-AIO_NOT_SUPPORTED += ["Unimatch_OptFlowPreprocessor", "MaskOptFlow"]
-for k in ALL_NODE_CLASS_MAPPINGS:
-    if "Preprocessor" in k:
-        if k not in AIO_NOT_SUPPORTED:
-            preprocessor_list += [k]
+def preprocessor_list():
+    preprocessor_list = ["None"]
+    AIO_NOT_SUPPORTED = ["InpaintPreprocessor",
+                         "MeshGraphormer+ImpactDetector-DepthMapPreprocessor", "DiffusionEdge_Preprocessor"]
+    AIO_NOT_SUPPORTED += ["SavePoseKpsAsJsonFile", "FacialPartColoringFromPoseKps",
+                          "UpperBodyTrackingFromPoseKps", "RenderPeopleKps", "RenderAnimalKps"]
+    AIO_NOT_SUPPORTED += ["Unimatch_OptFlowPreprocessor", "MaskOptFlow"]
+    for k in ALL_NODE_CLASS_MAPPINGS:
+        if "Preprocessor" in k:
+            if k not in AIO_NOT_SUPPORTED:
+                preprocessor_list += [k]
+    return preprocessor_list
 
 
 class AutoControlNetApply:
@@ -550,7 +552,7 @@ class AutoControlNetApply:
                              "negative": ("CONDITIONING", ),
                              "image": ("IMAGE", ),
                              "control_net": (folder_paths.get_filename_list("controlnet"),),
-                             "preprocessor": (preprocessor_list,),
+                             "preprocessor": (preprocessor_list(),),
                              "resolution": ("INT", {"default": 512, "min": 512, "max": 2048, "step": 1}),
                              "strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.01}),
                              "start_percent": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001}),
