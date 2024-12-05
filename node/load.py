@@ -224,8 +224,9 @@ class LoraLoader:
     CATEGORY = "📂 SDVN"
 
     def load_lora(self, model, clip, Download, Download_url, Lora_url_name, lora_name, strength_model=1, strength_clip=1):
-        if not Download and Download_url == '' and lora_name == "None":
-            return (model, clip)
+        if not Download or Download_url == '':
+            if lora_name == "None":
+                return (model, clip)
         if Download and Download_url != '':
             download_model(Download_url, Lora_url_name, "loras")
             lora_name = Lora_url_name
