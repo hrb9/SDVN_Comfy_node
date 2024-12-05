@@ -554,7 +554,7 @@ class AutoControlNetApply:
         return {"required": {"positive": ("CONDITIONING", ),
                              "negative": ("CONDITIONING", ),
                              "image": ("IMAGE", ),
-                             "control_net": (folder_paths.get_filename_list("controlnet"),),
+                             "control_net": (list_model(folder_paths.get_filename_list("controlnet")),),
                              "preprocessor": (preprocessor_list(),),
                              "resolution": ("INT", {"default": 512, "min": 512, "max": 2048, "step": 1}),
                              "strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.01}),
@@ -572,6 +572,8 @@ class AutoControlNetApply:
     CATEGORY = "✨ SDVN"
 
     def apply_controlnet(self, positive, negative, control_net, preprocessor, resolution, image, strength, start_percent, end_percent, vae=None, extra_concat=[]):
+        if control_net == "None":
+            return (positive, negative, image)
         if preprocessor != "None":
             if "AIO_Preprocessor" in ALL_NODE_CLASS_MAPPINGS:
                 image = ALL_NODE_CLASS_MAPPINGS["AIO_Preprocessor"]().execute(
