@@ -118,14 +118,55 @@ class ImageSize:
         return (w, h,)
 
 
+class Seed:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, }),
+            }}
+    CATEGORY = "✨ SDVN/Creative"
+    RETURN_TYPES = ("INT",)
+    RETURN_NAMES = ("seed",)
+    FUNCTION = "seed"
+
+    def seed(s, seed=0):
+        return (seed,)
+
+
+class Switch:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "true": (any,),
+                "false": (any,),
+                "target":  ("BOOLEAN", {"default": True},),
+            }}
+    CATEGORY = "✨ SDVN/Creative"
+    RETURN_TYPES = (any,)
+    RETURN_NAMES = ("output",)
+    FUNCTION = "switch"
+
+    def switch(s, true, false, target):
+        if target == True:
+            return (true,)
+        else:
+            return (false,)
+
+
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
     "SDVN Any Input Type": AnyInput,
     "SDVN Image Size": ImageSize,
+    "SDVN Seed": Seed,
+    "SDVN Switch": Switch,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SDVN Easy IPAdapter weight": "✨ IPAdapter weight",
+    "SDVN Easy IPAdapter weight": "📊 IPAdapter weight",
     "SDVN Any Input Type": "🔡 Any Input Type",
     "SDVN Image Size": "📐 Image Size",
+    "SDVN Seed": "🔢 Seed",
+    "SDVN Switch": "🔄 Switch"
 }
