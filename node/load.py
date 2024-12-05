@@ -198,7 +198,7 @@ class CheckpointLoaderDownload:
         if Download and Download_url != "":
             download_model(Download_url, Ckpt_url_name, "checkpoints")
             Ckpt_name = Ckpt_url_name
-        results = ALL_NODE["Lora_url_name"]().load_checkpoint(Ckpt_name)
+        results = ALL_NODE["CheckpointLoaderSimple"]().load_checkpoint(Ckpt_name)
         return results
 
 class LoraLoader:
@@ -486,6 +486,38 @@ class AutoControlNetApply:
         results["result"] = (p, n, image)
         return results
 
+class Inpaint:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {"SetLatentNoiseMask":("BOOLEAN",),
+                             "pixels": ("IMAGE", ),
+                             "vae": ("VAE", ),},
+                "optional": {"mask": ("MASK", ),
+                             "positive": ("CONDITIONING", ),
+                             "negative": ("CONDITIONING", ),}
+                             }
+
+    RETURN_TYPES = ("LATENT","CONDITIONING","CONDITIONING",)
+    RETURN_NAMES = ("latent","positive", "negative",)
+    FUNCTION = "encode"
+
+    CATEGORY = "📂 SDVN"
+
+    def encode(self, SetLatentNoiseMask, pixels, vae, mask = None, positive = None, negative = None):
+        if mask == None:
+            r = ALL_NODE["VAEEncode"]().encode(vae,pixels)[0]
+            if SetLatentNoiseMask:
+                r = ALL_NODE["SetLatentNoiseMask"]().set_mask(r, mask)[0]
+        elif positive == None or negative == None:
+            r = ALL_NODE["VAEEncodeForInpaint"]().encode(vae, pixels, mask)[0]
+        else:
+            r = ALL_NODE["InpaintModelConditioning"]().encode(positive, negative, pixels, vae, mask)
+            positive = r[0]
+            negative = r[1]
+            r = r[2]
+        return (r,positive,negative,)
+
+
 class CheckpointDownload:
     @classmethod
     def INPUT_TYPES(s):
@@ -505,7 +537,7 @@ class CheckpointDownload:
 
     def checkpoint_download(self, Download_url, Ckpt_url_name):
         download_model(Download_url, Ckpt_url_name, "checkpoints")
-        return ALL_NODE["Lora_url_name"]().load_checkpoint(Ckpt_url_name)
+        return ALL_NODE["CheckpointLoaderSimple"]().load_checkpoint(Ckpt_url_name)
 
 class LoraDownload:
     @classmethod
@@ -630,7 +662,23 @@ class CLIPDownload:
     def download(self, Download_url, Url_name, type):
         download_model(Download_url, Url_name, "text_encoders")
         return ALL_NODE["CLIPLoader"]().load_clip(Url_name,type)
-            
+
+class StyleModelDownload:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": { 
+                    "Download_url": ("STRING", {"default": "", "multiline": False},),
+                    "Url_name": ("STRING", {"default": "model.safetensors", "multiline": False},)
+                             }}
+    RETURN_TYPES = ("STYLE_MODEL",)
+    FUNCTION = "download"
+
+    CATEGORY = "📂 SDVN/📥 Download"
+
+    def download(self, Download_url, Url_name):
+        download_model(Download_url, Url_name, "style_models")
+        return ALL_NODE["StyleModelLoader"]().load_style_model(Url_name)
+                
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
     "SDVN Load Checkpoint": CheckpointLoaderDownload,
@@ -639,6 +687,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Load Image Url": LoadImageUrl,
     "SDVN CLIP Text Encode": CLIPTextEncode,
     "SDVN Controlnet Apply": AutoControlNetApply,
+    "SDVN Inpaint": Inpaint,
     "SDVN KSampler": Easy_KSampler,
     "SDVN Upscale Image": UpscaleImage,
     "SDVN UPscale Latent": UpscaleLatentImage,
@@ -650,6 +699,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN ControlNet Download":ControlNetDownload,
     "SDVN UNET Download":UNETDownload,
     "SDVN CLIP Download":CLIPDownload,
+    "SDVN StyleModel Download":StyleModelDownload,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -661,6 +711,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN CLIP Text Encode": "🔡 CLIP Text Encode",
     "SDVN KSampler": "⌛️ KSampler",
     "SDVN Controlnet Apply": "🎚️ Controlnet Apply",
+    "SDVN Inpaint": "👨‍🎨 Inpaint",
     "SDVN Upscale Image": "↗️ Upscale Image",
     "SDVN UPscale Latent": "↗️ Upscale Latent",
     "SDVN Checkpoint Download": "📥 Download Checkpoint",
@@ -672,4 +723,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN ControlNet Download":"📥 ControlNet Download",
     "SDVN UNET Download":"📥 UNET Download",
     "SDVN CLIP Download":"📥 CLIP Download",
+    "SDVN StyleModel Download":"📥  StyleModel Download",
 }

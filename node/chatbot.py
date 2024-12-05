@@ -206,10 +206,9 @@ class API_DALLE:
         return {
             "required": {
                 "OpenAI_API": ("STRING", {"default": "", "multiline": False, "tooltip": "Get API: https://platform.openai.com/settings/organization/api-keys"}),
-                "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 64, "display": "slider", "lazy": True}),
-                "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 64, "display": "slider", "lazy": True}),
+                "size": (['1024x1024', '1024x1792', '1792x1024'],{"default": "1024x1024"}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
-                "prompt": ("STRING", {"default": "", "multiline": True, "placeholder": "Image size ['256x256', '512x512', '1024x1024', '1024x1792', '1792x1024']", "tooltip": "Image size ['256x256', '512x512', '1024x1024', '1024x1792', '1792x1024']"}),
+                "prompt": ("STRING", {"default": "", "multiline": True, "placeholder": "Get API: https://platform.openai.com/settings/organization/api-keys"}),
             }
         }
 
@@ -218,21 +217,22 @@ class API_DALLE:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "api_dalle"
 
-    def api_dalle(self, OpenAI_API, width, height, seed, prompt):
+    def api_dalle(self, OpenAI_API, size, seed, prompt):
+        width, height = size.split("x")
         client = OpenAI(
             api_key=OpenAI_API
         )
         response = client.images.generate(
             model="dall-e-3",
             prompt=prompt,
-            size=f"{width}x{height}",
+            size=f"{int(width)}x{int(height)}",
             quality="standard",
             n=1,
         )
         cls = ALL_NODE["SDVN Load Image Url"]
         image_url = response.data[0].url
         print(image_url)
-        image = cls().load_image_url(image_url)[0]
+        image = cls().load_image_url(image_url)["result"][0]
         return (image,)
 
 
