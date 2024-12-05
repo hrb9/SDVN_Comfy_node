@@ -159,7 +159,6 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Image Size": ImageSize,
     "SDVN Seed": Seed,
     "SDVN Switch": Switch,
-    "Test": Show,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
