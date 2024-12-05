@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
 
-def list_model(folderlist):
+def none2list(folderlist):
     list = ["None"]
     list += folderlist
     return list
@@ -184,7 +184,7 @@ class CheckpointLoaderDownload:
                 "Ckpt_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
             },
             "optional": {
-                "Ckpt_name": (list_model(folder_paths.get_filename_list("checkpoints")), {"tooltip": "The name of the checkpoint (model) to load."})
+                "Ckpt_name": (none2list(folder_paths.get_filename_list("checkpoints")), {"tooltip": "The name of the checkpoint (model) to load."})
             }
         }
     RETURN_TYPES = ("MODEL", "CLIP", "VAE")
@@ -300,7 +300,7 @@ class LoraLoader:
                 "Download": ("BOOLEAN", {"default": True},),
                 "Download_url": ("STRING", {"default": "", "multiline": False},),
                 "Lora_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
-                "lora_name": (list_model(folder_paths.get_filename_list("loras")), {"default": "None", "tooltip": "The name of the LoRA."}),
+                "lora_name": (none2list(folder_paths.get_filename_list("loras")), {"default": "None", "tooltip": "The name of the LoRA."}),
             },
             "optional": {
                 "strength_model": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
@@ -376,6 +376,33 @@ class CLIPTextEncode:
         return (clip.encode_from_tokens_scheduled(token_p), clip.encode_from_tokens_scheduled(token_n), )
 
 
+def dic2list(dic):
+    l = []
+    for i in dic:
+        l += [i]
+    return l
+
+
+ModelType_list = {
+    "SD 1.5": [7.0, "euler_ancestral", "normal"],
+    "SDXL": [9.0, "dpmpp_2m_sde", "karras"],
+    "Flux": [1.0, "euler", "simple"],
+    "SD 1.5 Hyper": [1.0, "euler_ancestral", "sgm_uniform"],
+    "SDXL Hyper": [1.0, "euler_ancestral", "sgm_uniform"],
+    "SDXL Lightning": [1.0, "dpmpp_2m_sde", "sgm_uniform"],
+}
+
+StepsType_list = {
+    "Denoise": 20,
+    "Lightning 8steps": 8,
+    "Hyper 8steps": 8,
+    "Lightning 4steps": 8,
+    "Hyper 4steps": 8,
+    "Flux dev turbo (hyper 8steps)": 8,
+    "Flux schnell": 4,
+}
+
+
 class Easy_KSampler:
     @classmethod
     def INPUT_TYPES(s):
@@ -383,8 +410,8 @@ class Easy_KSampler:
             "required": {
                 "model": ("MODEL", {"tooltip": "The model used for denoising the input latent."}),
                 "positive": ("CONDITIONING", {"tooltip": "The conditioning describing the attributes you want to include in the image."}),
-                "ModelType": (["None", "SD 1.5", "SDXL", "Flux", "SD 1.5 Hyper", "SDXL Hyper", "SDXL Lightning"],),
-                "StepsType": (["None", "Denoise", "Lightning 8steps", "Hyper 8steps", "Lightning 4steps", "Hyper 4steps", "Flux dev turbo (hyper 8steps)", "Flux schnell"],),
+                "ModelType": (none2list(dic2list(ModelType_list)),),
+                "StepsType": (none2list(dic2list(StepsType_list)),),
                 "denoise": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01, "tooltip": "The amount of denoising applied, lower values will maintain the structure of the initial image allowing for image to image sampling."}),
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
                 "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
@@ -410,25 +437,9 @@ class Easy_KSampler:
     DESCRIPTION = "Uses the provided model, positive and negative conditioning to denoise the latent image."
 
     def sample(self, model, positive, ModelType, StepsType, sampler_name, scheduler, seed, Tiled=False, tile_width=None, tile_height=None, steps=20, cfg=7, denoise=1.0, negative=None, latent_image=None, vae=None):
-        ModelType_list = {
-            "SD 1.5": [7.0, "euler_ancestral", "normal"],
-            "SDXL": [9.0, "dpmpp_2m_sde", "karras"],
-            "Flux": [1.0, "euler", "simple"],
-            "SD 1.5 Hyper": [1.0, "euler_ancestral", "sgm_uniform"],
-            "SDXL Hyper": [1.0, "euler_ancestral", "sgm_uniform"],
-            "SDXL Lightning": [1.0, "dpmpp_2m_sde", "sgm_uniform"],
-        }
         if ModelType != 'None':
             cfg, sampler_name, scheduler = ModelType_list[ModelType]
-        StepsType_list = {
-            "Denoise": steps,
-            "Lightning 8steps": 8,
-            "Hyper 8steps": 8,
-            "Lightning 4steps": 8,
-            "Hyper 4steps": 8,
-            "Flux dev turbo (hyper 8steps)": 8,
-            "Flux schnell": 4,
-        }
+        StepsType_list["Denoise"] = steps
         if negative == None:
             cls_zero_negative = ALL_NODE_CLASS_MAPPINGS["ConditioningZeroOut"]
             negative = cls_zero_negative().zero_out(positive)[0]
@@ -465,7 +476,7 @@ class UpscaleImage:
     def INPUT_TYPES(s):
         return {"required": {
             "mode": (["Maxsize", "Resize", "Scale"], ),
-            "model_name": (list_model(folder_paths.get_filename_list("upscale_models")), {"default": "None", }),
+            "model_name": (none2list(folder_paths.get_filename_list("upscale_models")), {"default": "None", }),
             "scale": ("FLOAT", {"default": 1, "min": 0, "max": 10, "step": 0.01, }),
             "width": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
             "height": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
@@ -513,7 +524,7 @@ class UpscaleLatentImage:
     def INPUT_TYPES(s):
         return {"required": {
             "mode": (["Maxsize", "Resize", "Scale"], ),
-            "model_name": (list_model(folder_paths.get_filename_list("upscale_models")), {"default": "None", }),
+            "model_name": (none2list(folder_paths.get_filename_list("upscale_models")), {"default": "None", }),
             "scale": ("FLOAT", {"default": 2, "min": 0, "max": 10, "step": 0.01, }),
             "width": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
             "height": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
@@ -554,7 +565,7 @@ class AutoControlNetApply:
         return {"required": {"positive": ("CONDITIONING", ),
                              "negative": ("CONDITIONING", ),
                              "image": ("IMAGE", ),
-                             "control_net": (list_model(folder_paths.get_filename_list("controlnet")),),
+                             "control_net": (none2list(folder_paths.get_filename_list("controlnet")),),
                              "preprocessor": (preprocessor_list(),),
                              "resolution": ("INT", {"default": 512, "min": 512, "max": 2048, "step": 1}),
                              "strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.01}),
