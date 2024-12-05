@@ -12,7 +12,7 @@ import folder_paths
 import comfy.utils
 import hashlib
 from PIL.PngImagePlugin import PngInfo
-from nodes import NODE_CLASS_MAPPINGS as ALL_NODE_CLASS_MAPPINGS, MAX_RESOLUTION
+from nodes import NODE_CLASS_MAPPINGS as ALL_NODE_CLASS_MAPPINGS
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
@@ -505,7 +505,7 @@ class UpscaleImage:
         return (s,)
 
 
-class UpscaleLatentImage():
+class UpscaleLatentImage:
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
@@ -531,6 +531,51 @@ class UpscaleLatentImage():
         return (l, vae,)
 
 
+preprocessor_list = ["none"]
+AIO_NOT_SUPPORTED = ["InpaintPreprocessor",
+                     "MeshGraphormer+ImpactDetector-DepthMapPreprocessor", "DiffusionEdge_Preprocessor"]
+AIO_NOT_SUPPORTED += ["SavePoseKpsAsJsonFile", "FacialPartColoringFromPoseKps",
+                      "UpperBodyTrackingFromPoseKps", "RenderPeopleKps", "RenderAnimalKps"]
+AIO_NOT_SUPPORTED += ["Unimatch_OptFlowPreprocessor", "MaskOptFlow"]
+for k in ALL_NODE_CLASS_MAPPINGS:
+    if "Preprocessor" in k:
+        if k not in AIO_NOT_SUPPORTED:
+            preprocessor_list += [k]
+
+
+class AutoControlNetApply:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {"positive": ("CONDITIONING", ),
+                             "negative": ("CONDITIONING", ),
+                             "image": ("IMAGE", ),
+                             "control_net": (folder_paths.get_filename_list("controlnet"),),
+                             "preprocessor": (preprocessor_list,),
+                             "resolution": ("INT", {"default": 512, "min": 512, "max": 2048, "step": 1}),
+                             "strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.01}),
+                             "start_percent": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001}),
+                             "end_percent": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.001})
+                             },
+                "optional": {"vae": ("VAE", ),
+                             }
+                }
+
+    RETURN_TYPES = ("CONDITIONING", "CONDITIONING")
+    RETURN_NAMES = ("positive", "negative")
+    FUNCTION = "apply_controlnet"
+
+    CATEGORY = "✨ SDVN"
+
+    def apply_controlnet(self, positive, negative, control_net, preprocessor, resolution, image, strength, start_percent, end_percent, vae=None, extra_concat=[]):
+        image = ALL_NODE_CLASS_MAPPINGS["AIO_Preprocessor"]().execute(
+            preprocessor, image, resolution)[0]
+        control_net = ALL_NODE_CLASS_MAPPINGS["ControlNetLoader"](
+        ).load_controlnet(control_net)[0]
+        p, n = ALL_NODE_CLASS_MAPPINGS["ControlNetApplyAdvanced"]().apply_controlnet(
+            positive, negative, control_net, image, strength, start_percent, end_percent, vae)
+        return (p, n)
+
+
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
     "SDVN Load Checkpoint": CheckpointLoaderDownload,
@@ -543,6 +588,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN KSampler": Easy_KSampler,
     "SDVN Upscale Image": UpscaleImage,
     "SDVN UPscale Latent": UpscaleLatentImage,
+    "SDVN Controlnet Apply": AutoControlNetApply,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -557,4 +603,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN KSampler": "KSampler",
     "SDVN Upscale Image": "↗️ Upscale Image",
     "SDVN UPscale Latent": "↗️ Upscale Latent",
+    "SDVN Controlnet Apply": "Controlnet Apply"
 }
