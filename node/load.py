@@ -433,7 +433,7 @@ class UpscaleLatentImage:
 
 
 def preprocessor_list():
-    preprocessor_list = ["None"]
+    preprocessor_list = ["None","InvertImage"]
     AIO_NOT_SUPPORTED = ["InpaintPreprocessor",
                          "MeshGraphormer+ImpactDetector-DepthMapPreprocessor", "DiffusionEdge_Preprocessor"]
     AIO_NOT_SUPPORTED += ["SavePoseKpsAsJsonFile", "FacialPartColoringFromPoseKps",
@@ -472,7 +472,9 @@ class AutoControlNetApply:
     def apply_controlnet(self, positive, negative, control_net, preprocessor, resolution, image, strength, start_percent, end_percent, vae=None, extra_concat=[]):
         if control_net == "None":
             return (positive, negative, image)
-        if preprocessor != "None":
+        if preprocessor == "InvertImage":
+            image = ALL_NODE["ImageInvert"]().invert(image)[0]
+        elif preprocessor != "None":
             if "AIO_Preprocessor" in ALL_NODE:
                 r = ALL_NODE["AIO_Preprocessor"]().execute(preprocessor, image, resolution)
                 if "result" in r:
