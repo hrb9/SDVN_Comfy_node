@@ -474,8 +474,11 @@ class AutoControlNetApply:
             return (positive, negative, image)
         if preprocessor != "None":
             if "AIO_Preprocessor" in ALL_NODE:
-                image = ALL_NODE["AIO_Preprocessor"]().execute(
-                    preprocessor, image, resolution)[0]
+                r = ALL_NODE["AIO_Preprocessor"]().execute(preprocessor, image, resolution)
+                if "result" in r:
+                    image = r["result"][0]
+                else:
+                    image = r[0]
             else:
                 print(
                     "You have not installed it yet Controlnet Aux (https://github.com/Fannovel16/comfyui_controlnet_aux)")
