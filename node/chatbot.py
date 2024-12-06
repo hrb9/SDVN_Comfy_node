@@ -152,8 +152,8 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
             cls = ALL_NODE["DPRandomGenerator"]
             main_prompt = cls().get_prompt(main_prompt, seed, 'No')[0]
             sub_prompt = cls().get_prompt(sub_prompt, seed, 'No')[0]
-        main_prompt = ALL_NODE("SDVN Translate")().ggtranslate(main_prompt,translate)[0]
-        sub_prompt = ALL_NODE("SDVN Translate")().ggtranslate(sub_prompt,translate)[0]
+        main_prompt = ALL_NODE["SDVN Translate"]().ggtranslate(main_prompt,translate)[0]
+        sub_prompt = ALL_NODE["SDVN Translate"]().ggtranslate(sub_prompt,translate)[0]
         prompt = f"{main_prompt}.{sub_prompt}"
         model_name = model_list[chatbot]
         if 'Gemini' in chatbot:
@@ -231,7 +231,7 @@ class API_DALLE:
         if "DPRandomGenerator" in ALL_NODE:
             cls = ALL_NODE["DPRandomGenerator"]
             prompt = cls().get_prompt(prompt, seed, 'No')[0]
-        prompt = ALL_NODE("SDVN Translate")().ggtranslate(prompt,translate)[0]
+        prompt = ALL_NODE["SDVN Translate"]().ggtranslate(prompt,translate)[0]
 
         width, height = size.split("x")
         client = OpenAI(

@@ -265,8 +265,8 @@ class CLIPTextEncode:
             cls = ALL_NODE["DPRandomGenerator"]
             positive = cls().get_prompt(positive, seed, 'No')[0]
             negative = cls().get_prompt(negative, seed, 'No')[0]
-        positive = ALL_NODE("SDVN Translate")().ggtranslate(positive,translate)[0]
-        negative = ALL_NODE("SDVN Translate")().ggtranslate(negative,translate)[0]       
+        positive = ALL_NODE["SDVN Translate"]().ggtranslate(positive,translate)[0]
+        negative = ALL_NODE["SDVN Translate"]().ggtranslate(negative,translate)[0]       
         token_p = clip.tokenize(positive)
         token_n = clip.tokenize(negative)
         return (clip.encode_from_tokens_scheduled(token_p), clip.encode_from_tokens_scheduled(token_n), )
