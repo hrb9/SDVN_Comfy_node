@@ -72,7 +72,7 @@ class GGTranslate:
     FUNCTION = "ggtranslate"
 
     def ggtranslate(self, text, translate):
-        if translate == "None":
+        if translate == "None" or text == "":
             output = text
         else:
             output = Translator().translate(text, translate, 'auto').text 
