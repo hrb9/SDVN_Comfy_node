@@ -2,3 +2,4 @@ gallery-dl
 aria2
 google-generativeai
 openai
+googletrans-py

@@ -8,7 +8,13 @@ from PIL import Image
 import numpy as np
 import io
 import base64
+from googletrans import LANGUAGES
 
+def lang_list():
+    lang_list = ["None"]
+    for i in LANGUAGES.items():
+        lang_list += [i[1]]
+    return lang_list
 
 class AnyType(str):
     """A special class that is always equal in not equal comparisons. Credit to pythongosssss"""
@@ -112,7 +118,8 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
                                       """}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
                 "main_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "Chatbot prompt"}),
-                "sub_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "Chatbot prompt"})
+                "sub_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "Chatbot prompt"}),
+                "translate": (lang_list(),),
             },
             "optional": {
                 "image": ("IMAGE", {"tooltip": "The for gemini model"})
@@ -124,7 +131,7 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
     RETURN_TYPES = ("STRING",)
     FUNCTION = "api_chatbot"
 
-    def api_chatbot(self, chatbot, preset, APIkey, seed, main_prompt, sub_prompt, image=None):
+    def api_chatbot(self, chatbot, preset, APIkey, seed, main_prompt, sub_prompt, translate, image=None):
         model_list = {
             "Gemini | 1.5 Flash": "gemini-1.5-flash",
             "Gemini | 1.5 Pro": "gemini-1.5-pro",
@@ -145,6 +152,8 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
             cls = ALL_NODE["DPRandomGenerator"]
             main_prompt = cls().get_prompt(main_prompt, seed, 'No')[0]
             sub_prompt = cls().get_prompt(sub_prompt, seed, 'No')[0]
+        main_prompt = ALL_NODE("SDVN Translate")().ggtranslate(main_prompt,translate)[0]
+        sub_prompt = ALL_NODE("SDVN Translate")().ggtranslate(sub_prompt,translate)[0]
         prompt = f"{main_prompt}.{sub_prompt}"
         model_name = model_list[chatbot]
         if 'Gemini' in chatbot:
@@ -209,6 +218,7 @@ class API_DALLE:
                 "size": (['1024x1024', '1024x1792', '1792x1024'],{"default": "1024x1024"}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
                 "prompt": ("STRING", {"default": "", "multiline": True, "placeholder": "Get API: https://platform.openai.com/settings/organization/api-keys"}),
+                "translate": (lang_list(),),
             }
         }
 
@@ -217,7 +227,12 @@ class API_DALLE:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "api_dalle"
 
-    def api_dalle(self, OpenAI_API, size, seed, prompt):
+    def api_dalle(self, OpenAI_API, size, seed, prompt,translate):
+        if "DPRandomGenerator" in ALL_NODE:
+            cls = ALL_NODE["DPRandomGenerator"]
+            prompt = cls().get_prompt(prompt, seed, 'No')[0]
+        prompt = ALL_NODE("SDVN Translate")().ggtranslate(prompt,translate)[0]
+
         width, height = size.split("x")
         client = OpenAI(
             api_key=OpenAI_API

@@ -15,7 +15,13 @@ from PIL.PngImagePlugin import PngInfo
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "comfy"))
+from googletrans import LANGUAGES
 
+def lang_list():
+    lang_list = ["None"]
+    for i in LANGUAGES.items():
+        lang_list += [i[1]]
+    return lang_list
 
 def none2list(folderlist):
     list = ["None"]
@@ -240,6 +246,7 @@ class CLIPTextEncode:
             "required": {
                 "positive": ("STRING", {"multiline": True, "dynamicPrompts": True, "tooltip": "The text to be encoded."}),
                 "negative": ("STRING", {"multiline": True, "dynamicPrompts": True, "tooltip": "The text to be encoded."}),
+                "translate": (lang_list(),),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
                 "clip": ("CLIP", {"tooltip": "The CLIP model used for encoding the text."})
             }
@@ -253,11 +260,13 @@ class CLIPTextEncode:
     CATEGORY = "📂 SDVN"
     DESCRIPTION = "Encodes a text prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images."
 
-    def encode(self, clip, positive, negative, seed):
+    def encode(self, clip, positive, negative, translate, seed):
         if "DPRandomGenerator" in ALL_NODE:
             cls = ALL_NODE["DPRandomGenerator"]
             positive = cls().get_prompt(positive, seed, 'No')[0]
             negative = cls().get_prompt(negative, seed, 'No')[0]
+        positive = ALL_NODE("SDVN Translate")().ggtranslate(positive,translate)[0]
+        negative = ALL_NODE("SDVN Translate")().ggtranslate(negative,translate)[0]       
         token_p = clip.tokenize(positive)
         token_n = clip.tokenize(negative)
         return (clip.encode_from_tokens_scheduled(token_p), clip.encode_from_tokens_scheduled(token_n), )

@@ -1,4 +1,11 @@
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
+from googletrans import Translator, LANGUAGES
+
+def lang_list():
+    lang_list = ["None"]
+    for i in LANGUAGES.items():
+        lang_list += [i[1]]
+    return lang_list
 
 class AnyType(str):
     """A special class that is always equal in not equal comparisons. Credit to pythongosssss"""
@@ -52,12 +59,32 @@ class Easy_IPA_weight:
         print(f'Block weight: [{final_weight}]')
         return (final_weight,)
 
+class GGTranslate:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+            "text": ("STRING", {"default": "", "multiline": True, }),
+            "translate": (lang_list(),),
+        }}
 
+    CATEGORY = "📂 SDVN/💡 Creative"
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "ggtranslate"
+
+    def ggtranslate(self, text, translate):
+        if translate == "None":
+            output = text
+        else:
+            output = Translator().translate(text, translate, 'auto').text 
+            print(f'Translate: "{output}"')
+        return (output,)
+    
 class AnyInput:
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
             "input": ("STRING", {"default": "", "multiline": True, }),
+            "translate": (lang_list(),),
             "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
         }}
 
@@ -65,10 +92,11 @@ class AnyInput:
     RETURN_TYPES = ("STRING", "FLOAT", "INT", "BOOL")
     FUNCTION = "any_return"
 
-    def any_return(self, input, seed):
+    def any_return(self, input, translate, seed):
         if "DPRandomGenerator" in ALL_NODE:
             cls = ALL_NODE["DPRandomGenerator"]
             input = cls().get_prompt(input, seed, 'No')[0]
+        input = GGTranslate().ggtranslate(input,translate)[0]
         try:
             i = int(eval(input))
         except:
@@ -153,12 +181,14 @@ class Switch:
         else:
             return (false,)
 
+
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
     "SDVN Any Input Type": AnyInput,
     "SDVN Image Size": ImageSize,
     "SDVN Seed": Seed,
     "SDVN Switch": Switch,
+    "SDVN Translate": GGTranslate,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -166,5 +196,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Any Input Type": "🔡 Any Input Type",
     "SDVN Image Size": "📐 Image Size",
     "SDVN Seed": "🔢 Seed",
-    "SDVN Switch": "🔄 Switch"
+    "SDVN Switch": "🔄 Switch",
+    "SDVN Translate": "🔃 Translate"
 }
