@@ -114,9 +114,9 @@ model_list = {
 }
 preset_prompt = {
     "None": [],
-    "Python Function | vi": [
-        {"role": "user", "content": "Tôi sẽ yêu cầu một hàm def python với nhiệm vụ bất kỳ, hãy cho tôi câu trả lời là hàm python đó,viết thật đơn giản, và không cần bất kỳ hướng dẫn nào khác, các import đặt trong hàm. Đối với yêu cầu đầu vào hoặc đầu ra là hình ảnh, hãy nhớ ảnh ở dạng tensor"},
-        {"role": "assistant", "content": "Đồng ý! Hãy đưa ra yêu cầu của bạn."}
+    "Python Function": [
+        {"role": "user", "content": "I will ask for a def python function with any task, give me the answer that python function, write simply, and don't need any other instructions, the imports are placed in the function. For input or output requirements of an image, remember the image is in tensor form"},
+        {"role": "assistant", "content": "Agree! Please submit your request."}
     ],
     "Prompt Generate": [
         {"role": "user", "content": "Send the description on demand, limit 100 words, only send me the answer" }
