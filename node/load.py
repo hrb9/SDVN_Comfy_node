@@ -236,7 +236,7 @@ class LoraLoader:
         if Download and Download_url != '':
             download_model(Download_url, Lora_url_name, "loras")
             lora_name = Lora_url_name
-        results = ALL_NODE["LoraLoader"]().load_lora[model, clip, lora_name, strength_model, strength_clip]
+        results = ALL_NODE["LoraLoader"]().load_lora(model, clip, lora_name, strength_model, strength_clip)
         return results
 
 class CLIPTextEncode:
