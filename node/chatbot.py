@@ -103,14 +103,39 @@ def function(input):
             output = function()
         return (output,)
 
+model_list = {
+    "Gemini | 1.5 Flash": "gemini-1.5-flash",
+    "Gemini | 1.5 Pro": "gemini-1.5-pro",
+    "OpenAI | GPT 4-o mini": "gpt-4o-mini",
+    "OpenAI | GPT 4-o": "gpt-4o",
+    "OpenAI | GPT 3.5 Turbo": "gpt-3.5-turbo-0125",
+    "HuggingFace | Meta Llama-3.2": "meta-llama/Llama-3.2-3B-Instruct",
+    "HuggingFace | Qwen 2.5-72B": "Qwen/Qwen2.5-72B-Instruct"
+}
+preset_prompt = {
+    "None": [],
+    "Python Function | vi": [
+        {"role": "user", "content": "Tôi sẽ yêu cầu một hàm def python với nhiệm vụ bất kỳ, hãy cho tôi câu trả lời là hàm python đó,viết thật đơn giản, và không cần bất kỳ hướng dẫn nào khác, các import đặt trong hàm. Đối với yêu cầu đầu vào hoặc đầu ra là hình ảnh, hãy nhớ ảnh ở dạng tensor"},
+        {"role": "assistant", "content": "Đồng ý! Hãy đưa ra yêu cầu của bạn."}
+    ],
+    "Prompt Generate": [
+        {"role": "user", "content": "Send the description on demand, limit 100 words, only send me the answer" }
+    ]
+}
+
+def dic2list(dic):
+    l = []
+    for i in dic:
+        l += [i]
+    return l
 
 class API_chatbot:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                "chatbot": (["Gemini | 1.5 Flash", "Gemini | 1.5 Pro", "OpenAI | GPT 4-o mini", "OpenAI | GPT 4-o", "OpenAI | GPT 3.5 Turbo", "HuggingFace | Meta Llama-3.2", "HuggingFace | Qwen 2.5-72B"],),
-                "preset": (["None", "Python Function | vi"],),
+                "chatbot": (dic2list(model_list),),
+                "preset": (dic2list(preset_prompt),),
                 "APIkey": ("STRING", {"default": "", "multiline": False, "tooltip": """
 Get API Gemini: https://aistudio.google.com/app/apikey
 Get API OpenAI: https://platform.openai.com/settings/organization/api-keys
@@ -132,22 +157,6 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
     FUNCTION = "api_chatbot"
 
     def api_chatbot(self, chatbot, preset, APIkey, seed, main_prompt, sub_prompt, translate, image=None):
-        model_list = {
-            "Gemini | 1.5 Flash": "gemini-1.5-flash",
-            "Gemini | 1.5 Pro": "gemini-1.5-pro",
-            "OpenAI | GPT 4-o mini": "gpt-4o-mini",
-            "OpenAI | GPT 4-o": "gpt-4o",
-            "OpenAI | GPT 3.5 Turbo": "gpt-3.5-turbo-0125",
-            "HuggingFace | Meta Llama-3.2": "meta-llama/Llama-3.2-3B-Instruct",
-            "HuggingFace | Qwen 2.5-72B": "Qwen/Qwen2.5-72B-Instruct"
-        }
-        preset_prompt = {
-            "None": [],
-            "Python Function | vi": [
-                {"role": "user", "content": "Tôi sẽ yêu cầu một hàm def python với nhiệm vụ bất kỳ, hãy cho tôi câu trả lời là hàm python đó,viết thật đơn giản, và không cần bất kỳ hướng dẫn nào khác, các import đặt trong hàm. Đối với yêu cầu đầu vào hoặc đầu ra là hình ảnh, hãy nhớ ảnh ở dạng tensor"},
-                {"role": "assistant", "content": "Đồng ý! Hãy đưa ra yêu cầu của bạn."}
-            ]
-        }
         if "DPRandomGenerator" in ALL_NODE:
             cls = ALL_NODE["DPRandomGenerator"]
             main_prompt = cls().get_prompt(main_prompt, seed, 'No')[0]
