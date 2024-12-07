@@ -1,5 +1,5 @@
-gallery-dl
 aria2
-google-generativeai
 openai
+gallery-dl
+google-generativeai
 googletrans-py
