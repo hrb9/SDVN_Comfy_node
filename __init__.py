@@ -1,8 +1,3 @@
-from .node.load import NODE_CLASS_MAPPINGS as load_node, NODE_DISPLAY_NAME_MAPPINGS as load_dis
-from .node.merge import NODE_CLASS_MAPPINGS as merge_node, NODE_DISPLAY_NAME_MAPPINGS as merge_dis
-from .node.creative import NODE_CLASS_MAPPINGS as creative_node, NODE_DISPLAY_NAME_MAPPINGS as creative_dis
-from .node.chatbot import NODE_CLASS_MAPPINGS as chatbot_node, NODE_DISPLAY_NAME_MAPPINGS as chatbot_dis
-
 import subprocess
 import sys, os
 
@@ -27,7 +22,7 @@ def install():
     for package_name in list_package:
         if "aria" in package_name and os.uname().sysname == "Darwin" and "#" not in package_name:
             print(f"\033[{31}m{'Check SDVN-Comfy-Node: If your Mac doesn t have aria2 installed, install it via brew'}\033[0m")
-        else:
+        elif "#" not in package_name:
             if check_pip(package_name):
                 print(f"Check SDVN-Comfy-Node: Package '{package_name}' is already installed.")
             else:
@@ -35,6 +30,11 @@ def install():
                 subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
 
 install()
+
+from .node.load import NODE_CLASS_MAPPINGS as load_node, NODE_DISPLAY_NAME_MAPPINGS as load_dis
+from .node.merge import NODE_CLASS_MAPPINGS as merge_node, NODE_DISPLAY_NAME_MAPPINGS as merge_dis
+from .node.creative import NODE_CLASS_MAPPINGS as creative_node, NODE_DISPLAY_NAME_MAPPINGS as creative_dis
+from .node.chatbot import NODE_CLASS_MAPPINGS as chatbot_node, NODE_DISPLAY_NAME_MAPPINGS as chatbot_dis
 
 NODE_CLASS_MAPPINGS = {
     **load_node,

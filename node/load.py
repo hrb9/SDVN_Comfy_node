@@ -128,9 +128,13 @@ class LoadImage:
         if Url != '' and Load_url:
             if 'pinterest.com' in Url:
                 Url = run_gallery_dl(Url)
-            i = Image.open(requests.get(Url, stream=True).raw)
+            if 'http' in Url:
+                i = Image.open(requests.get(Url, stream=True).raw)
+            else:
+                i = Image.open(Url)
         else:
             image_path = folder_paths.get_annotated_filepath(image)
+            print(image_path)
             i = Image.open(image_path)
         ii = ImageOps.exif_transpose(i)
         if 'A' in ii.getbands():
@@ -172,7 +176,10 @@ class LoadImageUrl:
     def load_image_url(self, Url):
         if 'pinterest.com' in Url:
             Url = run_gallery_dl(Url)
-        image = Image.open(requests.get(Url, stream=True).raw)
+        if 'http' in Url:
+            image = Image.open(requests.get(Url, stream=True).raw)
+        else:
+            image = Image.open(Url)
         image = i2tensor(image)
         results = ALL_NODE["PreviewImage"]().save_images(image)
         results["result"] = (image,)
