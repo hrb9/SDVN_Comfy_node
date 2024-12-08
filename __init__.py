@@ -20,9 +20,8 @@ def install():
         list_package = file.read().splitlines()
 
     for package_name in list_package:
-        if "aria" in package_name and os.uname().sysname == "Darwin" and "#" not in package_name:
-            print(f"\033[{31}m{'Check SDVN-Comfy-Node: If your Mac doesn t have aria2 installed, install it via brew'}\033[0m")
-        elif "#" not in package_name:
+        print(f"\033[{31}m{'Check SDVN-Comfy-Node: If your Mac doesn t have aria2 installed, install it via brew'}\033[0m")
+        if "#" not in package_name:
             if check_pip(package_name):
                 print(f"Check SDVN-Comfy-Node: Package '{package_name}' is already installed.")
             else:
