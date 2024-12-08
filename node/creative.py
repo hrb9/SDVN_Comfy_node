@@ -89,7 +89,7 @@ class AnyInput:
         }}
 
     CATEGORY = "📂 SDVN/💡 Creative"
-    RETURN_TYPES = ("STRING", "FLOAT", "INT", "BOOL")
+    RETURN_TYPES = ("STRING", "FLOAT", "INT", "BOOLEAN")
     FUNCTION = "any_return"
 
     def any_return(self, input, translate, seed):
