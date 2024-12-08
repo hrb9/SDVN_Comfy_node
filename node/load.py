@@ -16,6 +16,7 @@ from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "comfy"))
 from googletrans import LANGUAGES
+from comfy.cldm.control_types import UNION_CONTROLNET_TYPES
 
 def lang_list():
     lang_list = ["None"]
@@ -470,6 +471,7 @@ class AutoControlNetApply:
                              "image": ("IMAGE", ),
                              "control_net": (none2list(folder_paths.get_filename_list("controlnet")),),
                              "preprocessor": (preprocessor_list(),),
+                             "union_type": (["None","auto"] + list(UNION_CONTROLNET_TYPES.keys()),),
                              "resolution": ("INT", {"default": 512, "min": 512, "max": 2048, "step": 1}),
                              "strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.01}),
                              "start_percent": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001}),
@@ -485,7 +487,7 @@ class AutoControlNetApply:
 
     CATEGORY = "📂 SDVN"
 
-    def apply_controlnet(self, positive, negative, control_net, preprocessor, resolution, image, strength, start_percent, end_percent, vae=None, extra_concat=[]):
+    def apply_controlnet(self, positive, negative, control_net, preprocessor, union_type, resolution, image, strength, start_percent, end_percent, vae=None, extra_concat=[]):
         if control_net == "None":
             return (positive, negative, image)
         if preprocessor == "InvertImage":
@@ -500,8 +502,9 @@ class AutoControlNetApply:
             else:
                 print(
                     "You have not installed it yet Controlnet Aux (https://github.com/Fannovel16/comfyui_controlnet_aux)")
-        control_net = ALL_NODE["ControlNetLoader"](
-        ).load_controlnet(control_net)[0]
+        if union_type != "None":
+            control_net = ALL_NODE["SetUnionControlNetType"]().set_controlnet_type(control_net,union_type)[0]
+        control_net = ALL_NODE["ControlNetLoader"]().load_controlnet(control_net)[0]
         p, n = ALL_NODE["ControlNetApplyAdvanced"]().apply_controlnet(
             positive, negative, control_net, image, strength, start_percent, end_percent, vae)
         results = ALL_NODE["PreviewImage"]().save_images(image)
