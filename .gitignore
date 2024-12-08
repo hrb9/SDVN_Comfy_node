@@ -5,3 +5,4 @@ __pycache__/__init__.cpython-311.pyc
 *.pyc
 /__pycache__
 node/API_key.json
+API_key.json

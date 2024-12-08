@@ -3,7 +3,7 @@ from openai import OpenAI
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 from torchvision.transforms import ToPILImage
 import torch
-import re
+import re, os, json
 from PIL import Image
 import numpy as np
 import io
@@ -28,6 +28,14 @@ class AnyType(str):
 
 any = AnyType("*")
 
+def api_check():
+    api_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),"API_key.json")
+    if os.path.exists(api_file):
+        with open(api_file, 'r', encoding='utf-8') as f:
+            api_list = json.load(f)
+        return api_list
+    else:
+        return None
 
 def tensor2pil(tensor: torch.Tensor) -> Image.Image:
     if tensor.ndim == 4:
@@ -157,6 +165,16 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
     FUNCTION = "api_chatbot"
 
     def api_chatbot(self, chatbot, preset, APIkey, seed, main_prompt, sub_prompt, translate, image=None):
+        if APIkey == "":
+            api_list = api_check()
+            if api_check() != None:
+                if "Gemini" in chatbot:
+                    APIkey =  api_list["Gemini"]
+                if "HuggingFace" in chatbot:
+                    APIkey =  api_list["HuggingFace"]
+                if "OpenAI" in chatbot:
+                    APIkey =  api_list["OpenAI"]
+
         if "DPRandomGenerator" in ALL_NODE:
             cls = ALL_NODE["DPRandomGenerator"]
             main_prompt = cls().get_prompt(main_prompt, seed, 'No')[0]
