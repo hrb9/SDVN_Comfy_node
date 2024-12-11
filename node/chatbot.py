@@ -255,6 +255,9 @@ class API_DALLE:
     FUNCTION = "api_dalle"
 
     def api_dalle(self, OpenAI_API, size, seed, prompt,translate):
+        if OpenAI_API == "":
+            api_list = api_check()
+            OpenAI_API =  api_list["OpenAI"]
         if "DPRandomGenerator" in ALL_NODE:
             cls = ALL_NODE["DPRandomGenerator"]
             prompt = cls().get_prompt(prompt, seed, 'No')[0]

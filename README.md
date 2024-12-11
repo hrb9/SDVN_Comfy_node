@@ -4,13 +4,8 @@
 **Smart node set, supporting easier and more convenient ways to use ComfyUI**
 
 
-[![Website][website-shield]][website-url]
-[![Dynamic JSON Badge][discord-shield]][discord-url]
+[![](https://img.shields.io/badge/Website-stablediffusion.vn-0075ff)](https://stablediffusion.vn) [![](https://img.shields.io/badge/Group-Stable%20Diffusion%20VN-0075ff)](https://www.facebook.com/groups/stablediffusion.vn) [![](https://img.shields.io/discord/813085864355037235?color=blue&label=Discord&logo=Discord)](https://discord.gg/5SEtApPeyG) 
 
-[website-shield]: https://img.shields.io/badge/Website-stablediffusion.vn-0075ff
-[website-url]: https://stablediffusion.vn/
-[discord-shield]: https://img.shields.io/discord/813085864355037235?color=blue&label=Discord&logo=Discord
-[discord-url]: https://discord.gg/5SEtApPeyG
 ![ComfyUI Screenshot](/preview/preview.png)
 </div>
 
@@ -118,8 +113,68 @@ ___
 *The set of nodes supports downloading photos of models to the corresponding folder and directly used on Comfyui*
 -  *Supports direct download from **civitai** and **huggingface** with model address link and model download link*
  
-![Base Nodes](/preview/download_node.png)
+![Download Nodes](/preview/download_node.png)
 
 ___
 
 ### Merge
+
+*Supports the smart and convenient way to adjust the Weight Model Block Model compared to the original nodes, inspiring more creativity. Refer more information at [SuperMerge](https://github.com/hako-mikan/sd-webui-supermerger), [Lora Block Weight](https://github.com/hako-mikan/sd-webui-lora-block-weight)*
+
+![Merge Nodes](/preview/merge_node.png)
+
+Support 3 types of syntax to adjust for each block
+- The non -listed values ​​will take the last block value
+- {Block}: {Weight Block}
+  - Ex: SD15 has 12 blocks IN from 0-11 
+    - `0:1, 1:1, 2:1, 3:1, 4:0, 5:1` <=> `0:1, 1:1, 2:1, 3:1, 4:0, 5:1, 6:1, 7:1, 8:1, 9:1, 10:1, 11:1`
+    - `2:0, 3:1` <=> `0:1, 1:1, 2:0, 3:1, 4:1, 5:1, 6:1, 7:1, 8:1, 9:1, 10:1, 11:1`
+- {Weight Block}
+  - Ex: SDXL has 9 blocks IN from 0-8
+    - `0, 0, 0, 0, 1, 1`  <=> `0:0, 1:0, 2:0, 3:0, 4:1, 5:1, 6:1, 7:1, 8:1`
+- {Range}: {Weight Block}
+  - Ex: Flux has 19 double blocks from 0-18
+    - `0-10:0, 11-18:1` <=> `0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:1, 12:1, 13:1, 14:1, 15:1, 16:1, 17:1, 18:1`
+- Combining 3 types of syntax
+  - Ex: SDXL has 9 blocks OUT from 0-8
+    - `0-3:0, 1, 6:1, 0` <=> `0:0, 1:0, 2:0, 3:0, 4:1, 5:0, 6:1, 7:0, 8:0`
+
+[*See more workflow examples*](#Example)
+
+___
+
+### Creative
+
+The node set helps to create the process in a smart way
+- 📊 IPAdapter weight: Use the same syntax as the merge
+- 🔃 Translate, 🔡 Any Input Type: Support translate and Dynamic prompt
+
+![Creative Nodes](/preview/creative_node.png)
+
+[*See more workflow examples*](#Example)
+
+___
+
+### API
+
+Support the use of AI models through API
+- Support the default API setting through the file: `.../SDVN_Custom_node/API_key.json` (Rename API_key.json.example and fill API)
+  - Get Gemini API: https://aistudio.google.com/app/apikey
+  - Get HuggingFace API: https://huggingface.co/settings/tokens
+  - Get OpenAI API (Chat GPT, Dall-E): https://platform.openai.com/settings/organization/api-keys
+
+![API Nodes](/preview/api_node.png)
+
+**💬 API Chatbot**
+- Image: Suport Gemini, ChatGPT
+- Preset: Add history and sample statements in cases of each other
+- Support translate and Dynamic prompt
+
+**🎨 DALL-E Generate Image**
+- Support translate and Dynamic prompt
+- Support size: 1024x1024, 1024x1792, 1792x1024
+___
+
+# Example
+
+- [ ] To do
