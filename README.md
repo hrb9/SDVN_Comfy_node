@@ -10,15 +10,20 @@
 </div>
 
 ___
-### [Installing](#Install)
-### [Guide](#Guide)
-- [✨ Base Node](#BaseNode)
-- [🏞️ Image](#Image)
-- [📥 Download](#Download)
-- [🧬 Merge](#Merge)
-- [💡 Creative](#Creative)
-- [👨🏻‍💻 API](#API)
-### [Example](#Example)
+[**Installing**](#Install)
+[**Guide**](#Guide)
+- [SDVN Comfy Node](#sdvn-comfy-node)
+- [Install](#install)
+- [Guide](#guide)
+    - [BaseNode](#basenode)
+    - [Image](#image)
+    - [Download](#download)
+    - [Merge](#merge)
+    - [Creative](#creative)
+    - [API](#api)
+- [Example](#example)
+
+[**Example**](#Example)
 
 ___
 
