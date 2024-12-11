@@ -12,16 +12,12 @@
 ___
 [**Installing**](#Install)
 [**Guide**](#Guide)
-- [SDVN Comfy Node](#sdvn-comfy-node)
-- [Install](#install)
-- [Guide](#guide)
-    - [BaseNode](#basenode)
-    - [Image](#image)
-    - [Download](#download)
-    - [Merge](#merge)
-    - [Creative](#creative)
-    - [API](#api)
-- [Example](#example)
+- [✨ Base Node](#BaseNode)
+- [🏞️ Image](#Image)
+- [📥 Download](#Download)
+- [🧬 Merge](#Merge)
+- [💡 Creative](#Creative)
+- [👨🏻‍💻 API](#API)
 
 [**Example**](#Example)
 
