@@ -83,16 +83,27 @@ class AnyInput:
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
-            "input": ("STRING", {"default": "", "multiline": True, }),
+            "input": ("STRING", {"default": "","placeholder": "Ex: (in1+in2)/in3; in1 in2, in3; or every", "multiline": True, }),
             "translate": (lang_list(),),
             "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
-        }}
+        },
+                "optional": {
+                    "in1":(any,),
+                    "in2":(any,),
+                    "in3":(any,),
+                    "in4":(any,),
+                }
+        }
 
     CATEGORY = "📂 SDVN/💡 Creative"
     RETURN_TYPES = ("STRING", "FLOAT", "INT", "BOOLEAN")
     FUNCTION = "any_return"
 
-    def any_return(self, input, translate, seed):
+    def any_return(self, input, translate, seed, in1 = None, in2 = None, in3 = None, in4 = None):
+        in_list = {"in1":in1,"in2":in2,"in3":in3,"in4":in4}
+        for i in in_list:
+            if in_list[i] !=None and i in input:
+                input = input.replace(i,str(in_list[i]))
         if "DPRandomGenerator" in ALL_NODE:
             cls = ALL_NODE["DPRandomGenerator"]
             input = cls().get_prompt(input, seed, 'No')[0]
