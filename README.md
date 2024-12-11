@@ -22,6 +22,14 @@ ___
 [**Example**](#Example)
 
 ___
+# Todo
+- [ ] Smart merge - save Lora, Checkpoint
+- [ ] Workflow Example
+- [ ] Hướng dẫn tiếng việt
+- [x] Install
+- [x] Guide
+
+___
 
 # Install
 
@@ -149,6 +157,7 @@ ___
 The node set helps to create the process in a smart way
 - 📊 IPAdapter weight: Use the same syntax as the merge
 - 🔃 Translate, 🔡 Any Input Type: Support translate and Dynamic prompt
+- 🔡 Any Input Type: Support Math, Boolean input value (yes-no, true-false, 1-2)
 
 ![Creative Nodes](/preview/creative_node.png)
 
@@ -177,5 +186,3 @@ Support the use of AI models through API
 ___
 
 # Example
-
-- [ ] To do
