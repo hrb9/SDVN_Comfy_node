@@ -192,6 +192,24 @@ class Switch:
         else:
             return (false,)
 
+class AnyShow:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "any": (any, {"forceInput": True}),
+            },
+        }
+
+    INPUT_IS_LIST = True
+    RETURN_TYPES = ()
+    FUNCTION = "show"
+    OUTPUT_NODE = True
+
+    CATEGORY = "📂 SDVN/💡 Creative"
+
+    def show(self, any):
+        return {"ui": {"text": any}}
 
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
@@ -200,6 +218,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Seed": Seed,
     "SDVN Switch": Switch,
     "SDVN Translate": GGTranslate,
+    "SDVN Any Show": AnyShow,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -208,5 +227,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Image Size": "📐 Image Size",
     "SDVN Seed": "🔢 Seed",
     "SDVN Switch": "🔄 Switch",
-    "SDVN Translate": "🔃 Translate"
+    "SDVN Translate": "🔃 Translate",
+    "SDVN Any Show": "🔎 Any show",
 }
