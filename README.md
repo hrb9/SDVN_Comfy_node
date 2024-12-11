@@ -64,7 +64,7 @@ ___
 
 **🏞️ Load Image / 🏞️ Load Image Url**
 
-- Support 2 images download methods from input folders and URL links.
+- Support 2 images download methods from input folders and URL links / Image Path
 - Support sub-folders in the input folder
 
 **🔡 CLIP Text Encode**
