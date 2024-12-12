@@ -1,16 +1,11 @@
-import comfy.sd
-import comfy.utils
-import comfy.model_base
-import comfy.model_management
-import comfy.model_sampling
-
-import torch
+import os,ast
 import folder_paths
-import json
-import os
+from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 
-from comfy.cli_args import args
-
+def none2list(folderlist):
+    list = ["None"]
+    list += folderlist
+    return list
 
 class ModelMergeBlocks:
     @classmethod
@@ -22,35 +17,40 @@ class ModelMergeBlocks:
                              "output": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01})
                              }}
     RETURN_TYPES = ("MODEL", "STRING")
+    RETURN_NAMES = ("model", "mbw",)
     FUNCTION = "merge"
 
     CATEGORY = "📂 SDVN/🧬 Merge"
 
     def merge(self, model1=None, model2=None, **kwargs):
-        for i in kwargs:
-            kwargs[i] = kwargs[i].split(',')
-        hargs = {}
-        for i in kwargs:
-            index = 0
-            for j in range(len(kwargs[i])):
-                if '-' in kwargs[i][j]:
-                    ran, num = kwargs[i][j].split(':')
-                    min, max = ran.split('-')
-                    num = float(num)
-                    index = int(min)
-                    for a in range(int(min), int(max)+1):
-                        hargs[f'{i}.{index}'] = num
+        if len(kwargs) > 3:
+            print(True)
+            hargs = kwargs
+        else:
+            for i in kwargs:
+                kwargs[i] = kwargs[i].split(',')
+            hargs = {}
+            for i in kwargs:
+                index = 0
+                for j in range(len(kwargs[i])):
+                    if '-' in kwargs[i][j]:
+                        ran, num = kwargs[i][j].split(':')
+                        min, max = ran.split('-')
+                        num = float(num)
+                        index = int(min)
+                        for a in range(int(min), int(max)+1):
+                            hargs[f'{i}.{index}'] = num
+                            index += 1
+                    elif ':' in kwargs[i][j]:
+                        index, num = kwargs[i][j].split(':')
+                        index = int(index)
+                        hargs[f'{i}.{index}'] = float(num)
                         index += 1
-                elif ':' in kwargs[i][j]:
-                    index, num = kwargs[i][j].split(':')
-                    index = int(index)
-                    hargs[f'{i}.{index}'] = float(num)
-                    index += 1
-                else:
-                    kwargs[i][j] = float(kwargs[i][j])
-                    hargs[f'{i}.{index}'] = kwargs[i][j]
-                    index += 1
-            hargs[i] = num if '-' in str(kwargs[i][0]) else kwargs[i][j]
+                    else:
+                        kwargs[i][j] = float(kwargs[i][j])
+                        hargs[f'{i}.{index}'] = kwargs[i][j]
+                        index += 1
+                hargs[i] = num if '-' in str(kwargs[i][0]) else kwargs[i][j]
         print(f'Final blocks:\n{hargs}')
         if model1 != None and model2 != None:
             m = model1.clone()
@@ -114,8 +114,6 @@ class ModelMergeFlux1(ModelMergeBlocks):
 
     @classmethod
     def INPUT_TYPES(s):
-        arg_dict = {"model1": ("MODEL",),
-                    "model2": ("MODEL",)}
 
         return {
             "required": {
@@ -128,17 +126,92 @@ class ModelMergeFlux1(ModelMergeBlocks):
             }
         }
 
+class ModelMergeFlux1(ModelMergeBlocks):
+    CATEGORY = "📂 SDVN/🧬 Merge"
 
-# NOTE: names should be globally unique
+    @classmethod
+    def INPUT_TYPES(s):
+
+        return {
+            "required": {
+                "double_blocks": ("STRING", {"default": "0-9:1,10-18:1"},),
+                "single_blocks": ("STRING", {"default": "0-37:1"},),
+            },
+            "optional": {
+                "model1": ("MODEL",),
+                "model2": ("MODEL",),
+            }
+        }
+
+class ModelMerge:
+    @classmethod
+    def INPUT_TYPES(s):
+
+        return {
+            "required": {
+                "Option":(["Merge Sum [ A * (1 - M) + B * M ]", "Merge Difference [ A + (B - C) * M ]", "Lora Export [ A - B]"],{}),
+                "Checkpoint_A": (none2list(folder_paths.get_filename_list("checkpoints")), {"default": "None"}),
+                "Checkpoint_B": (none2list(folder_paths.get_filename_list("checkpoints")), {"default": "None"}),
+                "Checkpoint_C": (none2list(folder_paths.get_filename_list("checkpoints")), {"default": "None"}),
+                "Multiplier_M": ("FLOAT", {"default": 1.0, "min": -10.0, "max": 10.0, "step": 0.01}),
+                "Save": ("BOOLEAN", {"default": True},),
+                "Save_name": ("STRING", {"default": "model_merge"},),
+                "Lora_rank": ("INT", {"default": 64, "min": 1, "max": 4096, "step": 1}),
+            },
+            "optional": {
+                "model_A": ("MODEL",),
+                "model_B": ("MODEL",),
+                "model_C": ("MODEL",),
+                "clip_A": ("CLIP",),
+                "clip_B": ("CLIP",),
+                "clip_C": ("CLIP",),
+                "vae": ("VAE",),
+                "MBW": ("STRING", {"forceInput": True}),
+            }
+        }
+    OUTPUT_NODE = True
+    RETURN_TYPES = ("MODEL","CLIP","VAE")
+    FUNCTION = "modelmerge"   
+    CATEGORY = "📂 SDVN/🧬 Merge"
+
+    def modelmerge(s, Option, Checkpoint_A, Checkpoint_B, Checkpoint_C, Multiplier_M, Save, Save_name, Lora_rank, model_A = None, model_B = None, model_C = None, clip_A = None, clip_B = None, clip_C = None, vae = None, MBW = None):
+        if model_A == None and clip_A == None and Checkpoint_A != "None":
+            model_A, clip_A, vae = ALL_NODE["CheckpointLoaderSimple"]().load_checkpoint(Checkpoint_A)[:3]
+        if model_B == None and clip_B == None and Checkpoint_B != "None":
+            model_B, clip_B = ALL_NODE["CheckpointLoaderSimple"]().load_checkpoint(Checkpoint_B)[:2]
+        if model_C == None and clip_C == None and Checkpoint_C != "None":
+            model_C, clip_C = ALL_NODE["CheckpointLoaderSimple"]().load_checkpoint(Checkpoint_C)[:2]
+        if Option == "Merge Sum [ A * (1 - M) + B * M ]":
+            model_C, clip_C = model_A, clip_A
+        if Option != "Lora Export [ A - B]":
+            model_sub_BC = ALL_NODE["ModelMergeSubtract"]().merge(model_B,model_C,Multiplier_M)[0]
+            clip_sub_BC = ALL_NODE["CLIPMergeSubtract"]().merge(clip_B,clip_C,Multiplier_M)[0]
+            model_merge = ALL_NODE["ModelMergeAdd"]().merge(model_A, model_sub_BC)[0]
+            if MBW != None:
+                model_merge = ModelMergeBlocks().merge(model_merge, model_A, **ast.literal_eval(MBW))[0]
+            clip_merge = ALL_NODE["CLIPMergeAdd"]().merge(clip_A, clip_sub_BC)[0]
+            if Save:
+                ALL_NODE["CheckpointSave"]().save(model_merge, clip_merge, vae, f"checkpoints/{Save_name}")
+            return (model_merge, clip_merge, vae)
+        else:
+            if MBW != None:
+                model_A = ModelMergeBlocks().merge(model_A, model_B, **ast.literal_eval(MBW))[0]
+            model_sub_AB = ALL_NODE["ModelMergeSubtract"]().merge(model_A, model_B, Multiplier_M)[0]
+            clip_sub_AB = ALL_NODE["CLIPMergeSubtract"]().merge(clip_A, clip_B, Multiplier_M)[0]
+            if Save:
+                ALL_NODE["LoraSave"]().save(f"loras/{Save_name}", Lora_rank,"standard", True, model_sub_AB, clip_sub_AB)
+            return {}
+
 NODE_CLASS_MAPPINGS = {
     "SDVN Merge SD1": ModelMergeSD1,
     "SDVN Merge SDXL": ModelMergeSDXL,
     "SDVN Merge Flux": ModelMergeFlux1,
+    "SDVN Model Merge": ModelMerge,
 }
 
-# A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Merge SD1": "🧬 Merge SD1",
     "SDVN Merge SDXL": "🧬 Merge SDXL",
-    "SDVN Merge Flux": "🧬 Merge Flux"
+    "SDVN Merge Flux": "🧬 Merge Flux",
+     "SDVN Model Merge": "🧬 Model Merge",
 }
