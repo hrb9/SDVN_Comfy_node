@@ -141,6 +141,7 @@ class ImageSize:
     RETURN_TYPES = ("INT", "INT",)
     RETURN_NAMES = ("width", "height",)
     FUNCTION = "imagesize"
+    OUTPUT_NODE = True
 
     def imagesize(s, image=None, latent=None):
         if image != None:
@@ -211,6 +212,25 @@ class AnyShow:
     def show(self, any):
         return {"ui": {"text": any}}
 
+class Runtest:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "any": (any, {"forceInput": True}),
+            },
+        }
+
+    INPUT_IS_LIST = True
+    RETURN_TYPES = ()
+    FUNCTION = "run"
+    OUTPUT_NODE = True
+
+    CATEGORY = "📂 SDVN/💡 Creative"
+
+    def run(self, any):
+        return ()
+
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
     "SDVN Any Input Type": AnyInput,
@@ -219,6 +239,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Switch": Switch,
     "SDVN Translate": GGTranslate,
     "SDVN Any Show": AnyShow,
+    "SDVN Run Test": Runtest,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -229,4 +250,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Switch": "🔄 Switch",
     "SDVN Translate": "🔃 Translate",
     "SDVN Any Show": "🔎 Any show",
+    "SDVN Run Test": "⚡️ Run test"
 }
