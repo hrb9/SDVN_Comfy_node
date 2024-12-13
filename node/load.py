@@ -522,8 +522,8 @@ class Inpaint:
                              "negative": ("CONDITIONING", ),}
                              }
 
-    RETURN_TYPES = ("LATENT","CONDITIONING","CONDITIONING",)
-    RETURN_NAMES = ("latent","positive", "negative",)
+    RETURN_TYPES = ("CONDITIONING","CONDITIONING","LATENT",)
+    RETURN_NAMES = ("positive", "negative","latent",)
     FUNCTION = "encode"
 
     CATEGORY = "📂 SDVN"
@@ -540,7 +540,7 @@ class Inpaint:
             positive = r[0]
             negative = r[1]
             r = r[2]
-        return (r,positive,negative,)
+        return (positive,negative,r,)
 
 
 class CheckpointDownload:
