@@ -457,7 +457,7 @@ def preprocessor_list():
                           "UpperBodyTrackingFromPoseKps", "RenderPeopleKps", "RenderAnimalKps"]
     AIO_NOT_SUPPORTED += ["Unimatch_OptFlowPreprocessor", "MaskOptFlow"]
     for k in ALL_NODE:
-        if "Preprocessor" in k:
+        if "Preprocessor" in k and "Inspire" not in k:
             if k not in AIO_NOT_SUPPORTED:
                 preprocessor_list += [k]
     return preprocessor_list
@@ -531,8 +531,8 @@ class Inpaint:
     def encode(self, SetLatentNoiseMask, pixels, vae, mask = None, positive = None, negative = None):
         if mask == None:
             r = ALL_NODE["VAEEncode"]().encode(vae,pixels)[0]
-            if SetLatentNoiseMask:
-                r = ALL_NODE["SetLatentNoiseMask"]().set_mask(r, mask)[0]
+        elif SetLatentNoiseMask:
+            r = ALL_NODE["SetLatentNoiseMask"]().set_mask(r, mask)[0]
         elif positive == None or negative == None:
             r = ALL_NODE["VAEEncodeForInpaint"]().encode(vae, pixels, mask)[0]
         else:

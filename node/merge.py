@@ -149,7 +149,7 @@ class ModelMerge:
 
         return {
             "required": {
-                "Option":(["Merge Sum [ A * (1 - M) + B * M ]", "Merge Difference [ A + (B - C) * M ]", "Lora Export [ A - B]"],{}),
+                "Option":(["Merge Simple [ A ]", "Merge Sum [ A * (1 - M) + B * M ]", "Merge Difference [ A + (B - C) * M ]", "Lora Export [ A - B]"],{}),
                 "Checkpoint_A": (none2list(folder_paths.get_filename_list("checkpoints")), {"default": "None"}),
                 "Checkpoint_B": (none2list(folder_paths.get_filename_list("checkpoints")), {"default": "None"}),
                 "Checkpoint_C": (none2list(folder_paths.get_filename_list("checkpoints")), {"default": "None"}),
@@ -181,23 +181,32 @@ class ModelMerge:
             model_B, clip_B = ALL_NODE["CheckpointLoaderSimple"]().load_checkpoint(Checkpoint_B)[:2]
         if model_C == None and clip_C == None and Checkpoint_C != "None":
             model_C, clip_C = ALL_NODE["CheckpointLoaderSimple"]().load_checkpoint(Checkpoint_C)[:2]
-        if Option == "Merge Sum [ A * (1 - M) + B * M ]":
-            model_C, clip_C = model_A, clip_A
         if Option != "Lora Export [ A - B]":
-            model_sub_BC = ALL_NODE["ModelMergeSubtract"]().merge(model_B,model_C,Multiplier_M)[0]
-            clip_sub_BC = ALL_NODE["CLIPMergeSubtract"]().merge(clip_B,clip_C,Multiplier_M)[0]
-            model_merge = ALL_NODE["ModelMergeAdd"]().merge(model_A, model_sub_BC)[0]
-            if MBW != None:
-                model_merge = ModelMergeBlocks().merge(model_merge, model_A, **ast.literal_eval(MBW))[0]
-            clip_merge = ALL_NODE["CLIPMergeAdd"]().merge(clip_A, clip_sub_BC)[0]
+            if Option == "Merge Simple [ A ]":
+                model_merge,  clip_merge = model_A, clip_A
+            else:
+                if Option == "Merge Sum [ A * (1 - M) + B * M ]":
+                    model_C, clip_C = model_A, clip_A
+                model_sub_BC = ALL_NODE["ModelMergeSubtract"]().merge(model_B,model_C,Multiplier_M)[0]
+                clip_sub_BC = ALL_NODE["CLIPMergeSubtract"]().merge(clip_B,clip_C,Multiplier_M)[0]
+                model_merge = ALL_NODE["ModelMergeAdd"]().merge(model_A, model_sub_BC)[0]
+                if MBW != None:
+                    model_merge = ModelMergeBlocks().merge(model_merge, model_A, **ast.literal_eval(MBW))[0]
+                clip_merge = ALL_NODE["CLIPMergeAdd"]().merge(clip_A, clip_sub_BC)[0]
             if Save:
                 ALL_NODE["CheckpointSave"]().save(model_merge, clip_merge, vae, f"checkpoints/{Save_name}")
             return (model_merge, clip_merge, vae)
         else:
-            if MBW != None:
-                model_A = ModelMergeBlocks().merge(model_A, model_B, **ast.literal_eval(MBW))[0]
-            model_sub_AB = ALL_NODE["ModelMergeSubtract"]().merge(model_A, model_B, Multiplier_M)[0]
-            clip_sub_AB = ALL_NODE["CLIPMergeSubtract"]().merge(clip_A, clip_B, Multiplier_M)[0]
+            if model_A != None and model_B != None:
+                if MBW != None:
+                    model_A = ModelMergeBlocks().merge(model_A, model_B, **ast.literal_eval(MBW))[0]
+                model_sub_AB = ALL_NODE["ModelMergeSubtract"]().merge(model_A, model_B, Multiplier_M)[0]
+            else:
+                model_sub_AB = None
+            if clip_A != None and clip_B != None:
+                clip_sub_AB = ALL_NODE["CLIPMergeSubtract"]().merge(clip_A, clip_B, Multiplier_M)[0]
+            else:
+                clip_sub_AB = None
             if Save:
                 ALL_NODE["LoraSave"]().save(f"loras/{Save_name}", Lora_rank,"standard", True, model_sub_AB, clip_sub_AB)
             return {}
