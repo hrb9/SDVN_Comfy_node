@@ -15,17 +15,21 @@ def check_pip(package_name):
         return False
     
 def install():
-    list_check = os.path.join(os.path.dirname(__file__),"requirements.txt")
-    with open(list_check, 'r', encoding='utf-8') as file:
-        list_package = file.read().splitlines()
-    print(f"\033[33m{'Check SDVN-Comfy-Node: If your Mac doesn t have aria2 installed, install it via brew'}\033[0m")
-    for package_name in list_package:
-        if "#" not in package_name:
-            if check_pip(package_name):
-                print(f"Check SDVN-Comfy-Node: Package '{package_name}' is already installed.")
-            else:
-                print(f"Check SDVN-Comfy-Node: Package '{package_name}' not found. Installing...")
-                subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
+    file_check = os.path.join(os.path.dirname(__file__),"installed.txt")
+    if not os.path.exists(file_check):
+        list_check = os.path.join(os.path.dirname(__file__),"requirements.txt")
+        with open(list_check, 'r', encoding='utf-8') as file:
+            list_package = file.read().splitlines()
+        print(f"\033[33m{'Check SDVN-Comfy-Node: If your Mac doesn t have aria2 installed, install it via brew'}\033[0m")
+        for package_name in list_package:
+            if "#" not in package_name:
+                if check_pip(package_name):
+                    print(f"Check SDVN-Comfy-Node: Package '{package_name}' is already installed.")
+                else:
+                    print(f"Check SDVN-Comfy-Node: Package '{package_name}' not found. Installing...")
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
+        with open(file_check, "w") as file:
+            file.write("") 
 
 install()
 
