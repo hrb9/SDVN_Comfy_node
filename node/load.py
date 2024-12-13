@@ -529,10 +529,10 @@ class Inpaint:
     CATEGORY = "📂 SDVN"
 
     def encode(self, SetLatentNoiseMask, pixels, vae, mask = None, positive = None, negative = None):
-        if mask == None:
+        if SetLatentNoiseMask or mask == None:
             r = ALL_NODE["VAEEncode"]().encode(vae,pixels)[0]
-        elif SetLatentNoiseMask:
-            r = ALL_NODE["SetLatentNoiseMask"]().set_mask(r, mask)[0]
+            if mask != None:
+                r = ALL_NODE["SetLatentNoiseMask"]().set_mask(r, mask)[0]
         elif positive == None or negative == None:
             r = ALL_NODE["VAEEncodeForInpaint"]().encode(vae, pixels, mask)[0]
         else:
