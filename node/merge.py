@@ -209,7 +209,7 @@ class ModelMerge:
                 clip_sub_AB = None
             if Save:
                 ALL_NODE["LoraSave"]().save(f"loras/{Save_name}", Lora_rank,"standard", True, model_sub_AB, clip_sub_AB)
-            return {}
+            return {model_A, clip_A, vae}
 
 NODE_CLASS_MAPPINGS = {
     "SDVN Merge SD1": ModelMergeSD1,
