@@ -346,7 +346,7 @@ class Easy_KSampler:
             cfg, sampler_name, scheduler = ModelType_list[ModelType]
         StepsType_list["Denoise"] = steps
         if FluxGuidance != 3.5:
-            positive = ALL_NODE["FluxGuidance"]().append(positive,FluxGuidance)
+            positive = ALL_NODE["FluxGuidance"]().append(positive,FluxGuidance)[0]
         if negative == None:
             cls_zero_negative = ALL_NODE["ConditioningZeroOut"]
             negative = cls_zero_negative().zero_out(positive)[0]
@@ -565,9 +565,10 @@ class ApplyStyleModel:
     CATEGORY = "📂 SDVN"
 
     def applystyle(self, positive, image, style_model, clip_vision_model, strength, strength_type = "multiply"):
-        clip_vision_model = ALL_NODE["CLIPVisionEncode"]().encode(clip_vision_model, image, "center")
-        style_model = ALL_NODE["StyleModelLoader"]().load_style_model(style_model)
-        result = ALL_NODE["StyleModelApply"]().apply_stylemodel(clip_vision_model, style_model, positive, strength, strength_type)[0]
+        clip_vision_model = ALL_NODE["CLIPVisionLoader"]().load_clip(clip_vision_model)[0]
+        clip_vision_encode = ALL_NODE["CLIPVisionEncode"]().encode(clip_vision_model, image, "center")[0]
+        style_model = ALL_NODE["StyleModelLoader"]().load_style_model(style_model)[0]
+        result = ALL_NODE["StyleModelApply"]().apply_stylemodel(clip_vision_encode, style_model, positive, strength, strength_type)[0]
         return (result,)
 
 class CheckpointDownload:
