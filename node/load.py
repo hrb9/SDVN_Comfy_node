@@ -330,6 +330,7 @@ class Easy_KSampler:
                 "vae": ("VAE", {"tooltip": "The VAE model used for decoding the latent."}),
                 "tile_width": ("INT", {"default": 1024, "min": 512, "max": 4096, "step": 64, }),
                 "tile_height": ("INT", {"default": 1024, "min": 512, "max": 4096, "step": 64, }),
+                "FluxGuidance":  ("FLOAT", {"default": 3.5, "min": 0.0, "max": 100.0, "step": 0.1}),
             }
         }
 
@@ -340,10 +341,12 @@ class Easy_KSampler:
     CATEGORY = "📂 SDVN"
     DESCRIPTION = "Uses the provided model, positive and negative conditioning to denoise the latent image."
 
-    def sample(self, model, positive, ModelType, StepsType, sampler_name, scheduler, seed, Tiled=False, tile_width=None, tile_height=None, steps=20, cfg=7, denoise=1.0, negative=None, latent_image=None, vae=None):
+    def sample(self, model, positive, ModelType, StepsType, sampler_name, scheduler, seed, Tiled=False, tile_width=None, tile_height=None, steps=20, cfg=7, denoise=1.0, negative=None, latent_image=None, vae=None, FluxGuidance = 3.5):
         if ModelType != 'None':
             cfg, sampler_name, scheduler = ModelType_list[ModelType]
         StepsType_list["Denoise"] = steps
+        if FluxGuidance != 3.5:
+            positive = ALL_NODE["FluxGuidance"]().append(positive,FluxGuidance)
         if negative == None:
             cls_zero_negative = ALL_NODE["ConditioningZeroOut"]
             negative = cls_zero_negative().zero_out(positive)[0]
@@ -541,7 +544,31 @@ class Inpaint:
             negative = r[1]
             r = r[2]
         return (positive,negative,r,)
+    
+class ApplyStyleModel:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {"positive": ("CONDITIONING", ),
+                             "image": ("IMAGE",),
+                             "style_model": (folder_paths.get_filename_list("style_models"), ),
+                             "clip_vision_model": (folder_paths.get_filename_list("clip_vision"), ),
+                             "strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.001}),
+                             
+                             },
+                "hidden":  {"strength_type": (["multiply"], ),}
+                             }
+    
+    RETURN_TYPES = ("CONDITIONING",)
+    RETURN_NAMES = ("positive",)
+    FUNCTION = "applystyle"
 
+    CATEGORY = "📂 SDVN"
+
+    def applystyle(self, positive, image, style_model, clip_vision_model, strength, strength_type = "multiply"):
+        clip_vision_model = ALL_NODE["CLIPVisionEncode"]().encode(clip_vision_model, image, "center")
+        style_model = ALL_NODE["StyleModelLoader"]().load_style_model(style_model)
+        result = ALL_NODE["StyleModelApply"]().apply_stylemodel(clip_vision_model, style_model, positive, strength, strength_type)[0]
+        return (result,)
 
 class CheckpointDownload:
     @classmethod
@@ -703,6 +730,7 @@ class StyleModelDownload:
     def download(self, Download_url, Url_name):
         download_model(Download_url, Url_name, "style_models")
         return ALL_NODE["StyleModelLoader"]().load_style_model(Url_name)
+    
                 
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
@@ -713,6 +741,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN CLIP Text Encode": CLIPTextEncode,
     "SDVN Controlnet Apply": AutoControlNetApply,
     "SDVN Inpaint": Inpaint,
+    "SDVN Apply Style Model": ApplyStyleModel,
     "SDVN KSampler": Easy_KSampler,
     "SDVN Upscale Image": UpscaleImage,
     "SDVN UPscale Latent": UpscaleLatentImage,
@@ -737,6 +766,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN KSampler": "⌛️ KSampler",
     "SDVN Controlnet Apply": "🎚️ Controlnet Apply",
     "SDVN Inpaint": "👨‍🎨 Inpaint",
+    "SDVN Apply Style Model": "🌈 Apply Style Model",
     "SDVN Upscale Image": "↗️ Upscale Image",
     "SDVN UPscale Latent": "↗️ Upscale Latent",
     "SDVN Checkpoint Download": "📥 Checkpoint Download",
