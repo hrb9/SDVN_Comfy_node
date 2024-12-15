@@ -135,14 +135,15 @@ class ImageSize:
         return {
             "optional": {
                 "image": ("IMAGE",),
-                "latent": ("LATENT",)
+                "latent": ("LATENT",),
+                "maxsize": ("INT", {"default": 0, "min": 0, "max": 10240, "tooltip": "0 = noset"}),
             }}
     CATEGORY = "📂 SDVN/💡 Creative"
     RETURN_TYPES = ("INT", "INT",)
     RETURN_NAMES = ("width", "height",)
     FUNCTION = "imagesize"
 
-    def imagesize(s, image=None, latent=None):
+    def imagesize(s, image=None, latent=None, maxsize = 0):
         if image != None:
             samples = image.movedim(-1, 1)
             w = samples.shape[3]
@@ -152,6 +153,13 @@ class ImageSize:
             h = latent["samples"].shape[-2] * 8
         else:
             w = h = 0
+        if maxsize > 0:
+            if w > h:
+                h = int(round(h * ( maxsize / w)))
+                w = maxsize
+            else:
+                w = int(round(w * ( maxsize / h)))
+                h = maxsize
         print(f"Image width: {w} | Image height: {h}")
         return (w, h,)
 
