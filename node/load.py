@@ -544,7 +544,7 @@ class Inpaint:
             negative = r[1]
             r = r[2]
         return (positive,negative,r,)
-    
+style_list = ["highest", "high", "medium", "low", "lowest"]
 class ApplyStyleModel:
     @classmethod
     def INPUT_TYPES(s):
@@ -553,6 +553,7 @@ class ApplyStyleModel:
                              "style_model": (folder_paths.get_filename_list("style_models"), ),
                              "clip_vision_model": (folder_paths.get_filename_list("clip_vision"), ),
                              "strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.001}),
+                             "streng_style":(style_list,{"default":"medium"}),
                              
                              },
                 "hidden":  {"strength_type": (["multiply"], ),}
@@ -564,12 +565,25 @@ class ApplyStyleModel:
 
     CATEGORY = "📂 SDVN"
 
-    def applystyle(self, positive, image, style_model, clip_vision_model, strength, strength_type = "multiply"):
+    def applystyle(self, positive, image, style_model, clip_vision_model, strength, streng_style, strength_type = "multiply"):
         clip_vision_model = ALL_NODE["CLIPVisionLoader"]().load_clip(clip_vision_model)[0]
         clip_vision_encode = ALL_NODE["CLIPVisionEncode"]().encode(clip_vision_model, image, "center")[0]
         style_model = ALL_NODE["StyleModelLoader"]().load_style_model(style_model)[0]
-        result = ALL_NODE["StyleModelApply"]().apply_stylemodel(clip_vision_encode, style_model, positive, strength, strength_type)[0]
-        return (result,)
+        downsampling_factor = style_list.index(streng_style)
+        mode="area" if downsampling_factor==3 else "bicubic"
+        cond = style_model.get_cond(clip_vision_encode).flatten(start_dim=0, end_dim=1).unsqueeze(dim=0)
+        if downsampling_factor>1:
+            (b,t,h)=cond.shape
+            m = int(np.sqrt(t))
+            cond=torch.nn.functional.interpolate(cond.view(b, m, m, h).transpose(1,-1), size=(m//downsampling_factor, m//downsampling_factor), mode=mode)#
+            cond=cond.transpose(1,-1).reshape(b,-1,h)
+        if strength_type == "multiply":
+            cond *= strength
+        c = []
+        for t in positive:
+            n = [torch.cat((t[0], cond), dim=1), t[1].copy()]
+            c.append(n)
+        return (c, )
 
 class CheckpointDownload:
     @classmethod
