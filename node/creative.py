@@ -141,7 +141,6 @@ class ImageSize:
     RETURN_TYPES = ("INT", "INT",)
     RETURN_NAMES = ("width", "height",)
     FUNCTION = "imagesize"
-    OUTPUT_NODE = True
 
     def imagesize(s, image=None, latent=None):
         if image != None:
