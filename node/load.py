@@ -34,7 +34,7 @@ def get_metadata(filepath):
         return j
     
 def check_key(dic,key):
-    return dic[key] if key in dic else ""
+    return dic[key] if key in dic else "No info"
 
 def metadata_covert(j):
     if 'ss_tag_frequency' in j :
