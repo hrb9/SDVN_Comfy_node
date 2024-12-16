@@ -65,7 +65,7 @@ def style_list():
                 reader = csv.reader(file)
                 my_data_list = [row for row in reader]
             data_list = my_data_list + data_list
-    data_list[0][0] = data_list[0][0].split("\ufeff")[1]
+    # data_list[0][0] = data_list[0][0].split("\ufeff")[1]
     card_list = []
     for i in data_list:
         card_list += [i[0]]
@@ -345,8 +345,8 @@ class CLIPTextEncode:
 
     def encode(self, clip, positive, negative, style, translate, seed):
         if style != "None":
-            positive += style_list()[1][style_list()[0].index(style)][1]
-            negative += style_list()[1][style_list()[0].index(style)][2] if len(style_list()[1][style_list()[0].index(style)]) > 2 else ""
+            positive += f"{positive}, {style_list()[1][style_list()[0].index(style)][1]}"
+            negative += f"{negative}, {style_list()[1][style_list()[0].index(style)][2]}" if len(style_list()[1][style_list()[0].index(style)]) > 2 else ""
         if "DPRandomGenerator" in ALL_NODE:
             cls = ALL_NODE["DPRandomGenerator"]
             positive = cls().get_prompt(positive, seed, 'No')[0]
@@ -370,6 +370,11 @@ class StyleLoad:
                 "positive": ("STRING", {"multiline": True, "dynamicPrompts": True, "tooltip": "The text to be encoded."}),
                 "negative": ("STRING", {"multiline": True, "dynamicPrompts": True, "tooltip": "The text to be encoded."}),
                 "style": (none2list(style_list()[0]),{"default": "None"}),
+                "style2": (none2list(style_list()[0]),{"default": "None"}),
+                "style3": (none2list(style_list()[0]),{"default": "None"}),
+                "style4": (none2list(style_list()[0]),{"default": "None"}),
+                "style5": (none2list(style_list()[0]),{"default": "None"}),
+                "style6": (none2list(style_list()[0]),{"default": "None"}),
                 "translate": (lang_list(),),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
             }
@@ -381,10 +386,12 @@ class StyleLoad:
     CATEGORY = "📂 SDVN"
     DESCRIPTION = "Encodes a text prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images."
 
-    def loadstyle(self, positive, negative, style, translate, seed):
-        if style != "None":
-            positive += style_list()[1][style_list()[0].index(style)][1]
-            negative += style_list()[1][style_list()[0].index(style)][2] if len(style_list()[1][style_list()[0].index(style)]) > 2 else ""
+    def loadstyle(self, positive, negative, translate, seed, **kargs):
+        print(kargs)
+        for i in kargs:
+            if kargs[i] != "None":
+                positive = f"{positive}, {style_list()[1][style_list()[0].index(kargs[i])][1]}"
+                negative = f"{negative}, {style_list()[1][style_list()[0].index(kargs[i])][2]}" if len(style_list()[1][style_list()[0].index(kargs[i])]) > 2 else ""
         if "DPRandomGenerator" in ALL_NODE:
             cls = ALL_NODE["DPRandomGenerator"]
             positive = cls().get_prompt(positive, seed, 'No')[0]
