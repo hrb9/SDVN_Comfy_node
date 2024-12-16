@@ -1,5 +1,24 @@
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 from googletrans import Translator, LANGUAGES
+import torch
+
+def check_mask(mask_tensor):
+    if not isinstance(mask_tensor, torch.Tensor):
+        return False
+    if mask_tensor.dtype != torch.float32:
+        return False
+    if mask_tensor.ndim != 3 or mask_tensor.size(0) != 1:
+        return False
+    if not (0.0 <= mask_tensor.min() and mask_tensor.max() <= 1.0):
+        return False
+    return True
+
+def check_img(input_tensor):
+    if not isinstance(input_tensor, torch.Tensor):
+        return False
+    if input_tensor.ndim == 4 and input_tensor.size(0) == 1 and input_tensor.size(-1) == 3:
+        return True
+    return False
 
 def lang_list():
     lang_list = ["None"]
@@ -199,6 +218,7 @@ class Switch:
             return (true,)
         else:
             return (false,)
+        
 
 class AnyShow:
     @classmethod
@@ -217,7 +237,15 @@ class AnyShow:
     CATEGORY = "📂 SDVN/💡 Creative"
 
     def show(self, any):
-        return {"ui": {"text": any}}
+        if check_img(any[0]):
+            results = ALL_NODE["PreviewImage"]().save_images(any[0])
+            return results
+        elif check_mask(any[0]):
+            i = ALL_NODE["MaskToImage"]().mask_to_image(any[0])[0]
+            results = ALL_NODE["PreviewImage"]().save_images(i)
+            return results
+        else:
+            return {"ui": {"text": any}}
 
 class Runtest:
     @classmethod
@@ -228,7 +256,6 @@ class Runtest:
             },
         }
 
-    INPUT_IS_LIST = True
     RETURN_TYPES = ()
     FUNCTION = "run"
     OUTPUT_NODE = True
@@ -237,6 +264,75 @@ class Runtest:
 
     def run(self, any):
         return ()
+
+class PipeIn:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "model": ("MODEL",),
+                "clip": ("CLIP",),
+                "positive": ("CONDITIONING",),
+                "negative": ("CONDITIONING",),
+                "vae": ("VAE",),
+                "latent": ("LATENT",),
+                "image": ("IMAGE",),
+                "mask": ("MASK",),
+                "any": (any,),
+                
+            },
+        }
+
+    RETURN_TYPES = ("PIPEIN",)
+    RETURN_NAMES = ("pipe-in",)
+    FUNCTION = "pipein"
+
+    CATEGORY = "📂 SDVN/💡 Creative"
+
+    def pipein(self, model = None, clip = None, positive = None, negative = None, vae = None, latent = None, image = None, mask = None, any = None):
+        pipe_in = {"model":model, "clip":clip, "positive":positive, "negative":negative, "vae":vae, "latent":latent, "image":image, "mask":mask, "any":any}
+        return (pipe_in,)
+
+class PipeOut:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "pipe_in": ("PIPEIN",),
+                "type": (["model", "clip", "positive", "negative", "vae", "latent", "image", "mask", "any"],{}),
+            },
+        }
+
+    RETURN_TYPES = (any,)
+    RETURN_NAMES = ("pipe-out",)
+    FUNCTION = "pipeout"
+
+    CATEGORY = "📂 SDVN/💡 Creative"
+
+    def pipeout(self, pipe_in, type):
+        print(type)
+        if type == "image":
+            print("True")
+        out = pipe_in[type]
+        return (out,)
+    
+class PipeOutAll:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "pipe_in": ("PIPEIN",),
+            },
+        }
+
+    RETURN_TYPES = ("MODEL", "CLIP", "CONDITIONING", "CONDITIONING", "VAE", "LATENT", "IMAGE", "MASK", any,)
+    RETURN_NAMES = ("model", "clip", "positive", "negative", "vae", "latent", "image", "mask", "any")
+    FUNCTION = "pipeout"
+
+    CATEGORY = "📂 SDVN/💡 Creative"
+
+    def pipeout(self, pipe_in):
+        return (pipe_in["model"],pipe_in["clip"],pipe_in["positive"],pipe_in["negative"],pipe_in["vae"],pipe_in["latent"],pipe_in["image"],pipe_in["mask"],pipe_in["any"],)
 
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
@@ -247,6 +343,9 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Translate": GGTranslate,
     "SDVN Any Show": AnyShow,
     "SDVN Run Test": Runtest,
+    "SDVN Pipe In": PipeIn,
+    "SDVN Pipe Out": PipeOut,
+    "SDVN Pipe Out All": PipeOutAll,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -257,5 +356,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Switch": "🔄 Switch",
     "SDVN Translate": "🔃 Translate",
     "SDVN Any Show": "🔎 Any show",
-    "SDVN Run Test": "⚡️ Run test"
+    "SDVN Run Test": "⚡️ Run test",
+    "SDVN Pipe In": "🪢 Pipe In",
+    "SDVN Pipe Out": "🪢 Pipe Out",
+    "SDVN Pipe Out All": "🪢 Pipe Out All"
 }

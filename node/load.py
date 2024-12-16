@@ -1,23 +1,76 @@
-import comfy.sd
-import requests
-import math
-import os
-import re
-import sys
-from PIL import Image, ImageOps
-import torch
-import subprocess
-import numpy as np
-import folder_paths
-import comfy.utils
-import hashlib
-from PIL.PngImagePlugin import PngInfo
-from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
-sys.path.insert(0, os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "comfy"))
-from googletrans import LANGUAGES
-from comfy.cldm.control_types import UNION_CONTROLNET_TYPES
 
+import requests, math, json, os, re, sys, torch, hashlib, subprocess, numpy as np, csv
+import folder_paths, comfy.sd, comfy.utils
+from PIL import Image, ImageOps
+from googletrans import LANGUAGES
+from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
+from comfy.cldm.control_types import UNION_CONTROLNET_TYPES
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
+
+def get_metadata(filepath):
+    name = filepath.split("/")[-1].split(".")[0]
+    if os.path.exists(os.path.join(os.path.dirname(filepath),f"{name}.txt")):
+        txt = os.path.join(os.path.dirname(filepath),f"{name}.txt")
+        with open(txt, "r", encoding="utf-8") as file:
+            txt_content = file.read() 
+    else:
+        txt_content = ""
+    with open(filepath, "rb") as file:
+        header_size = int.from_bytes(file.read(8), "little", signed=False)
+
+        if header_size <= 0:
+            raise BufferError("Invalid header size")
+
+        header = file.read(header_size)
+        if header_size <= 0:
+            raise BufferError("Invalid header")
+
+        header_json = json.loads(header)
+        if "__metadata__" in header_json:
+            j = header_json["__metadata__"]
+        else:
+            j = {}
+        j["info"] = txt_content
+        return j
+def metadata_covert(j):
+    tag = next(iter(json.loads(j['ss_tag_frequency']).values()))
+    list_tag = ", ".join(list(tag)[:10])
+    text =f"""
+Tag: {list_tag}
+
+Dim: {j["ss_network_dim"]}
+
+Alpha: {j["ss_network_alpha"]}
+
+Unet_lr: {j["ss_unet_lr"]}
+
+Batch_Size: {j["ss_total_batch_size"]}
+
+Epochs: {j["ss_num_epochs"]}
+
+Steps: {j["ss_max_train_steps"]}
+
+Info_txt: {j["info"]}
+"""
+    return text
+
+def style_list():
+    file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"styles.csv")
+    with open(file_path, mode="r", encoding="utf-8") as file:
+        reader = csv.reader(file)
+        data_list = [row for row in reader]
+    my_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"my_styles.csv")
+    if os.path.exists(my_path):
+            with open(my_path, mode="r", encoding="utf-8") as file:
+                reader = csv.reader(file)
+                my_data_list = [row for row in reader]
+            data_list = my_data_list + data_list
+    data_list[0][0] = data_list[0][0].split("\ufeff")[1]
+    card_list = []
+    for i in data_list:
+        card_list += [i[0]]
+    return (card_list,data_list)
+    
 def lang_list():
     lang_list = ["None"]
     for i in LANGUAGES.items():
@@ -220,32 +273,53 @@ class LoraLoader:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "model": ("MODEL", {"tooltip": "The diffusion model the LoRA will be applied to."}),
-                "clip": ("CLIP", {"default": None, "tooltip": "The CLIP model the LoRA will be applied to."}),
                 "Download": ("BOOLEAN", {"default": True},),
                 "Download_url": ("STRING", {"default": "", "multiline": False},),
                 "Lora_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
                 "lora_name": (none2list(folder_paths.get_filename_list("loras")), {"default": "None", "tooltip": "The name of the LoRA."}),
             },
             "optional": {
+                "model": ("MODEL", {"tooltip": "The diffusion model the LoRA will be applied to."}),
+                "clip": ("CLIP", {"default": None, "tooltip": "The CLIP model the LoRA will be applied to."}),
                 "strength_model": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
                 "strength_clip": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01, "tooltip": "How strongly to modify the CLIP model. This value can be negative."}),
             }
         }
 
-    RETURN_TYPES = ("MODEL", "CLIP")
+    RETURN_TYPES = ("MODEL", "CLIP", "STRING")
+    RETURN_NAMES = ("model", "clip", "info")
     FUNCTION = "load_lora"
     CATEGORY = "📂 SDVN"
 
-    def load_lora(self, model, clip, Download, Download_url, Lora_url_name, lora_name, strength_model=1, strength_clip=1):
+    def load_lora(self, Download, Download_url, Lora_url_name, lora_name, model = None, clip = None, strength_model=1, strength_clip=1):
         if not Download or Download_url == '':
             if lora_name == "None":
                 return (model, clip)
         if Download and Download_url != '':
             download_model(Download_url, Lora_url_name, "loras")
             lora_name = Lora_url_name
-        results = ALL_NODE["LoraLoader"]().load_lora(model, clip, lora_name, strength_model, strength_clip)
-        return results
+        path = folder_paths.get_full_path_or_raise("loras", lora_name)
+        info = metadata_covert((get_metadata(path)))
+
+        index = 0
+        if not Download or Download_url == '':
+            name = lora_name.split('.')[0]
+            for i in ["jpg","png","jpeg"]:
+                if os.path.exists(os.path.join(os.path.dirname(path),f"{name}.{i}")):
+                    i_cover = os.path.join(os.path.dirname(path),f"{name}.{i}")
+                    index += 1
+
+        if model == None or clip == None:
+            results = (None, None,)
+        else:
+            results = ALL_NODE["LoraLoader"]().load_lora(model, clip, lora_name, strength_model, strength_clip)
+        if index > 0:
+            i = Image.open(i_cover)
+            i = i2tensor(i)
+            ui = ALL_NODE["PreviewImage"]().save_images(i)["ui"]
+            return {"ui":ui, "result":(results[0],results[1],info)}
+        else:
+            return (results[0],results[1],info)
 
 class CLIPTextEncode:
     @classmethod
@@ -254,6 +328,7 @@ class CLIPTextEncode:
             "required": {
                 "positive": ("STRING", {"multiline": True, "dynamicPrompts": True, "tooltip": "The text to be encoded."}),
                 "negative": ("STRING", {"multiline": True, "dynamicPrompts": True, "tooltip": "The text to be encoded."}),
+                "style": (none2list(style_list()[0]),{"default": "None"}),
                 "translate": (lang_list(),),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
                 "clip": ("CLIP", {"tooltip": "The CLIP model used for encoding the text."})
@@ -268,25 +343,51 @@ class CLIPTextEncode:
     CATEGORY = "📂 SDVN"
     DESCRIPTION = "Encodes a text prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images."
 
-    def encode(self, clip, positive, negative, translate, seed):
+    def encode(self, clip, positive, negative, style, translate, seed):
         if "DPRandomGenerator" in ALL_NODE:
             cls = ALL_NODE["DPRandomGenerator"]
             positive = cls().get_prompt(positive, seed, 'No')[0]
             negative = cls().get_prompt(negative, seed, 'No')[0]
         positive = ALL_NODE["SDVN Translate"]().ggtranslate(positive,translate)[0]
-        negative = ALL_NODE["SDVN Translate"]().ggtranslate(negative,translate)[0]       
+        negative = ALL_NODE["SDVN Translate"]().ggtranslate(negative,translate)[0]
+        if style != "None":
+            positive += style_list()[1][style_list()[0].index(style)][1]
+            negative += style_list()[1][style_list()[0].index(style)][2] if len(style_list()[1][style_list()[0].index(style)]) > 2 else ""
         token_p = clip.tokenize(positive)
         token_n = clip.tokenize(negative)
         return (clip.encode_from_tokens_scheduled(token_p), clip.encode_from_tokens_scheduled(token_n), )
 
+class StyleLoad:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "positive": ("STRING", {"multiline": True, "dynamicPrompts": True, "tooltip": "The text to be encoded."}),
+                "negative": ("STRING", {"multiline": True, "dynamicPrompts": True, "tooltip": "The text to be encoded."}),
+                "style": (none2list(style_list()[0]),{"default": "None"}),
+                "translate": (lang_list(),),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
+            }
+        }
+    RETURN_TYPES = ("STRING", "STRING",)
+    RETURN_NAMES = ("positive", "negative",)
+    FUNCTION = "loadstyle"
 
-def dic2list(dic):
-    l = []
-    for i in dic:
-        l += [i]
-    return l
+    CATEGORY = "📂 SDVN"
+    DESCRIPTION = "Encodes a text prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images."
 
-
+    def loadstyle(self, positive, negative, style, translate, seed):
+        if "DPRandomGenerator" in ALL_NODE:
+            cls = ALL_NODE["DPRandomGenerator"]
+            positive = cls().get_prompt(positive, seed, 'No')[0]
+            negative = cls().get_prompt(negative, seed, 'No')[0]
+        positive = ALL_NODE["SDVN Translate"]().ggtranslate(positive,translate)[0]
+        negative = ALL_NODE["SDVN Translate"]().ggtranslate(negative,translate)[0]
+        if style != "None":
+            positive += style_list()[1][style_list()[0].index(style)][1]
+            negative += style_list()[1][style_list()[0].index(style)][2] if len(style_list()[1][style_list()[0].index(style)]) > 2 else ""
+        return (positive,negative,)
+    
 ModelType_list = {
     "SD 1.5": [7.0, "euler_ancestral", "normal"],
     "SDXL": [9.0, "dpmpp_2m_sde", "karras"],
@@ -314,8 +415,8 @@ class Easy_KSampler:
             "required": {
                 "model": ("MODEL", {"tooltip": "The model used for denoising the input latent."}),
                 "positive": ("CONDITIONING", {"tooltip": "The conditioning describing the attributes you want to include in the image."}),
-                "ModelType": (none2list(dic2list(ModelType_list)),),
-                "StepsType": (none2list(dic2list(StepsType_list)),),
+                "ModelType": (none2list(list(ModelType_list)),),
+                "StepsType": (none2list(list(StepsType_list)),),
                 "denoise": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01, "tooltip": "The amount of denoising applied, lower values will maintain the structure of the initial image allowing for image to image sampling."}),
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
                 "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
@@ -768,6 +869,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN UNET Download":UNETDownload,
     "SDVN CLIP Download":CLIPDownload,
     "SDVN StyleModel Download":StyleModelDownload,
+    "SDVN Styles":StyleLoad, 
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -792,4 +894,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN UNET Download":"📥 UNET Download",
     "SDVN CLIP Download":"📥 CLIP Download",
     "SDVN StyleModel Download":"📥  StyleModel Download",
+    "SDVN Styles":"🗂️ Styles"
 }
