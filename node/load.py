@@ -32,25 +32,32 @@ def get_metadata(filepath):
             j = {}
         j["info"] = txt_content
         return j
+    
+def check_key(dic,key):
+    return dic[key] if key in dic else ""
+
 def metadata_covert(j):
-    tag = next(iter(json.loads(j['ss_tag_frequency']).values()))
-    list_tag = ", ".join(list(tag)[:10])
+    if 'ss_tag_frequency' in j :
+        tag = next(iter(json.loads(j['ss_tag_frequency']).values()))
+        list_tag = ", ".join(list(tag)[:10])
+    else:
+        list_tag = ""
     text =f"""
 Tag: {list_tag}
 
-Dim: {j["ss_network_dim"]}
+Dim: {check_key(j,"ss_network_dim")}
 
-Alpha: {j["ss_network_alpha"]}
+Alpha: {check_key(j,"ss_network_alpha")}
 
-Unet_lr: {j["ss_unet_lr"]}
+Unet_lr: {check_key(j,"ss_unet_lr")}
 
-Batch_Size: {j["ss_total_batch_size"]}
+Batch_Size: {check_key(j,"ss_total_batch_size")}
 
-Epochs: {j["ss_num_epochs"]}
+Epochs: {check_key(j,"ss_num_epochs")}
 
-Steps: {j["ss_max_train_steps"]}
+Steps: {check_key(j,"ss_max_train_steps")}
 
-Info_txt: {j["info"]}
+Info_txt: {check_key(j,"info")}
 """
     return text
 
