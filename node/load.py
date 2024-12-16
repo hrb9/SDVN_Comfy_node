@@ -334,8 +334,8 @@ class CLIPTextEncode:
                 "clip": ("CLIP", {"tooltip": "The CLIP model used for encoding the text."})
             }
         }
-    RETURN_TYPES = ("CONDITIONING", "CONDITIONING",)
-    RETURN_NAMES = ("positive", "negative",)
+    RETURN_TYPES = ("CONDITIONING", "CONDITIONING", "STRING")
+    RETURN_NAMES = ("positive", "negative", "prompt")
     OUTPUT_TOOLTIPS = (
         "A conditioning containing the embedded text used to guide the diffusion model.",)
     FUNCTION = "encode"
@@ -344,18 +344,22 @@ class CLIPTextEncode:
     DESCRIPTION = "Encodes a text prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images."
 
     def encode(self, clip, positive, negative, style, translate, seed):
+        if style != "None":
+            positive += style_list()[1][style_list()[0].index(style)][1]
+            negative += style_list()[1][style_list()[0].index(style)][2] if len(style_list()[1][style_list()[0].index(style)]) > 2 else ""
         if "DPRandomGenerator" in ALL_NODE:
             cls = ALL_NODE["DPRandomGenerator"]
             positive = cls().get_prompt(positive, seed, 'No')[0]
             negative = cls().get_prompt(negative, seed, 'No')[0]
         positive = ALL_NODE["SDVN Translate"]().ggtranslate(positive,translate)[0]
         negative = ALL_NODE["SDVN Translate"]().ggtranslate(negative,translate)[0]
-        if style != "None":
-            positive += style_list()[1][style_list()[0].index(style)][1]
-            negative += style_list()[1][style_list()[0].index(style)][2] if len(style_list()[1][style_list()[0].index(style)]) > 2 else ""
+        prompt =f"""
+Positive: {positive}
+Negative: {negative}
+        """
         token_p = clip.tokenize(positive)
         token_n = clip.tokenize(negative)
-        return (clip.encode_from_tokens_scheduled(token_p), clip.encode_from_tokens_scheduled(token_n), )
+        return (clip.encode_from_tokens_scheduled(token_p), clip.encode_from_tokens_scheduled(token_n), prompt)
 
 class StyleLoad:
     @classmethod
@@ -377,15 +381,15 @@ class StyleLoad:
     DESCRIPTION = "Encodes a text prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images."
 
     def loadstyle(self, positive, negative, style, translate, seed):
+        if style != "None":
+            positive += style_list()[1][style_list()[0].index(style)][1]
+            negative += style_list()[1][style_list()[0].index(style)][2] if len(style_list()[1][style_list()[0].index(style)]) > 2 else ""
         if "DPRandomGenerator" in ALL_NODE:
             cls = ALL_NODE["DPRandomGenerator"]
             positive = cls().get_prompt(positive, seed, 'No')[0]
             negative = cls().get_prompt(negative, seed, 'No')[0]
         positive = ALL_NODE["SDVN Translate"]().ggtranslate(positive,translate)[0]
         negative = ALL_NODE["SDVN Translate"]().ggtranslate(negative,translate)[0]
-        if style != "None":
-            positive += style_list()[1][style_list()[0].index(style)][1]
-            negative += style_list()[1][style_list()[0].index(style)][2] if len(style_list()[1][style_list()[0].index(style)]) > 2 else ""
         return (positive,negative,)
     
 ModelType_list = {
