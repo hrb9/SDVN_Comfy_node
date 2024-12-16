@@ -355,6 +355,7 @@ class CLIPTextEncode:
         negative = ALL_NODE["SDVN Translate"]().ggtranslate(negative,translate)[0]
         prompt =f"""
 Positive: {positive}
+
 Negative: {negative}
         """
         token_p = clip.tokenize(positive)
