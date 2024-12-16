@@ -72,7 +72,6 @@ def style_list():
                 reader = csv.reader(file)
                 my_data_list = [row for row in reader]
             data_list = my_data_list + data_list
-    # data_list[0][0] = data_list[0][0].split("\ufeff")[1]
     card_list = []
     for i in data_list:
         card_list += [i[0]]
