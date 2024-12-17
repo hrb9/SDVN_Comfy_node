@@ -1,5 +1,5 @@
 
-.DS_Store
+*.DS_Store
 __pycache__/load_img.cpython-311.pyc
 __pycache__/__init__.cpython-311.pyc
 *.pyc
