@@ -624,9 +624,9 @@ class AutoControlNetApply:
             else:
                 print(
                     "You have not installed it yet Controlnet Aux (https://github.com/Fannovel16/comfyui_controlnet_aux)")
+        control_net = ALL_NODE["ControlNetLoader"]().load_controlnet(control_net)[0]
         if union_type != "None":
             control_net = ALL_NODE["SetUnionControlNetType"]().set_controlnet_type(control_net,union_type)[0]
-        control_net = ALL_NODE["ControlNetLoader"]().load_controlnet(control_net)[0]
         p, n = ALL_NODE["ControlNetApplyAdvanced"]().apply_controlnet(
             positive, negative, control_net, image, strength, start_percent, end_percent, vae)
         results = ALL_NODE["PreviewImage"]().save_images(image)
