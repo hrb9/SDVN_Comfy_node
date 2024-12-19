@@ -7,6 +7,15 @@ from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 from comfy.cldm.control_types import UNION_CONTROLNET_TYPES
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
+def read_png(image_path):
+    try:
+        with Image.open(image_path) as img:
+            metadata = img.info  # PNG metadata
+            return metadata
+    except Exception as e:
+        print(f"Error metadata: {e}")
+        return None
+    
 def get_metadata(filepath):
     name = filepath.split("/")[-1].split(".")[0]
     if os.path.exists(os.path.join(os.path.dirname(filepath),f"{name}.txt")):
@@ -99,10 +108,18 @@ def i2tensor(i) -> torch.Tensor:
 
 def run_gallery_dl(url):
     command = ['gallery-dl', '-G', url]
-    result = subprocess.run(command, check=True,
-                            text=True, capture_output=True)
-    return result.stdout.strip()
-
+    try:
+        result = subprocess.run(command, check=True,
+                                text=True, capture_output=True)
+        result = result.stdout.strip()
+        if 'http' not in result:
+            result = 'https://raw.githubusercontent.com/StableDiffusionVN/SDVN_Comfy_node/refs/heads/main/preview/eror.jpg'
+        if '\n' in result:
+            result = result.split('\n')[0]
+    except:
+        print('Cannot find image link')
+        result = 'https://raw.githubusercontent.com/StableDiffusionVN/SDVN_Comfy_node/refs/heads/main/preview/eror.jpg'
+    return result
 
 def civit_downlink(link):
     command = ['wget', link, '-O', 'model.html']
@@ -181,19 +198,21 @@ class LoadImage:
 
     CATEGORY = "📂 SDVN"
 
-    RETURN_TYPES = ("IMAGE", "MASK")
+    RETURN_TYPES = ("IMAGE", "MASK", "STRING",)
+    RETURN_NAMES = ("image","mask", "img_path",)
     FUNCTION = "load_image"
 
-    def load_image(self, Url, Load_url, image=None):
+    def load_image(self, Url, Load_url, image):
+        image_path = folder_paths.get_annotated_filepath(image)
         if Url != '' and Load_url:
-            if 'pinterest.com' in Url:
-                Url = run_gallery_dl(Url)
             if 'http' in Url:
+                Url = run_gallery_dl(Url)
                 i = Image.open(requests.get(Url, stream=True).raw)
+                image_path = ''
             else:
+                image_path = Url
                 i = Image.open(Url)
         else:
-            image_path = folder_paths.get_annotated_filepath(image)
             print(image_path)
             i = Image.open(image_path)
         ii = ImageOps.exif_transpose(i)
@@ -202,7 +221,7 @@ class LoadImage:
             mask = 1. - torch.from_numpy(mask)
         else:
             mask = torch.zeros((64, 64), dtype=torch.float32, device="cpu")
-        return (i2tensor(i), mask.unsqueeze(0))
+        return (i2tensor(i), mask.unsqueeze(0), image_path)
 
     @classmethod
     def IS_CHANGED(self, Url, Load_url, image=None):
@@ -233,10 +252,9 @@ class LoadImageUrl:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "load_image_url"
 
-    def load_image_url(self, Url):
-        if 'pinterest.com' in Url:
-            Url = run_gallery_dl(Url)
+    def load_image_url(self, Url):  
         if 'http' in Url:
+            Url = run_gallery_dl(Url)
             image = Image.open(requests.get(Url, stream=True).raw)
         else:
             image = Image.open(Url)
