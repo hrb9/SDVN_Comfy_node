@@ -213,7 +213,8 @@ class CheckpointLoaderDownload:
                 "Ckpt_name": (none2list(folder_paths.get_filename_list("checkpoints")), {"tooltip": "The name of the checkpoint (model) to load."})
             }
         }
-    RETURN_TYPES = ("MODEL", "CLIP", "VAE")
+    RETURN_TYPES = ("MODEL", "CLIP", "VAE", "STRING")
+    RETURN_NAMES = ("model", "clip", "vae", "ckpt_path")
     OUTPUT_TOOLTIPS = ("The model used for denoising latents.",
                        "The CLIP model used for encoding text prompts.",
                        "The VAE model used for encoding and decoding images to and from latent space.")
@@ -227,8 +228,22 @@ class CheckpointLoaderDownload:
             download_model(Download_url, Ckpt_url_name, "checkpoints")
             Ckpt_name = Ckpt_url_name
         results = ALL_NODE["CheckpointLoaderSimple"]().load_checkpoint(Ckpt_name)
-        return results
-
+        path = folder_paths.get_full_path_or_raise("checkpoints", Ckpt_name)
+        index = 0
+        if not Download or Download_url == '':
+            name = Ckpt_name.split("/")[-1].rsplit(".", 1)[0]
+            for i in ["jpg","jpeg","png"]:
+                if os.path.exists(os.path.join(os.path.dirname(path),f"{name}.{i}")):
+                    i_cover = os.path.join(os.path.dirname(path),f"{name}.{i}")
+                    index += 1
+        if index > 0:
+            i = Image.open(i_cover)
+            i = i2tensor(i)
+            ui = ALL_NODE["PreviewImage"]().save_images(i)["ui"]
+            return {"ui":ui, "result":(results[0],results[1],results[2],path)}
+        else:
+            return (results[0],results[1],results[2],path)
+        
 class LoraLoader:
     @classmethod
     def INPUT_TYPES(s):
