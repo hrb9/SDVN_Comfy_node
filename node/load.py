@@ -263,7 +263,7 @@ class LoraLoader:
         index = 0
         if not Download or Download_url == '':
             name = lora_name.split("/")[-1].rsplit(".", 1)[0]
-            for i in ["jpg","png","jpeg"]:
+            for i in ["jpg","jpeg","png"]:
                 if os.path.exists(os.path.join(os.path.dirname(path),f"{name}.{i}")):
                     i_cover = os.path.join(os.path.dirname(path),f"{name}.{i}")
                     index += 1

@@ -1,7 +1,8 @@
 from PIL import Image
 from PIL.ExifTags import TAGS
 from PIL.PngImagePlugin import PngInfo
-import json,ast, os
+import json, ast, os, torch
+import numpy as np
 from collections import defaultdict
         
 class img_info:
@@ -334,6 +335,17 @@ def update_metadata(filepath, metadata_dict):
         file.write(new_header)
         file.write(binary_data)
 
+def tensor2pil(tensor: torch.Tensor) -> Image.Image:
+    if tensor.ndim == 4:
+        tensor = tensor.squeeze(0)
+    if tensor.ndim == 3 and tensor.shape[-1] == 3:
+        np_image = (tensor.numpy() * 255).astype(np.uint8)
+    else:
+        raise ValueError(
+            "Tensor phải có shape [H, W, C] hoặc [1, H, W, C] với C = 3 (RGB).")
+    pil_image = Image.fromarray(np_image)
+    return pil_image
+
 class lora_info_editor:
     @classmethod
     def INPUT_TYPES(s):
@@ -346,6 +358,9 @@ class lora_info_editor:
                 "Url": ("STRING",{"multiline": False}),
                 "Txt_save": ("BOOLEAN", {"default": True},),
                 "Txt_note": ("STRING",{"multiline": True}),
+            },
+            "optional": {
+                "image_cover": ("IMAGE",)
             }
         }
 
@@ -355,7 +370,7 @@ class lora_info_editor:
     RETURN_NAMES = ("model_path",)
     FUNCTION = "update"
 
-    def update(self, lora_path, Json_Embed, Trigger_word, Copyright, Url, Txt_save, Txt_note):
+    def update(self, lora_path, Json_Embed, Trigger_word, Copyright, Url, Txt_save, Txt_note, image_cover = None):
         if Json_Embed:
             data_dict = {}
             if Trigger_word != "":
@@ -370,6 +385,11 @@ class lora_info_editor:
             txt_path = os.path.join(os.path.dirname(lora_path),f"{name}.txt")
             with open(txt_path, "w", encoding="utf-8") as file:
                 file.write(Txt_note)
+        if image_cover != None:
+            name = lora_path.split("/")[-1].rsplit(".", 1)[0]
+            img_path = os.path.join(os.path.dirname(lora_path),f"{name}.png")
+            image = tensor2pil(image_cover)
+            image.save(img_path, format="PNG")
         return (lora_path,)
 
 NODE_CLASS_MAPPINGS = {
