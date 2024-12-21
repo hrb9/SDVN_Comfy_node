@@ -1,8 +1,9 @@
 from PIL import Image
 from PIL.ExifTags import TAGS
 from PIL.PngImagePlugin import PngInfo
-import json,ast
-
+import json,ast, os
+from collections import defaultdict
+        
 class img_info:
     @classmethod
     def INPUT_TYPES(s):
@@ -13,7 +14,7 @@ class img_info:
             }
         }
 
-    CATEGORY = "📂 SDVN/🏞️ Image"
+    CATEGORY = "📂 SDVN/ℹ️ Info_check"
 
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("info",)
@@ -60,7 +61,7 @@ class metadata_check:
             }
         }
 
-    CATEGORY = "📂 SDVN/🏞️ Image"
+    CATEGORY = "📂 SDVN/ℹ️ Info_check"
 
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("info",)
@@ -227,13 +228,161 @@ class exif_check:
                 resulf = "No data"
             return (resulf,)
 
+def get_metadata(filepath):
+    name = filepath.split("/")[-1].rsplit(".", 1)[0]
+    if os.path.exists(os.path.join(os.path.dirname(filepath),f"{name}.txt")):
+        txt = os.path.join(os.path.dirname(filepath),f"{name}.txt")
+        with open(txt, "r", encoding="utf-8") as file:
+            txt_content = file.read() 
+    else:
+        txt_content = ""
+    with open(filepath, "rb") as file:
+        header_size = int.from_bytes(file.read(8), "little", signed=False)
+
+        if header_size <= 0:
+            return {"info":txt_content}
+        header = file.read(header_size)
+        header_json = json.loads(header)
+        if "__metadata__" in header_json:
+            j = header_json["__metadata__"]
+        else:
+            j = {}
+        j["info"] = txt_content
+        return j
+    
+def tag_list(data):
+    d_m = {}
+    data_tag = json.loads(data['ss_tag_frequency'])
+    for i in data_tag:
+        for key,value in {**d_m, **data_tag[i]}.items():
+            d_m[key] = d_m.get(key, 0) + data_tag[i].get(key, 0)
+    sorted_dict = dict(sorted(d_m.items(), key=lambda item: item[1], reverse=True))
+    return sorted_dict
+
+def check_key(dic,key):
+    return dic[key] if key in dic else "No data"
+
+list_data_check = {"Trigger_word": "Trigger_word",
+                   "Copyright": "Copyright",
+                   "Url": "Url",
+                   "Dim":"ss_network_dim",
+                   "Alpha": "ss_network_alpha",
+                   "Unet_lr": "ss_unet_lr",
+                   "Batch_Size": "ss_total_batch_size",
+                   "Epochs": "ss_num_epochs",
+                   "Steps": "ss_max_train_steps",
+                   "Info_txt": "info"}
+
+def metadata_covert(path):
+    data = get_metadata(path)
+    if 'ss_tag_frequency' in data :
+        tag_dict = tag_list(data)
+        list_tag = ", ".join(list(tag_dict)[:20])
+    else:
+        list_tag = ""
+    result = {}
+    result["Tag"] = list_tag
+    for key,value in list_data_check.items():
+        result[key] = check_key(data,value)
+    full_data = ""
+    for key, value in result.items():
+        full_data += f"{key}: {value}\n\n"
+    result["Full_Data"] = full_data
+    return result
+
+class lora_info:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "model_path": ("STRING",{"forceInput": True}),
+                "info_type": (["Full_Data","Tag", *list(list_data_check)],)
+            }
+        }
+
+    CATEGORY = "📂 SDVN/ℹ️ Info_check"
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("info",)
+    FUNCTION = "read"
+
+    def read(self, model_path, info_type):
+        data_dict = metadata_covert(model_path)
+        return (data_dict[info_type],)
+
+def update_metadata(filepath, metadata_dict):
+    with open(filepath, "rb") as file:
+        header_size = int.from_bytes(file.read(8), "little", signed=False)
+
+        if header_size <= 0:
+            raise BufferError("Invalid header size")
+
+        header = file.read(header_size)
+        header_json = json.loads(header)
+
+        if "__metadata__" in header_json:
+            header_json["__metadata__"].update(metadata_dict)
+        else:
+            header_json["__metadata__"] = metadata_dict
+
+        binary_data = file.read()
+
+    with open(filepath, "wb") as file:
+        new_header = json.dumps(header_json).encode("utf-8")
+
+        file.write(len(new_header).to_bytes(8, "little", signed=False))
+        file.write(new_header)
+        file.write(binary_data)
+
+class lora_info_editor:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "lora_path": ("STRING",),
+                "Json_Embed": ("BOOLEAN", {"default": True},),
+                "Trigger_word": ("STRING",{"multiline": False}),
+                "Copyright": ("STRING",{"multiline": False}),
+                "Url": ("STRING",{"multiline": False}),
+                "Txt_save": ("BOOLEAN", {"default": True},),
+                "Txt_note": ("STRING",{"multiline": True}),
+            }
+        }
+
+    CATEGORY = "📂 SDVN/ℹ️ Info_check"
+    OUTPUT_NODE = True
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("model_path",)
+    FUNCTION = "update"
+
+    def update(self, lora_path, Json_Embed, Trigger_word, Copyright, Url, Txt_save, Txt_note):
+        if Json_Embed:
+            data_dict = {}
+            if Trigger_word != "":
+                data_dict["Trigger_word"] = Trigger_word
+            if Copyright != "":
+                data_dict["Copyright"] = Copyright
+            if Url != "":
+                data_dict["Url"] = Url
+            update_metadata(lora_path, data_dict)
+        if Txt_save and Txt_note != "":
+            name = lora_path.split("/")[-1].rsplit(".", 1)[0]
+            txt_path = os.path.join(os.path.dirname(lora_path),f"{name}.txt")
+            with open(txt_path, "w", encoding="utf-8") as file:
+                file.write(Txt_note)
+        return (lora_path,)
+
 NODE_CLASS_MAPPINGS = {
+    "SDVN Lora info": lora_info,
+    "SDVN Lora info editor": lora_info_editor,
     "SDVN Image Info": img_info,
     "SDVN Metadata Check": metadata_check,
     "SDVN Exif check": exif_check,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
+    "SDVN Lora info": "ℹ️ Lora info",
+    "SDVN Lora info editor": "*️⃣ Lora info editor",
     "SDVN Image Info": "ℹ️ Image Info",
     "SDVN Metadata Check": "ℹ️ Metadata check",
     "SDVN Exif check": "ℹ️ Exif check"

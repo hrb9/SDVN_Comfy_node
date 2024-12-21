@@ -6,70 +6,7 @@ from googletrans import LANGUAGES
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 from comfy.cldm.control_types import UNION_CONTROLNET_TYPES
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
-
-def read_png(image_path):
-    try:
-        with Image.open(image_path) as img:
-            metadata = img.info  # PNG metadata
-            return metadata
-    except Exception as e:
-        print(f"Error metadata: {e}")
-        return None
     
-def get_metadata(filepath):
-    name = filepath.split("/")[-1].split(".")[0]
-    if os.path.exists(os.path.join(os.path.dirname(filepath),f"{name}.txt")):
-        txt = os.path.join(os.path.dirname(filepath),f"{name}.txt")
-        with open(txt, "r", encoding="utf-8") as file:
-            txt_content = file.read() 
-    else:
-        txt_content = ""
-    with open(filepath, "rb") as file:
-        header_size = int.from_bytes(file.read(8), "little", signed=False)
-
-        if header_size <= 0:
-            raise BufferError("Invalid header size")
-
-        header = file.read(header_size)
-        if header_size <= 0:
-            raise BufferError("Invalid header")
-
-        header_json = json.loads(header)
-        if "__metadata__" in header_json:
-            j = header_json["__metadata__"]
-        else:
-            j = {}
-        j["info"] = txt_content
-        return j
-    
-def check_key(dic,key):
-    return dic[key] if key in dic else "No info"
-
-def metadata_covert(j):
-    if 'ss_tag_frequency' in j :
-        tag = next(iter(json.loads(j['ss_tag_frequency']).values()))
-        list_tag = ", ".join(list(tag)[:10])
-    else:
-        list_tag = ""
-    text =f"""
-Tag: {list_tag}
-
-Dim: {check_key(j,"ss_network_dim")}
-
-Alpha: {check_key(j,"ss_network_alpha")}
-
-Unet_lr: {check_key(j,"ss_unet_lr")}
-
-Batch_Size: {check_key(j,"ss_total_batch_size")}
-
-Epochs: {check_key(j,"ss_num_epochs")}
-
-Steps: {check_key(j,"ss_max_train_steps")}
-
-Info_txt: {check_key(j,"info")}
-"""
-    return text
-
 def style_list():
     file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"styles.csv")
     with open(file_path, mode="r", encoding="utf-8") as file:
@@ -311,7 +248,7 @@ class LoraLoader:
         }
 
     RETURN_TYPES = ("MODEL", "CLIP", "STRING")
-    RETURN_NAMES = ("model", "clip", "info")
+    RETURN_NAMES = ("model", "clip", "lora_path")
     FUNCTION = "load_lora"
     CATEGORY = "📂 SDVN"
 
@@ -323,11 +260,9 @@ class LoraLoader:
             download_model(Download_url, Lora_url_name, "loras")
             lora_name = Lora_url_name
         path = folder_paths.get_full_path_or_raise("loras", lora_name)
-        info = metadata_covert((get_metadata(path)))
-
         index = 0
         if not Download or Download_url == '':
-            name = lora_name.split('.')[0]
+            name = lora_name.split("/")[-1].rsplit(".", 1)[0]
             for i in ["jpg","png","jpeg"]:
                 if os.path.exists(os.path.join(os.path.dirname(path),f"{name}.{i}")):
                     i_cover = os.path.join(os.path.dirname(path),f"{name}.{i}")
@@ -341,9 +276,9 @@ class LoraLoader:
             i = Image.open(i_cover)
             i = i2tensor(i)
             ui = ALL_NODE["PreviewImage"]().save_images(i)["ui"]
-            return {"ui":ui, "result":(results[0],results[1],info)}
+            return {"ui":ui, "result":(results[0],results[1],path)}
         else:
-            return (results[0],results[1],info)
+            return (results[0],results[1],path)
 
 class CLIPTextEncode:
     @classmethod
