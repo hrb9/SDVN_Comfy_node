@@ -209,7 +209,7 @@ class exif_check:
             }
         }
 
-    CATEGORY = "📂 SDVN/🏞️ Image"
+    CATEGORY = "📂 SDVN/ℹ️ Info_check"
 
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("info",)
