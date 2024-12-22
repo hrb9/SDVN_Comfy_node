@@ -54,7 +54,7 @@ class image_layout:
             }
         }
 
-    CATEGORY = "📂 SDVN/💡 Creative"
+    CATEGORY = "📂 SDVN/🏞️ Image"
 
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("image",)
