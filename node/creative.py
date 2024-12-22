@@ -414,14 +414,14 @@ class LoadTextFile:
 
     def loadtxt(self, custom_path, input_dir, mode, index, auto_index, string = None):
         if string != None:
-            content = string
+            content = string.strip()
         else:
             if custom_path != "":
                 path = custom_path
             else:
                 path = os.path.join(folder_paths.get_input_directory(), input_dir)
             with open(path, 'r') as file:
-                content = file.read()
+                content = file.read().strip()
 
         if mode == "fullfile":
             resulf = content
