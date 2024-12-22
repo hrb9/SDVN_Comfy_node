@@ -885,6 +885,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Inpaint": Inpaint,
     "SDVN Apply Style Model": ApplyStyleModel,
     "SDVN KSampler": Easy_KSampler,
+    "SDVN Styles":StyleLoad, 
     "SDVN Upscale Image": UpscaleImage,
     "SDVN UPscale Latent": UpscaleLatentImage,
     "SDVN Checkpoint Download": CheckpointDownload,
@@ -896,7 +897,6 @@ NODE_CLASS_MAPPINGS = {
     "SDVN UNET Download":UNETDownload,
     "SDVN CLIP Download":CLIPDownload,
     "SDVN StyleModel Download":StyleModelDownload,
-    "SDVN Styles":StyleLoad, 
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -911,6 +911,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Controlnet Apply": "🎚️ Controlnet Apply",
     "SDVN Inpaint": "👨‍🎨 Inpaint",
     "SDVN Apply Style Model": "🌈 Apply Style Model",
+    "SDVN Styles":"🗂️ Prompt Styles",
     "SDVN Upscale Image": "↗️ Upscale Image",
     "SDVN UPscale Latent": "↗️ Upscale Latent",
     "SDVN Checkpoint Download": "📥 Checkpoint Download",
@@ -922,5 +923,4 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN UNET Download":"📥 UNET Download",
     "SDVN CLIP Download":"📥 CLIP Download",
     "SDVN StyleModel Download":"📥  StyleModel Download",
-    "SDVN Styles":"🗂️ Prompt Styles"
 }
