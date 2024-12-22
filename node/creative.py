@@ -1,6 +1,7 @@
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 from googletrans import Translator, LANGUAGES
-import torch
+import torch, os
+import folder_paths
 
 def check_mask(mask_tensor):
     if not isinstance(mask_tensor, torch.Tensor):
@@ -218,7 +219,37 @@ class Switch:
             return (true,)
         else:
             return (false,)
-        
+
+class Logic:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "input_true": (any,),
+                "input_false": (any,),
+                "a": (any,),
+                "b": (any,),
+                "logic":  (["a = b", "a != b", "a > b", "a < b", "a >= b", "a <= b"],),
+            }}
+    CATEGORY = "📂 SDVN/💡 Creative"
+    RETURN_TYPES = (any,)
+    RETURN_NAMES = ("output",)
+    FUNCTION = "logic"
+
+    def logic(s, input_true, input_false, a, b, logic):
+        if logic == "a = b":
+            r = a == b
+        elif logic == "a != b":
+            r = a != b
+        elif logic == "a > b":
+            r = a > b
+        elif logic == "a < b":
+            r = a < b
+        elif logic == "a >= b":
+            r = a >= b
+        elif logic == "a <= b":
+            r = a <= b
+        return (input_true if r == True else input_false,)
 
 class AnyShow:
     @classmethod
@@ -334,18 +365,138 @@ class PipeOutAll:
     def pipeout(self, pipe_in):
         return (pipe_in["model"],pipe_in["clip"],pipe_in["positive"],pipe_in["negative"],pipe_in["vae"],pipe_in["latent"],pipe_in["image"],pipe_in["mask"],pipe_in["any"],)
 
+def list_txt_path(file_path):
+    list_txt = []
+    if os.path.isfile(file_path):
+        file_path = os.path.dirname(file_path)
+
+    for file in os.listdir(file_path):
+        file_full_path = os.path.join(file_path, file)
+        if os.path.isdir(file_full_path):
+            list_txt.extend(list_txt_path(file_full_path))
+        elif os.path.isfile(file_full_path):
+            type_name = file.split('.')[-1].lower()
+            if type_name in ["txt"]:
+                list_txt.append(file_full_path)
+    return list_txt
+
+def get_name_file(file_path):
+    list_txt = list_txt_path(file_path)
+    try:
+        for i in list_txt:
+            list_txt[list_txt.index(i)] = i.replace(f"{file_path}/","")
+        return list_txt
+    except:
+        return ["None"]
+
+class LoadTextFile:
+    @classmethod
+    def INPUT_TYPES(s):
+        input_dir = folder_paths.get_input_directory()
+        return {
+            "required": {
+                "custom_path": ("STRING",{"default":""}),
+                "input_dir": (get_name_file(input_dir),),
+                "mode": (["line","keyword","fullfile"],),
+                "index": ("INT",{"default":0}),
+                "auto_index": ("BOOLEAN", {"default": False, "label_on": "loop", "label_off": "off"},),
+            },
+            "optional": {
+                "string": ("STRING",{"forceInput": True})
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("string",)
+    FUNCTION = "loadtxt"
+
+    CATEGORY = "📂 SDVN/💡 Creative"
+
+    def loadtxt(self, custom_path, input_dir, mode, index, auto_index, string = None):
+        if string != None:
+            content = string
+        else:
+            if custom_path != "":
+                path = custom_path
+            else:
+                path = os.path.join(folder_paths.get_input_directory(), input_dir)
+            with open(path, 'r') as file:
+                content = file.read()
+
+        if mode == "fullfile":
+            resulf = content
+        else:
+            if mode == "line":
+                list_txt = content.splitlines()
+            elif mode == "keyword":
+                list_txt = content.split(",")
+            index = index%len(list_txt) if auto_index else index
+            resulf = list_txt[index].strip()
+        return (resulf,)
+
+class SaveTextFile:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "content": ("STRING",{"forceInput": True}),
+                "save_name": ("STRING",{"default":"filename.txt"}),
+                "save_dir": (["input","output"],{"default":"input"}),
+                "custom_dir": ("STRING",{"default":""}),
+                "mode": (["new_line","new_file","join_string","new_first_line","join_first_string"],),
+            },
+        }
+    RETURN_TYPES = ()
+    FUNCTION = "savetxt"
+    OUTPUT_NODE = True
+    CATEGORY = "📂 SDVN/💡 Creative"
+
+    def savetxt(self, content, save_name, save_dir, custom_dir, mode):
+        if content != "":
+            if custom_dir != "":
+                if not os.path.isdir(custom_dir):
+                    os.mkdir(custom_dir)
+                path = os.path.join(custom_dir,save_name)
+            else:
+                list_dir = {
+                    "input": folder_paths.get_input_directory(),
+                    "output": folder_paths.get_output_directory()
+                }
+                path = os.path.join(list_dir[save_dir],save_name)
+            if os.path.exists(path):
+                with open(path, 'r') as file:
+                    old_content = file.read()
+            else:
+                old_content = ""
+            if mode == "new_line":
+                new_content = f"{old_content}\n{content}"
+            elif mode == "new_file":
+                new_content = content
+            elif mode == "join_string":
+                new_content = f"{old_content}, {content}"
+            elif mode == "new_first_line":
+                new_content = f"{content}\n{old_content}"
+            elif mode == "join_first_string":
+                new_content = f"{content}, {old_content}"
+            with open(path, 'w') as file:
+                file.write(new_content)
+        return ()
+    
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
     "SDVN Any Input Type": AnyInput,
     "SDVN Image Size": ImageSize,
     "SDVN Seed": Seed,
     "SDVN Switch": Switch,
+    "SDVN Logic": Logic,
     "SDVN Translate": GGTranslate,
     "SDVN Any Show": AnyShow,
     "SDVN Run Test": Runtest,
     "SDVN Pipe In": PipeIn,
     "SDVN Pipe Out": PipeOut,
     "SDVN Pipe Out All": PipeOutAll,
+    "SDVN Load Text": LoadTextFile,
+    "SDVN Save Text": SaveTextFile,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -354,10 +505,13 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Image Size": "📐 Image Size",
     "SDVN Seed": "🔢 Seed",
     "SDVN Switch": "🔄 Switch",
+    "SDVN Logic": "#️⃣ Logic",
     "SDVN Translate": "🔃 Translate",
     "SDVN Any Show": "🔎 Any show",
     "SDVN Run Test": "⚡️ Run test",
     "SDVN Pipe In": "🪢 Pipe In",
     "SDVN Pipe Out": "🪢 Pipe Out",
-    "SDVN Pipe Out All": "🪢 Pipe Out All"
+    "SDVN Pipe Out All": "🪢 Pipe Out All",
+    "SDVN Load Text": "💽 Load Text",
+    "SDVN Save Text": "💽 Save Text",
 }

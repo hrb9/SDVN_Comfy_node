@@ -175,7 +175,47 @@ class LoadImage:
 
         return True
 
+class LoadImageFolder:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "folder_path": ("STRING", {"default": "", "multiline": False},),
+                "index": ("INT",{"default":0,"min":0}),
+                "auto_index": ("BOOLEAN", {"default": False, "label_on": "loop", "label_off": "off"},),
+            }
+        }
 
+    CATEGORY = "📂 SDVN"
+
+    RETURN_TYPES = ("IMAGE", "STRING",)
+    RETURN_NAMES = ("image", "list_img",)
+    FUNCTION = "load_image"
+
+    def list_img_by_path(s,file_path):
+        list_img = []
+
+        if os.path.isfile(file_path):
+            file_path = os.path.dirname(file_path)
+
+        for file in os.listdir(file_path):
+            file_full_path = os.path.join(file_path, file)
+            if os.path.isdir(file_full_path):
+                list_img.extend(s.list_img_by_path(file_full_path))
+            elif os.path.isfile(file_full_path):
+                type_name = file.split('.')[-1].lower()
+                if type_name in ["jpeg", "webp", "png", "jpg", "bmp"]:
+                    list_img.append(file_full_path)
+        return list_img
+
+    def load_image(self, folder_path, index, auto_index):
+        list_img = self.list_img_by_path(folder_path)
+        index = index%len(list_img) if auto_index else index
+        image_path = list_img[index]
+        str_list_img = "\n".join(list_img)
+        i = Image.open(image_path)
+        return (i2tensor(i), str_list_img)
+    
 class LoadImageUrl:
     @classmethod
     def INPUT_TYPES(s):
@@ -838,6 +878,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Load Checkpoint": CheckpointLoaderDownload,
     "SDVN Load Lora": LoraLoader,
     "SDVN Load Image": LoadImage,
+    "SDVN Load Image Folder": LoadImageFolder,
     "SDVN Load Image Url": LoadImageUrl,
     "SDVN CLIP Text Encode": CLIPTextEncode,
     "SDVN Controlnet Apply": AutoControlNetApply,
@@ -863,6 +904,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Load Checkpoint": "📀 Load Checkpoint",
     "SDVN Load Lora": "🎨 Load Lora",
     "SDVN Load Image": "🏞️ Load Image",
+    "SDVN Load Image Folder": "🏞️ Load Image Folder",
     "SDVN Load Image Url": "📥 Load Image Url",
     "SDVN CLIP Text Encode": "🔡 CLIP Text Encode",
     "SDVN KSampler": "⌛️ KSampler",

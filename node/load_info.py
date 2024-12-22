@@ -10,7 +10,7 @@ class img_info:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "img_path": ("STRING", {"default": "", "multiline": False, "tooltip": "Get img_path by 'SDVN Load Image' node"}),
+                "img_path": ("STRING", {"forceInput": True}),
                 "info_type": (["name","img_type","img_format", "color_mode", "image_size", "dpi", "metadata", "exif_data"],)
             }
         }
@@ -296,7 +296,7 @@ class lora_info:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "model_path": ("STRING",{"forceInput": True}),
+                "lora_path": ("STRING",{"forceInput": True}),
                 "info_type": (["Full_Data","Tag", *list(list_data_check)],)
             }
         }
@@ -307,8 +307,8 @@ class lora_info:
     RETURN_NAMES = ("info",)
     FUNCTION = "read"
 
-    def read(self, model_path, info_type):
-        data_dict = metadata_covert(model_path)
+    def read(self, lora_path, info_type):
+        data_dict = metadata_covert(lora_path)
         return (data_dict[info_type],)
 
 def update_metadata(filepath, metadata_dict):
@@ -346,12 +346,12 @@ def tensor2pil(tensor: torch.Tensor) -> Image.Image:
     pil_image = Image.fromarray(np_image)
     return pil_image
 
-class lora_info_editor:
+class model_info_editor:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                "lora_path": ("STRING",),
+                "model_path": ("STRING",{"forceInput": True}),
                 "Json_Embed": ("BOOLEAN", {"default": True},),
                 "Trigger_word": ("STRING",{"multiline": False}),
                 "Copyright": ("STRING",{"multiline": False}),
@@ -370,7 +370,7 @@ class lora_info_editor:
     RETURN_NAMES = ("model_path",)
     FUNCTION = "update"
 
-    def update(self, lora_path, Json_Embed, Trigger_word, Copyright, Url, Txt_save, Txt_note, image_cover = None):
+    def update(self, model_path, Json_Embed, Trigger_word, Copyright, Url, Txt_save, Txt_note, image_cover = None):
         if Json_Embed:
             data_dict = {}
             if Trigger_word != "":
@@ -379,22 +379,22 @@ class lora_info_editor:
                 data_dict["Copyright"] = Copyright
             if Url != "":
                 data_dict["Url"] = Url
-            update_metadata(lora_path, data_dict)
+            update_metadata(model_path, data_dict)
         if Txt_save and Txt_note != "":
-            name = lora_path.split("/")[-1].rsplit(".", 1)[0]
-            txt_path = os.path.join(os.path.dirname(lora_path),f"{name}.txt")
+            name = model_path.split("/")[-1].rsplit(".", 1)[0]
+            txt_path = os.path.join(os.path.dirname(model_path),f"{name}.txt")
             with open(txt_path, "w", encoding="utf-8") as file:
                 file.write(Txt_note)
         if image_cover != None:
-            name = lora_path.split("/")[-1].rsplit(".", 1)[0]
-            img_path = os.path.join(os.path.dirname(lora_path),f"{name}.png")
+            name = model_path.split("/")[-1].rsplit(".", 1)[0]
+            img_path = os.path.join(os.path.dirname(model_path),f"{name}.png")
             image = tensor2pil(image_cover)
             image.save(img_path, format="PNG")
-        return (lora_path,)
+        return (model_path,)
 
 NODE_CLASS_MAPPINGS = {
     "SDVN Lora info": lora_info,
-    "SDVN Lora info editor": lora_info_editor,
+    "SDVN Model info editor": model_info_editor,
     "SDVN Image Info": img_info,
     "SDVN Metadata Check": metadata_check,
     "SDVN Exif check": exif_check,
@@ -402,7 +402,7 @@ NODE_CLASS_MAPPINGS = {
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Lora info": "ℹ️ Lora info",
-    "SDVN Lora info editor": "*️⃣ Lora info editor",
+    "SDVN Model info editor": "*️⃣ Model info editor",
     "SDVN Image Info": "ℹ️ Image Info",
     "SDVN Metadata Check": "ℹ️ Metadata check",
     "SDVN Exif check": "ℹ️ Exif check"
