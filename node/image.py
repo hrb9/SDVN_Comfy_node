@@ -9,9 +9,9 @@ def create_image_with_text(text, image_size=(1200, 100), font_size=40, align = "
     draw = ImageDraw.Draw(image)
     
     try:
-        if os_name == "Linux":
+        if os_name == "Darwin":
             font = ImageFont.truetype("SF-Mono-Bold.otf", font_size)
-        elif os_name == "Darwin":
+        elif os_name == "Linux":
             font = ImageFont.truetype("LiberationMono-Regular.ttf", font_size)
         else:
             font = ImageFont.truetype("arialbd.ttf", font_size)
