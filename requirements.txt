@@ -4,3 +4,4 @@ openai
 gallery-dl
 google-generativeai
 googletrans-py
+matplotlib

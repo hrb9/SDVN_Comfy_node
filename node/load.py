@@ -123,7 +123,9 @@ class LoadImage:
                     os.path.join(root, file), start=input_dir)
                 # so the filename is processed correctly in widgets.js
                 file_path = file_path.replace("\\", "/")
-                file_list.append(file_path)
+                img_type = file_path.split('.')[-1].lower()
+                if img_type in ["jpeg", "webp", "png", "jpg", "bmp"]:
+                    file_list.append(file_path)
 
         return {
             "required": {
