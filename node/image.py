@@ -1,13 +1,20 @@
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 import torch, numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps
+import platform
+os_name = platform.system()
 
 def create_image_with_text(text, image_size=(1200, 100), font_size=40, align = "left"):
     image = Image.new('RGB', image_size, color=(255, 255, 255))
     draw = ImageDraw.Draw(image)
     
     try:
-        font = ImageFont.truetype("SF-Mono-Bold.otf", font_size)
+        if os_name == "Linux":
+            font = ImageFont.truetype("SF-Mono-Bold.otf", font_size)
+        elif os_name == "Darwin":
+            font = ImageFont.truetype("LiberationMono-Regular.ttf", font_size)
+        else:
+            font = ImageFont.truetype("arialbd.ttf", font_size)
     except IOError:
         font = ImageFont.load_default() 
 
@@ -20,7 +27,7 @@ def create_image_with_text(text, image_size=(1200, 100), font_size=40, align = "
         text_x = (image_size[0] - text_width) / 2
     elif align == "right":
         text_x = (image_size[0] - text_width) - 50
-    text_y = (image_size[1] - text_height) / 2 - 4
+    text_y = (image_size[1] - text_height) / 2
 
     draw.text((text_x, text_y), text, font=font, fill=(0, 0, 0))
     
