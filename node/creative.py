@@ -454,9 +454,12 @@ class SaveTextFile:
     def savetxt(self, content, save_name, save_dir, custom_dir, mode):
         if content != "":
             if custom_dir != "":
-                if not os.path.isdir(custom_dir):
-                    os.mkdir(custom_dir)
-                path = os.path.join(custom_dir,save_name)
+                if os.path.isfile(custom_dir):
+                    path = custom_dir.replace(custom_dir.split('.')[-1],'txt')
+                else:
+                    if not os.path.isdir(custom_dir):
+                        os.mkdir(custom_dir)
+                    path = os.path.join(custom_dir,save_name)
             else:
                 list_dir = {
                     "input": folder_paths.get_input_directory(),
