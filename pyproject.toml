@@ -1,6 +1,6 @@
 [project]
 name = "sdvn_comfy_node"
-description = "Smart Node Set, Supporting Easier and More Convenient Ways to Use Comfyui.Support Translate, Dynamic Prompt, Wildcard in most nodes.Support API with popular models (Gemini, Dall-E, Chat GPT).Support to download and use models directly at Comfyui.Support sub-folder with input folders.Support Merger Model more intelligently.Support smart, higher customization node and neat, more beautiful.And many other complementary nodes ..."
+description = "Update layout node"
 version = "1.1.0"
 license = {file = "LICENSE"}
 dependencies = ["#If MacOs - Please install aria2 manually via brew", "aria2;sys_platform != 'darwin'", "openai", "gallery-dl", "google-generativeai", "googletrans-py"]
