@@ -10,6 +10,6 @@ Repository = "https://github.com/StableDiffusionVN/SDVN_Comfy_node"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
-PublisherId = ""
+PublisherId = "sdvn-comfy-node"
 DisplayName = "SDVN_Comfy_node"
 Icon = ""
