@@ -7,7 +7,7 @@ os_name = platform.system()
 def create_image_with_text(text, image_size=(1200, 100), font_size=40, align = "left"):
     image = Image.new('RGB', image_size, color=(255, 255, 255))
     draw = ImageDraw.Draw(image)
-    
+    font_size = round(font_size*(image_size[1]/100))
     try:
         if os_name == "Darwin":
             font = ImageFont.truetype("Tahoma.ttf", font_size)
@@ -92,7 +92,7 @@ class image_layout:
         if label != "":
             samples = r.movedim(-1, 1)
             w = samples.shape[3]
-            img_label = create_image_with_text(label, image_size=(w, 50 * (max_size // 512)), font_size = font_size, align = align)
+            img_label = create_image_with_text(label, image_size=(w, round(50 * (max_size / 512))), font_size = font_size, align = align)
             img_label = i2tensor(img_label)
             list_img = [r, img_label]
             list_img = [tensor.squeeze(0) for tensor in list_img]
