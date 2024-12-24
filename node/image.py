@@ -1,7 +1,7 @@
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 import torch, numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-import platform
+import platform, math
 os_name = platform.system()
 
 def create_image_with_text(text, image_size=(1200, 100), font_size=40, align = "left"):
@@ -40,12 +40,78 @@ def i2tensor(i) -> torch.Tensor:
     image = torch.from_numpy(image)[None,]
     return image 
 
+class list_img:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "image1": ("IMAGE",),
+                "image2": ("IMAGE",),
+                "image3": ("IMAGE",),
+                "image4": ("IMAGE",),
+                "image5": ("IMAGE",),
+                "image6": ("IMAGE",),
+                "image7": ("IMAGE",),
+                "image8": ("IMAGE",),
+                "image9": ("IMAGE",),
+                "image10": ("IMAGE",),
+            }
+        }
+    CATEGORY = "📂 SDVN/🏞️ Image"
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "list_img"
+
+    def list_img(s, image1 = None, image2 = None, image3 = None, image4 = None, image5 = None, image6 = None, image7 = None, image8 = None, image9 = None, image10 = None):
+        r = []
+        for i in [image1, image2, image3, image4, image5, image6, image7, image8, image9, image10]:
+            if i != None:
+                if isinstance(i, list):
+                    r += [*i]
+                else:
+                    r += [i]
+        return (r,)
+
+class img_list_repeat:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "image1": ("IMAGE",),
+                "image2": ("IMAGE",),
+                "image3": ("IMAGE",),
+                "image4": ("IMAGE",),
+                "image5": ("IMAGE",),
+                "image6": ("IMAGE",),
+                "image7": ("IMAGE",),
+                "image8": ("IMAGE",),
+                "image9": ("IMAGE",),
+                "image10": ("IMAGE",),
+            }
+        }
+    INPUT_IS_LIST = True
+    OUTPUT_IS_LIST = (True, )
+    CATEGORY = "📂 SDVN/🏞️ Image"
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "list_img"
+
+    def list_img(s, image1 = None, image2 = None, image3 = None, image4 = None, image5 = None, image6 = None, image7 = None, image8 = None, image9 = None, image10 = None):
+        r = []
+        for i in [image1, image2, image3, image4, image5, image6, image7, image8, image9, image10]:
+            if i != None:
+                if isinstance(i, list):
+                    r += [*i]
+                else:
+                    r += [i]
+        return (r,)
+       
 class image_layout:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                "mode": (["row","column"],),
+                "mode": (["row","column","auto"],),
                 "max_size": ("INT",{"default":1024,"min":0}),
                 "label": ("STRING",),
                 "font_size": ("INT",{"default":40,"min":0}),
@@ -62,33 +128,46 @@ class image_layout:
         }
 
     CATEGORY = "📂 SDVN/🏞️ Image"
-
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("image",)
     FUNCTION = "layout"
 
     def layout(self, mode, max_size, label, align, font_size, image1 = None, image2 = None, image3 = None, image4 = None, image5 = None, image6 = None):
         list_img = []
+        full_img = []
+        for i in [image1, image2, image3, image4, image5, image6]:
+            if i != None:
+                if isinstance(i, list):
+                    full_img += [*i]
+                else:
+                    full_img += [i]
         if mode != "auto":
-            for i in [image1, image2, image3, image4, image5, image6]:
-                if i != None:
-                    samples = i.movedim(-1, 1)
-                    w = samples.shape[3]
-                    h = samples.shape[2]
-                    if mode == "row":
-                        w = round(w * max_size / h)
-                        h = max_size
-                    elif mode == "column":
-                        h = round(h * max_size / w)
-                        w = max_size
-                    i = ALL_NODE["ImageScale"]().upscale(i, "nearest-exact", w, h, "disabled")[0]
-                    list_img.append(i)
+            for i in full_img:
+                samples = i.movedim(-1, 1)
+                w = samples.shape[3]
+                h = samples.shape[2]
+                if mode == "row":
+                    w = round(w * max_size / h)
+                    h = max_size
+                elif mode == "column":
+                    h = round(h * max_size / w)
+                    w = max_size
+                i = ALL_NODE["ImageScale"]().upscale(i, "nearest-exact", w, h, "disabled")[0]
+                list_img.append(i)
             list_img = [tensor.squeeze(0) for tensor in list_img]
             if mode == "row":
                 img_layout = torch.cat(list_img, dim=1)
             elif mode == "column":
                 img_layout = torch.cat(list_img, dim=0)
             r = img_layout.unsqueeze(0)
+        else:
+            c = math.ceil(math.sqrt(len(full_img)))
+            if len(full_img) % c <= c/2 and len(full_img) % c != 0:
+                c = c + 1
+            new_list = [full_img[i:i + c] for i in range(0, len(full_img), c)]
+            for i in new_list:
+                list_img += [self.layout("row", max_size, "", "left", font_size, i)[0]]
+            r = self.layout("column", max_size, "", "left", font_size, list_img)[0]
         if label != "":
             samples = r.movedim(-1, 1)
             w = samples.shape[3]
@@ -102,9 +181,13 @@ class image_layout:
         
     
 NODE_CLASS_MAPPINGS = {
+    "SDVM Imag List": list_img,
+    "SDVM Imag List Repeat": img_list_repeat,
     "SDVN Image Layout": image_layout,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Image Layout": "🪄 Image Layout",
+    "SDVM Imag List": "🔄 Image List",
+    "SDVM Imag List Repeat": "🔄 Image Repeat",
 }
