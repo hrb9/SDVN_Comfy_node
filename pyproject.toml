@@ -1,7 +1,7 @@
 [project]
 name = "sdvn_comfy_node"
-description = "Update layout node"
-version = "1.1.0"
+description = "Update fix text node, add icon image"
+version = "1.1.1"
 license = {file = "LICENSE"}
 dependencies = ["#If MacOs - Please install aria2 manually via brew", "aria2;sys_platform != 'darwin'", "openai", "gallery-dl", "google-generativeai", "googletrans-py"]
 
@@ -12,4 +12,4 @@ Repository = "https://github.com/StableDiffusionVN/SDVN_Comfy_node"
 [tool.comfy]
 PublisherId = "sdvn-comfy-node"
 DisplayName = "SDVN_Comfy_node"
-Icon = ""
+Icon = "https://github.com/StableDiffusionVN/SDVN_Comfy_node/blob/main/preview/sdvn-logo.png"
