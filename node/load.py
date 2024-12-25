@@ -183,7 +183,7 @@ class LoadImageFolder:
         return {
             "required": {
                 "folder_path": ("STRING", {"default": "", "multiline": False},),
-                "index": ("INT",{"default":0,"min":0}),
+                "index": ("INT",{"default":-1,"min":-1}),
                 "auto_index": ("BOOLEAN", {"default": False, "label_on": "loop", "label_off": "off"},),
             }
         }
@@ -192,6 +192,7 @@ class LoadImageFolder:
 
     RETURN_TYPES = ("IMAGE", "STRING", "STRING")
     RETURN_NAMES = ("image", "list_img", "img_path")
+    OUTPUT_IS_LIST = (True, False, False)
     FUNCTION = "load_image"
 
     def list_img_by_path(s,file_path):
@@ -213,10 +214,19 @@ class LoadImageFolder:
     def load_image(self, folder_path, index, auto_index):
         list_img = self.list_img_by_path(folder_path)
         index = index%len(list_img) if auto_index else index
-        image_path = list_img[index]
         str_list_img = "\n".join(list_img)
-        i = Image.open(image_path)
-        return (i2tensor(i), str_list_img, image_path,)
+        if index != -1:
+            image_path = list_img[index]
+            i = Image.open(image_path)
+            i = [i2tensor(i)]
+        else:
+            i = []
+            for x in list_img:
+               image_path = str_list_img
+               img = Image.open(x)
+               img = i2tensor(img)
+               i.append(img)
+        return (i, str_list_img, image_path,)
     
 class LoadImageUrl:
     @classmethod

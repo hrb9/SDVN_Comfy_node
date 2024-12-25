@@ -104,6 +104,7 @@ class AnyInput:
     def INPUT_TYPES(s):
         return {"required": {
             "input": ("STRING", {"default": "","placeholder": "Ex: (in1+in2)/in3; in1 in2, in3; or every", "multiline": True, }),
+            "output_list": (["None", "keywork", "line"], {"default": "None"}),
             "translate": (lang_list(),),
             "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
         },
@@ -115,11 +116,13 @@ class AnyInput:
                 }
         }
 
+    # INPUT_IS_LIST = True
+    OUTPUT_IS_LIST = (True, True, True, True)
     CATEGORY = "📂 SDVN/💡 Creative"
     RETURN_TYPES = ("STRING", "FLOAT", "INT", "BOOLEAN")
     FUNCTION = "any_return"
 
-    def any_return(self, input, translate, seed, in1 = None, in2 = None, in3 = None, in4 = None):
+    def any_return(self, input, output_list, translate, seed, in1 = None, in2 = None, in3 = None, in4 = None):
         in_list = {"in1":in1,"in2":in2,"in3":in3,"in4":in4}
         for i in in_list:
             if in_list[i] !=None and i in input:
@@ -128,23 +131,33 @@ class AnyInput:
             cls = ALL_NODE["DPRandomGenerator"]
             input = cls().get_prompt(input, seed, 'No')[0]
         input = GGTranslate().ggtranslate(input,translate)[0]
-        try:
-            i = int(eval(input))
-        except:
-            i = 0
-        try:
-            f = float(eval(input))
-        except:
-            f = 0.0
         true_values = {"true",  "1", "yes", "y", "on"}
-        false_values = {"false", "0", "no", "n", "off"}
-        input = input.strip().lower()
-        if input in true_values:
-            b = True
-        elif input in false_values:
-            b = False
-        else:
-            b = False
+        input = input.lower()
+        if output_list == "None":
+            input = [input]
+        elif output_list == "keywork":
+            input = input.split(',')
+        elif output_list == "line":
+            input = input.splitlines()
+        f = [*input]
+        print(f)
+        i = [*input]
+        b = [*input]
+        for x in f:
+            try:
+                f[f.index(x)] = float(eval(x))
+            except:
+                f[f.index(x)] = 0.0
+        for x in i:
+            try:
+                i[i.index(x)] = int(eval(x))
+            except:
+                i[i.index(x)] = 0
+        for x in b:
+            if x in true_values:
+                b[b.index(x)] = True
+            else:
+                b[b.index(x)] = False
         return (input, f, i, b,)
 
 
