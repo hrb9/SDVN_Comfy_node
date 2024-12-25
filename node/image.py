@@ -91,7 +91,10 @@ class img_repeat:
     FUNCTION = "list_img"
 
     def list_img(s, repeat, image):
-        return ([image for _ in range(repeat)],)
+        r = []
+        for _ in range(repeat[0]):
+            r += [*image]
+        return (r,)
 
 class load_img_from_list:
     @classmethod
@@ -177,8 +180,8 @@ class image_layout:
                 c = c + 1
             new_list = [full_img[i:i + c] for i in range(0, len(full_img), c)]
             for i in new_list:
-                list_img += [self.layout("row", max_size, "", "left", font_size, i)[0]]
-            r = self.layout("column", max_size, "", "left", font_size, list_img)[0]
+                list_img += [self.layout(["row"], [max_size], [""], ["left"], [font_size], i)[0]]
+            r = self.layout(["column"], [max_size], [""], ["left"], [font_size], list_img)[0]
         if label != "":
             samples = r.movedim(-1, 1)
             w = samples.shape[3]
