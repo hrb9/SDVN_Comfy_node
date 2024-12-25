@@ -40,38 +40,6 @@ def i2tensor(i) -> torch.Tensor:
     image = torch.from_numpy(image)[None,]
     return image 
 
-class list_img:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "optional": {
-                "image1": ("IMAGE",),
-                "image2": ("IMAGE",),
-                "image3": ("IMAGE",),
-                "image4": ("IMAGE",),
-                "image5": ("IMAGE",),
-                "image6": ("IMAGE",),
-                "image7": ("IMAGE",),
-                "image8": ("IMAGE",),
-                "image9": ("IMAGE",),
-                "image10": ("IMAGE",),
-            }
-        }
-    CATEGORY = "📂 SDVN/🏞️ Image"
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("image",)
-    FUNCTION = "list_img"
-
-    def list_img(s, image1 = None, image2 = None, image3 = None, image4 = None, image5 = None, image6 = None, image7 = None, image8 = None, image9 = None, image10 = None):
-        r = []
-        for i in [image1, image2, image3, image4, image5, image6, image7, image8, image9, image10]:
-            if i != None:
-                if isinstance(i, list):
-                    r += [*i]
-                else:
-                    r += [i]
-        return (r,)
-
 class img_list_repeat:
     @classmethod
     def INPUT_TYPES(s):
@@ -105,6 +73,44 @@ class img_list_repeat:
                 else:
                     r += [i]
         return (r,)
+
+class img_repeat:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "repeat": ("INT", {"default":1,"min":1}),
+                "image": ("IMAGE",),
+            }
+        }
+    # INPUT_IS_LIST = True
+    OUTPUT_IS_LIST = (True, )
+    CATEGORY = "📂 SDVN/🏞️ Image"
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "list_img"
+
+    def list_img(s, repeat, image):
+        return ([image for _ in range(repeat)],)
+
+class load_img_from_list:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "index": ("INT", {"default":0,"min":0}),
+                "image": ("IMAGE",),
+            }
+        }
+    INPUT_IS_LIST = True
+    # OUTPUT_IS_LIST = (True, )
+    CATEGORY = "📂 SDVN/🏞️ Image"
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "load_from_list"
+
+    def load_from_list(s, index, image):
+        return (image[index[0]],)
        
 class image_layout:
     @classmethod
@@ -126,7 +132,7 @@ class image_layout:
                 "image6": ("IMAGE",),
             }
         }
-
+    INPUT_IS_LIST = True
     CATEGORY = "📂 SDVN/🏞️ Image"
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("image",)
@@ -135,6 +141,11 @@ class image_layout:
     def layout(self, mode, max_size, label, align, font_size, image1 = None, image2 = None, image3 = None, image4 = None, image5 = None, image6 = None):
         list_img = []
         full_img = []
+        mode = mode[0]
+        max_size = max_size[0]
+        label = label[0]
+        align = align[0]
+        font_size = font_size[0]
         for i in [image1, image2, image3, image4, image5, image6]:
             if i != None:
                 if isinstance(i, list):
@@ -181,13 +192,15 @@ class image_layout:
         
     
 NODE_CLASS_MAPPINGS = {
-    "SDVM Imag List": list_img,
-    "SDVM Imag List Repeat": img_list_repeat,
+    "SDVM Image List Repeat": img_list_repeat,
+    "SDVN Image Repeat": img_repeat,
     "SDVN Image Layout": image_layout,
+    "SDVN Load Image From List": load_img_from_list,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Image Layout": "🪄 Image Layout",
-    "SDVM Imag List": "🔄 Image List",
-    "SDVM Imag List Repeat": "🔄 Image Repeat",
+    "SDVM Image List Repeat": "🔄 Image List",
+    "SDVN Image Repeat": "🔄 Image Repeat",
+    "SDVN Load Image From List": "📁 Image From List",
 }
