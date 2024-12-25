@@ -689,7 +689,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Image Size": "📐 Image Size",
     "SDVN Seed": "🔢 Seed",
     "SDVN Switch": "🔄 Switch",
-    "SDVN Logic": "#️⃣ Logic",
+    "SDVN Logic": "#️⃣ Logic Switch",
     "SDVN Boolean": "#️⃣ Boolean",
     "SDVN Translate": "🔃 Translate",
     "SDVN Any Show": "🔎 Any show",
