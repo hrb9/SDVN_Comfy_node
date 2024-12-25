@@ -264,6 +264,35 @@ class Logic:
             r = a <= b
         return (input_true if r == True else input_false,)
 
+class Boolean:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "a": (any,),
+                "b": (any,),
+                "logic":  (["a = b", "a != b", "a > b", "a < b", "a >= b", "a <= b"],),
+            }}
+    CATEGORY = "📂 SDVN/💡 Creative"
+    RETURN_TYPES = ("BOOLEAN",)
+    RETURN_NAMES = ("boolean",)
+    FUNCTION = "logic"
+
+    def logic(s, a, b, logic):
+        if logic == "a = b":
+            r = a == b
+        elif logic == "a != b":
+            r = a != b
+        elif logic == "a > b":
+            r = a > b
+        elif logic == "a < b":
+            r = a < b
+        elif logic == "a >= b":
+            r = a >= b
+        elif logic == "a <= b":
+            r = a <= b
+        return (r,)
+
 class AnyShow:
     @classmethod
     def INPUT_TYPES(s):
@@ -572,6 +601,47 @@ class load_any_from_list:
 
     def load_from_list(s, index, any):
         return (any[index[0]],)
+
+class filter_list:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "start": ("INT", {"default":0,"min":0}),
+                "end": ("INT", {"default":0,"min":0}),
+                "input": (any,),
+            },
+            "optional": {
+                "boolean": ("BOOLEAN", {"forceInput": True})
+            }
+        }
+
+    CATEGORY = "📂 SDVN/💡 Creative"
+    RETURN_TYPES = (any,)
+    RETURN_NAMES = ("any",)
+    INPUT_IS_LIST = True
+    OUTPUT_IS_LIST = (True,)
+    FUNCTION = "filter_list"
+
+    def filter_list(s, start, end, input, boolean = None):
+        start = start[0]
+        end = end[0]
+        if end != 0 and start <= end and end < len(input):
+            n_input = []
+            for i in range(len(input)):
+                if i in range(start-1,end):
+                    n_input.append(input[i])
+            input = [*n_input]
+        if boolean != None:
+            n_input = []
+            for i in range(len(input)):
+                try:
+                    if boolean[i]:
+                        n_input.append(input[i])
+                except:
+                    None
+            input = [*n_input]
+        return (input,)
         
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
@@ -580,6 +650,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Seed": Seed,
     "SDVN Switch": Switch,
     "SDVN Logic": Logic,
+    "SDVN Boolean": Boolean,
     "SDVN Translate": GGTranslate,
     "SDVN Any Show": AnyShow,
     "SDVN Run Test": Runtest,
@@ -591,6 +662,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Any List":any_list_repeat,
     "SDVN Any Repeat":any_repeat,
     "SDVN Any From List":load_any_from_list,
+    "SDVN Filter List": filter_list,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -600,6 +672,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Seed": "🔢 Seed",
     "SDVN Switch": "🔄 Switch",
     "SDVN Logic": "#️⃣ Logic",
+    "SDVN Boolean": "#️⃣ Boolean",
     "SDVN Translate": "🔃 Translate",
     "SDVN Any Show": "🔎 Any show",
     "SDVN Run Test": "⚡️ Run test",
@@ -611,4 +684,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Any List":"🔄 Any List",
     "SDVN Any Repeat":"🔄 Any Repeat",
     "SDVN Any From List":"📁 Any From List",
+    "SDVN Filter List": "⚖️ Filter List",
 }
