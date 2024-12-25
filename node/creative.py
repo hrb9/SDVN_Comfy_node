@@ -484,7 +484,82 @@ class SaveTextFile:
             with open(path, 'w') as file:
                 file.write(new_content)
         return ()
-    
+
+class any_list_repeat:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "any1": (any,),
+                "any2": (any,),
+                "any3": (any,),
+                "any4": (any,),
+                "any5": (any,),
+                "any6": (any,),
+                "any7": (any,),
+                "any8": (any,),
+                "any9": (any,),
+                "any10": (any,),
+            }
+        }
+    INPUT_IS_LIST = True
+    OUTPUT_IS_LIST = (True, )
+    CATEGORY = "📂 SDVN/💡 Creative"
+    RETURN_TYPES = (any,)
+    RETURN_NAMES = ("any",)
+    FUNCTION = "list_any"
+
+    def list_any(s, any1 = None, any2 = None, any3 = None, any4 = None, any5 = None, any6 = None, any7 = None, any8 = None, any9 = None, any10 = None):
+        r = []
+        for i in [any1, any2, any3, any4, any5, any6, any7, any8, any9, any10]:
+            if i != None:
+                if isinstance(i, list):
+                    r += [*i]
+                else:
+                    r += [i]
+        return (r,)
+
+class any_repeat:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "repeat": ("INT", {"default":1,"min":1}),
+                "any": (any,),
+            }
+        }
+
+    INPUT_IS_LIST = True
+    OUTPUT_IS_LIST = (True, )
+    CATEGORY = "📂 SDVN/💡 Creative"
+    RETURN_TYPES = (any,)
+    RETURN_NAMES = ("any",)
+    FUNCTION = "list_any"
+
+    def list_any(s, repeat, any):
+        r = []
+        for _ in range(repeat[0]):
+            r += [*any]
+        return (r,)
+
+class load_any_from_list:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "index": ("INT", {"default":0,"min":0}),
+                "any": (any,),
+            }
+        }
+    INPUT_IS_LIST = True
+    CATEGORY = "📂 SDVN/💡 Creative"
+    RETURN_TYPES = (any,)
+    RETURN_NAMES = ("any",)
+    FUNCTION = "load_from_list"
+
+    def load_from_list(s, index, any):
+        return (any[index[0]],)
+        
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
     "SDVN Any Input Type": AnyInput,
@@ -500,6 +575,9 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Pipe Out All": PipeOutAll,
     "SDVN Load Text": LoadTextFile,
     "SDVN Save Text": SaveTextFile,
+    "SDVN Any List":any_list_repeat,
+    "SDVN Any Repeat":any_repeat,
+    "SDVN Any From List":load_any_from_list,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -517,4 +595,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Pipe Out All": "🪢 Pipe Out All",
     "SDVN Load Text": "💽 Load Text",
     "SDVN Save Text": "💽 Save Text",
+    "SDVN Any List":"🔄 Any List",
+    "SDVN Any Repeat":"🔄 Any Repeat",
+    "SDVN Any From List":"📁 Any From List",
 }
