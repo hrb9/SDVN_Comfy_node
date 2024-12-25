@@ -131,7 +131,7 @@ class AnyInput:
             cls = ALL_NODE["DPRandomGenerator"]
             input = cls().get_prompt(input, seed, 'No')[0]
         input = GGTranslate().ggtranslate(input,translate)[0]
-        true_values = {"true",  "1", "yes", "y", "on"}
+        true_values = ["true",  "1", "yes", "y", "on"]
         input = input.lower()
         if output_list == "None":
             input = [input]
@@ -160,6 +160,32 @@ class AnyInput:
                 b[b.index(x)] = False
         return (input, f, i, b,)
 
+class SimpleAnyInput:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+            "input": ("STRING", {"default": "", "multiline": False, }),
+        }}
+
+    CATEGORY = "📂 SDVN/💡 Creative"
+    RETURN_TYPES = (any,)
+    RETURN_NAMES = ("any",)
+    FUNCTION = "simple_any"
+
+    def simple_any(s,input):
+        try:
+            r = int(eval(input))
+        except:
+            try:
+                r = float(eval(input))
+            except:
+                if input.lower() in ["true",  "yes", "y", "on"]:
+                    r = True
+                elif input.lower() in ["false",  "no", "n", "off"]:
+                    r = False
+                else:
+                    r = input
+        return (r,)
 
 class ImageSize:
 
@@ -664,6 +690,7 @@ class filter_list:
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
     "SDVN Any Input Type": AnyInput,
+    "SDVN Simple Any Input": SimpleAnyInput,
     "SDVN Image Size": ImageSize,
     "SDVN Seed": Seed,
     "SDVN Switch": Switch,
@@ -703,4 +730,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Any Repeat":"🔄 Any Repeat",
     "SDVN Any From List":"📁 Any From List",
     "SDVN Filter List": "⚖️ Filter List",
+    "SDVN Simple Any Input": "🔡 Simple Any Input",
 }
