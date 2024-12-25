@@ -190,9 +190,9 @@ class LoadImageFolder:
 
     CATEGORY = "📂 SDVN"
 
-    RETURN_TYPES = ("IMAGE", "STRING", "STRING")
-    RETURN_NAMES = ("image", "list_img", "img_path")
-    OUTPUT_IS_LIST = (True, False, False)
+    RETURN_TYPES = ("IMAGE", "STRING")
+    RETURN_NAMES = ("image", "img_path")
+    OUTPUT_IS_LIST = (True, True)
     FUNCTION = "load_image"
 
     def list_img_by_path(s,file_path):
@@ -214,19 +214,18 @@ class LoadImageFolder:
     def load_image(self, folder_path, index, auto_index):
         list_img = self.list_img_by_path(folder_path)
         index = index%len(list_img) if auto_index else index
-        str_list_img = "\n".join(list_img)
         if index != -1:
-            image_path = list_img[index]
-            i = Image.open(image_path)
+            image_path = [list_img[index]]
+            i = Image.open(image_path[0])
             i = [i2tensor(i)]
         else:
             i = []
+            image_path = list_img
             for x in list_img:
-               image_path = str_list_img
                img = Image.open(x)
                img = i2tensor(img)
                i.append(img)
-        return (i, str_list_img, image_path,)
+        return (i, image_path,)
     
 class LoadImageUrl:
     @classmethod

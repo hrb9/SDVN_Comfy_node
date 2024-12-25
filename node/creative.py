@@ -242,7 +242,7 @@ class Logic:
                 "input_false": (any,),
                 "a": (any,),
                 "b": (any,),
-                "logic":  (["a = b", "a != b", "a > b", "a < b", "a >= b", "a <= b"],),
+                "logic":  (["a = b", "a != b", "a > b", "a < b", "a >= b", "a <= b", "a in b", "a not in b"],),
             }}
     CATEGORY = "📂 SDVN/💡 Creative"
     RETURN_TYPES = (any,)
@@ -262,6 +262,10 @@ class Logic:
             r = a >= b
         elif logic == "a <= b":
             r = a <= b
+        elif logic == "a in b":
+            r = a in b
+        elif logic == " a not in b":
+            r = a not in b
         return (input_true if r == True else input_false,)
 
 class Boolean:
@@ -271,7 +275,7 @@ class Boolean:
             "required": {
                 "a": (any,),
                 "b": (any,),
-                "logic":  (["a = b", "a != b", "a > b", "a < b", "a >= b", "a <= b"],),
+                "logic":  (["a = b", "a != b", "a > b", "a < b", "a >= b", "a <= b", "a in b", "a not in b"],),
             }}
     CATEGORY = "📂 SDVN/💡 Creative"
     RETURN_TYPES = ("BOOLEAN",)
@@ -291,6 +295,10 @@ class Boolean:
             r = a >= b
         elif logic == "a <= b":
             r = a <= b
+        elif logic == "a in b":
+            r = a in b
+        elif logic == " a not in b":
+            r = a not in b
         return (r,)
 
 class AnyShow:
