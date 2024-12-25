@@ -626,11 +626,21 @@ class filter_list:
     def filter_list(s, start, end, input, boolean = None):
         start = start[0]
         end = end[0]
-        if end != 0 and start <= end and end < len(input):
+        if start != 0:
+            end = len(input) if end == 0 else end
+        if end != 0 and start <= end:
             n_input = []
             for i in range(len(input)):
                 if i in range(start-1,end):
-                    n_input.append(input[i])
+                    if boolean != None:
+                        try:
+                            b = boolean[i]
+                        except:
+                            b = True
+                    else:
+                        b = True
+                    if b == True:
+                        n_input.append(input[i])
             input = [*n_input]
         if boolean != None:
             n_input = []
