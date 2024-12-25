@@ -1,7 +1,7 @@
 [project]
 name = "sdvn_comfy_node"
-description = "Update fix text node, add icon image"
-version = "1.1.1"
+description = "Update Loop - List - Repeat node"
+version = "1.2"
 license = {file = "LICENSE"}
 dependencies = ["#If MacOs - Please install aria2 manually via brew", "aria2;sys_platform != 'darwin'", "openai", "gallery-dl", "google-generativeai", "googletrans-py"]
 
