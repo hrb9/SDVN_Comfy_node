@@ -146,9 +146,12 @@ class image_layout:
         full_img = []
         mode = mode[0]
         max_size = max_size[0]
-        label = label[0]
         align = align[0]
         font_size = font_size[0]
+        if mode != "row":
+            label = label[0]
+        elif len(label) == 1:
+            label = label[0].split(',')
         for i in [image1, image2, image3, image4, image5, image6]:
             if i != None:
                 if isinstance(i, list):
@@ -168,10 +171,21 @@ class image_layout:
                     w = max_size
                 i = ALL_NODE["ImageScale"]().upscale(i, "nearest-exact", w, h, "disabled")[0]
                 list_img.append(i)
-            list_img = [tensor.squeeze(0) for tensor in list_img]
             if mode == "row":
+                if len(label) > 1:
+                    new_list = []
+                    for index in range(len(list_img)):
+                        try:
+                            r_label = label[index].strip()
+                        except:
+                            r_label = " "
+                        print(r_label)
+                        new_list += [self.layout(["row"], [max_size], [r_label], [align], [font_size], [list_img[index]])[0]]
+                    list_img = new_list
+                list_img = [tensor.squeeze(0) for tensor in list_img]
                 img_layout = torch.cat(list_img, dim=1)
             elif mode == "column":
+                list_img = [tensor.squeeze(0) for tensor in list_img]
                 img_layout = torch.cat(list_img, dim=0)
             r = img_layout.unsqueeze(0)
         else:
@@ -182,7 +196,9 @@ class image_layout:
             for i in new_list:
                 list_img += [self.layout(["row"], [max_size], [""], ["left"], [font_size], i)[0]]
             r = self.layout(["column"], [max_size], [""], ["left"], [font_size], list_img)[0]
-        if label != "":
+        if label != "" and len(label) == 1:
+            if mode == "row":
+                label = label[0]
             samples = r.movedim(-1, 1)
             w = samples.shape[3]
             img_label = create_image_with_text(label, image_size=(w, round(50 * (max_size / 512))), font_size = font_size, align = align)

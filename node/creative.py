@@ -170,22 +170,27 @@ class SimpleAnyInput:
     CATEGORY = "📂 SDVN/💡 Creative"
     RETURN_TYPES = (any,)
     RETURN_NAMES = ("any",)
+    OUTPUT_IS_LIST = (True,)
     FUNCTION = "simple_any"
 
     def simple_any(s,input):
-        try:
-            r = int(eval(input))
-        except:
+        input = input.split(',')
+        result = []
+        for i in input:
             try:
-                r = float(eval(input))
+                r = int(eval(i))
             except:
-                if input.lower() in ["true",  "yes", "y", "on"]:
-                    r = True
-                elif input.lower() in ["false",  "no", "n", "off"]:
-                    r = False
-                else:
-                    r = input
-        return (r,)
+                try:
+                    r = float(eval(i))
+                except:
+                    if i.lower() in ["true",  "yes", "y", "on"]:
+                        r = True
+                    elif i.lower() in ["false",  "no", "n", "off"]:
+                        r = False
+                    else:
+                        r = i
+            result.append(r)
+        return (result,)
 
 class ImageSize:
 
