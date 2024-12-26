@@ -192,13 +192,17 @@ class image_layout:
             new_list = [full_img[i:i + c] for i in range(0, len(full_img), c)]
             for i in new_list:
                 list_img += [self.layout(["row"], [max_size], [""], ["left"], [font_size], i)[0]]
-            r = self.layout(["column"], [max_size], [""], ["left"], [font_size], list_img)[0]
+            if len(list_img) >1:
+                r = self.layout(["column"], [max_size], [""], ["left"], [font_size], list_img)[0]
+            else:
+                r = list_img[0]
         if ( mode != "row") or ( len(label) == 1 and mode == "row" and ',' not in label[0]):
             label = label[0]
             if label != "":
                 samples = r.movedim(-1, 1)
                 w = samples.shape[3]
-                img_label = create_image_with_text(label, image_size=(w, round(50 * (max_size / 512))), font_size = font_size, align = align)
+                h = samples.shape[2]
+                img_label = create_image_with_text(label, image_size=(w, round(50 * (h / 512))), font_size = font_size, align = align)
                 img_label = i2tensor(img_label)
                 list_img = [r, img_label]
                 list_img = [tensor.squeeze(0) for tensor in list_img]
@@ -206,7 +210,6 @@ class image_layout:
                 r = img_layout.unsqueeze(0)
         return (r,)
         
-    
 NODE_CLASS_MAPPINGS = {
     "SDVM Image List Repeat": img_list_repeat,
     "SDVN Image Repeat": img_repeat,
