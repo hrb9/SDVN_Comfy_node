@@ -83,7 +83,7 @@ class img_repeat:
                 "image": ("IMAGE",),
             }
         }
-    # INPUT_IS_LIST = True
+    INPUT_IS_LIST = True
     OUTPUT_IS_LIST = (True, )
     CATEGORY = "📂 SDVN/🏞️ Image"
     RETURN_TYPES = ("IMAGE",)
