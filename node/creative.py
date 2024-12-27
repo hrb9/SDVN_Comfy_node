@@ -691,7 +691,74 @@ class filter_list:
                     None
             input = [*n_input]
         return (input,)
+    
+class menu_option:
+    menu_list = ["Option_1","Option_2","Option_3","Option_4","Option_5","Option_6","Option_7","Option_8"]
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "Menu": (s.menu_list,{"default":"Option_1"}),
+                "Setting": ("STRING", {"multiline": True,"default": """
+Option_1:parameter1
+Option_2:parameter2
+Option_3:parameter3
+Option_4:parameter4                                                                                                                                                         
+"""}),
+            },
+        }
+
+    CATEGORY = "📂 SDVN/💡 Creative"
+    RETURN_TYPES = (any,)
+    RETURN_NAMES = ("output",)
+    # INPUT_IS_LIST = True
+    OUTPUT_IS_LIST = (True,)
+    FUNCTION = "menu_option"
+    
+    def menu_option(s, Menu, Setting):
+        Setting = Setting.strip().splitlines()
+        index = s.menu_list.index(Menu)
+        try:
+            p = Setting[index].split(':')[-1]
+        except:
+            p = Setting[0]
+        p = SimpleAnyInput().simple_any(p)[0]
         
+        return (p,)
+
+class dic_convert:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "input": (any,""),
+                "logic":  (["input = key"],),
+                "setting": ("STRING", {"multiline": True,"default": """
+key:output1
+key2:output2
+key3:output3                                                                                                                                                         
+"""}),
+            },
+        }
+
+    CATEGORY = "📂 SDVN/💡 Creative"
+    RETURN_TYPES = (any,)
+    RETURN_NAMES = ("value output",)
+    # INPUT_IS_LIST = True
+    OUTPUT_IS_LIST = (True,)
+    FUNCTION = "dic_convert"
+
+    def dic_convert(s, input, logic, setting):
+        d = {}
+        if logic == "input = key":
+            s_list = setting.strip().splitlines()
+            for i in s_list:
+                d[i.split(':')[0]] = i.split(':')[1]
+            input = str(input)
+            output = d[input]
+            output = SimpleAnyInput().simple_any(output)[0]
+            return (output,)
+
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
     "SDVN Any Input Type": AnyInput,
@@ -713,6 +780,8 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Any Repeat":any_repeat,
     "SDVN Any From List":load_any_from_list,
     "SDVN Filter List": filter_list,
+    "SDVN Menu Option": menu_option,
+    "SDVN Dic Convert": dic_convert,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -736,4 +805,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Any From List":"📁 Any From List",
     "SDVN Filter List": "⚖️ Filter List",
     "SDVN Simple Any Input": "🔡 Simple Any Input",
+    "SDVN Menu Option": "📋 Menu Option",
+    "SDVN Dic Convert": "🔄 Dic Convert",
 }
