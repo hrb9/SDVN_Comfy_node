@@ -479,14 +479,14 @@ class LoadTextFile:
                 "custom_path": ("STRING",{"default":""}),
                 "input_dir": (get_name_file(input_dir),),
                 "mode": (["line","keyword","fullfile"],),
-                "index": ("INT",{"default":0}),
+                "index": ("INT",{"default":-1,"min":-1}),
                 "auto_index": ("BOOLEAN", {"default": False, "label_on": "loop", "label_off": "off"},),
             },
             "optional": {
                 "string": ("STRING",{"forceInput": True})
             }
         }
-
+    OUTPUT_IS_LIST = (True,)
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("string",)
     FUNCTION = "loadtxt"
@@ -505,14 +505,17 @@ class LoadTextFile:
                 content = file.read().strip()
 
         if mode == "fullfile":
-            resulf = content
+            resulf = [content]
         else:
             if mode == "line":
                 list_txt = content.splitlines()
             elif mode == "keyword":
                 list_txt = content.split(",")
             index = index%len(list_txt) if auto_index else index
-            resulf = list_txt[index].strip()
+            if index != -1:
+                resulf = [list_txt[index].strip()]
+            else:
+                resulf = list_txt
         return (resulf,)
 
 class SaveTextFile:
