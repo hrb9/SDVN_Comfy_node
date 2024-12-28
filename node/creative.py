@@ -735,11 +735,12 @@ class dic_convert:
         return {
             "required": {
                 "input": (any,""),
-                "logic":  (["input = key"],),
+                "logic":  (["input = key","input in key","key in input", "input >= key", "input <= key", "input > key", "input < key"],),
                 "setting": ("STRING", {"multiline": True,"default": """
 key:output1
 key2:output2
-key3:output3                                                                                                                                                         
+key3:output3
+other:output4                                                                                                                                                         
 """}),
             },
         }
@@ -753,14 +754,50 @@ key3:output3
 
     def dic_convert(s, input, logic, setting):
         d = {}
+        s_list = setting.strip().splitlines()
+        for i in s_list:
+            d[i.split(':')[0]] = i.split(':')[1]
+        input = str(input)
         if logic == "input = key":
-            s_list = setting.strip().splitlines()
-            for i in s_list:
-                d[i.split(':')[0]] = i.split(':')[1]
-            input = str(input)
-            output = d[input]
+            try:
+                output = d[input]
+            except:
+                output = d[list(d)[0]]
+        if logic == "key in input":
+            for i in d:
+                if i.lower() in input.lower():
+                    output = d[i]
+                    break
+        if logic == "input in key":
+            for i in d:
+                if input.lower() in i.lower():
+                    output = d[i]
+                    break
+        if logic == "input >= key":
+            for i in d:
+                if float(input) >= float(i):
+                    output = d[i]
+                    break
+        if logic == "input <= key":
+            for i in d:
+                if float(input) <= float(i):
+                    output = d[i]
+                    break
+        if logic == "input > key":
+            for i in d:
+                if float(input) > float(i):
+                    output = d[i]
+                    break
+        if logic == "input < key":
+            for i in d:
+                if float(input) < float(i):
+                    output = d[i]
+                    break
+        try:
             output = SimpleAnyInput().simple_any(output)[0]
-            return (output,)
+        except:
+            output = SimpleAnyInput().simple_any(d[list(d)[-1]])[0]
+        return (output,)
 
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
