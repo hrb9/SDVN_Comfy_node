@@ -174,7 +174,7 @@ class SimpleAnyInput:
     FUNCTION = "simple_any"
 
     def simple_any(s,input):
-        input = input.split(',')
+        input = [item.strip() for item in input.split(",")]
         result = []
         for i in input:
             try:
