@@ -762,7 +762,7 @@ other:output4
             try:
                 output = d[input]
             except:
-                output = d[list(d)[0]]
+                output = d[list(d)[-1]]
         if logic == "key in input":
             for i in d:
                 if i.lower() in input.lower():
