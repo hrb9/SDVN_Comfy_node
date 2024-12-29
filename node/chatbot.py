@@ -78,7 +78,7 @@ def function(input):
         }
 
     CATEGORY = "📂 SDVN/💡 Creative"
-
+    OUTPUT_IS_LIST = (True,)
     RETURN_TYPES = (any,)
     RETURN_NAMES = ("output",)
     FUNCTION = "python_function"
@@ -109,7 +109,9 @@ def function(input):
             output = function(new_list[0])
         elif b == 0:
             output = function()
-        return (output,)
+        if not isinstance(output, list):
+            output = [output]
+        return ([*output],)
 
 model_list = {
     "Gemini | 1.5 Flash": "gemini-1.5-flash",
