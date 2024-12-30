@@ -45,6 +45,7 @@ from .node.creative import NODE_CLASS_MAPPINGS as creative_node, NODE_DISPLAY_NA
 from .node.chatbot import NODE_CLASS_MAPPINGS as chatbot_node, NODE_DISPLAY_NAME_MAPPINGS as chatbot_dis
 from .node.load_info import NODE_CLASS_MAPPINGS as load_info_node, NODE_DISPLAY_NAME_MAPPINGS as load_info_dis
 from .node.image import NODE_CLASS_MAPPINGS as image_node, NODE_DISPLAY_NAME_MAPPINGS as image_dis
+from .node.preset import NODE_CLASS_MAPPINGS as preset_node, NODE_DISPLAY_NAME_MAPPINGS as preset_dis
 
 NODE_CLASS_MAPPINGS = {
     **load_node,
@@ -53,6 +54,7 @@ NODE_CLASS_MAPPINGS = {
     **chatbot_node,
     **load_info_node,
     **image_node,
+    **preset_node
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     **load_dis,
@@ -61,6 +63,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     **chatbot_dis,
     **load_info_dis,
     **image_dis,
+    **preset_dis
 }
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']

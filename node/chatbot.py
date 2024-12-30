@@ -77,7 +77,7 @@ def function(input):
             }
         }
 
-    CATEGORY = "📂 SDVN/💡 Creative"
+    CATEGORY = "📂 SDVN/👨🏻‍💻 Dev"
     OUTPUT_IS_LIST = (True,)
     RETURN_TYPES = (any,)
     RETURN_NAMES = ("output",)
@@ -161,7 +161,7 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
             }
         }
 
-    CATEGORY = "📂 SDVN/👨🏻‍💻 API"
+    CATEGORY = "📂 SDVN/💬 API"
 
     RETURN_TYPES = ("STRING",)
     FUNCTION = "api_chatbot"
@@ -251,7 +251,7 @@ class API_DALLE:
             }
         }
 
-    CATEGORY = "📂 SDVN/👨🏻‍💻 API"
+    CATEGORY = "📂 SDVN/💬 API"
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "api_dalle"
