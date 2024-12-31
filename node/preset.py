@@ -69,7 +69,7 @@ class auto_generate:
     FUNCTION = "auto_generate"
 
     model_para = {
-        "Flux": [1152, "", 0.3],
+        "Flux": [1152, "None", 0.3],
         "SDXL": [1024, "XL-BasePrompt", 0.3],
         "SDXL Lightning": [1024, "XL-BasePrompt", 0.3],
         "SDXL Hyper": [1024, "XL-BasePrompt", 0.3],
@@ -79,8 +79,12 @@ class auto_generate:
         model, clip, vae = ALL_NODE["CheckpointLoaderSimple"]().load_checkpoint(Checkpoint)
         list_lora = [Lora, Lora2, Lora3, Lora4, Lora5]
         Lora_Strength = ALL_NODE["SDVN Simple Any Input"]().simple_any(Lora_Strength)[0]
-        for index in range(list_lora):
-            model, clip = ALL_NODE["SDVN Load Lora"]().load_lora(False, "", "", list_lora[index], model, clip,  {Lora_Strength[index] if index <= len(Lora_Strength) else Lora_Strength[-1]}, 1)
+        for index in range(len(list_lora)):
+            if list_lora[index] != "None":
+                try:
+                    model, clip, _ = ALL_NODE["SDVN Load Lora"]().load_lora(False, "", "", list_lora[index], model, clip,  Lora_Strength[index] if index + 1 <= len(Lora_Strength) else Lora_Strength[-1], 1)["result"]
+                except:
+                    model, clip, _ = ALL_NODE["SDVN Load Lora"]().load_lora(False, "", "", list_lora[index], model, clip,  Lora_Strength[index] if index +1 <= len(Lora_Strength) else Lora_Strength[-1], 1)
         if "flux" in Checkpoint.lower():
             type_model = "Flux"
         elif "xl" in Checkpoint.lower():
@@ -91,16 +95,18 @@ class auto_generate:
         Denoise = 1 if Image == None else Denoise
         max_size = s.model_para[type_model][0] / (1.5 * Denoise)
         if w > h:
-            n_w = max_size if max_size > w else w
-            n_h = h * (max_size/w) if max_size > w else h
+            n_w = max_size if max_size <= w else w
+            n_h = h * (max_size/w) if max_size <= w else h
         else:
-            n_h = max_size if max_size > h else h
-            n_w = w * (max_size/h) if max_size > h else w
+            n_h = max_size if max_size <= h else h
+            n_w = w * (max_size/h) if max_size <= h else w
+        n_h = int(round(n_h))
+        n_w = int(round(n_w))
         if Image == None:
             latent = ALL_NODE["EmptyLatentImage"]().generate(n_w, n_h, 1)[0]
         else:
             image = ALL_NODE["SDVN Upscale Image"]().upscale("Resize", n_w, n_h, 1, "None", Image)[0]
-            latent = ALL_NODE["SDVN Inpaint"]().encode(False, image, vae, Mask, None, None)[2]
+            latent = ALL_NODE["SDVN Inpaint"]().encode(True, image, vae, Mask, None, None)[2]
         Prompt = f"{Active_prompt}, {Prompt}"
         p, n, _ = ALL_NODE["SDVN CLIP Text Encode"]().encode(clip, Prompt, "", s.model_para[type_model][1], "en", seed)
         if type_model == "SDXL":
@@ -110,13 +116,14 @@ class auto_generate:
                     break
                 if "hyper-sdxl" in i.lower():
                     type_model = "SDXL Hyper" 
-        latent_img, img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed, Tiled=False, tile_width=None, tile_height=None, steps=Steps, cfg=7, denoise=1.0, negative=n, latent_image=latent, vae=vae, FluxGuidance = 3.5)
+        _, img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed, Tiled=False, tile_width=None, tile_height=None, steps=Steps, cfg=7, denoise=Denoise, negative=n, latent_image=latent, vae=vae, FluxGuidance = 3.5)
         if w <= n_w:
-            return img
+            return (img,)
         else:
-            latent = ALL_NODE["SDVN UPscale Latent"]().upscale("Resize", w, h, 1, "4x-UltraSharp.pth", latent_img, vae)[0]
-            img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed, Tiled=True, tile_width=w/2, tile_height=h/2, steps=Steps, cfg=7, denoise=s.model_para[type_model][2], negative=n, latent_image=latent, vae=vae, FluxGuidance = 3.5)
-            return img
+            img = ALL_NODE["SDVN Upscale Image"]().upscale("Resize", w, h, 1, "4x-UltraSharp.pth", img)[0]
+            latent = ALL_NODE["SDVN Inpaint"]().encode(True, img, vae, Mask, None, None)[2]
+            img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed, Tiled=True, tile_width=int(round(w/2)), tile_height=int(round(h/2)), steps=Steps, cfg=7, denoise=s.model_para[type_model][2], negative=n, latent_image=latent, vae=vae, FluxGuidance = 3.5)[1]
+            return (img,)
         
 NODE_CLASS_MAPPINGS = {
     "SDVN Quick Menu": quick_menu,
