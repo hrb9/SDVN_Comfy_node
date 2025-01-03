@@ -117,9 +117,9 @@ class auto_generate:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "Model":("MODEL",),
-                "Clip":("CLIP",),
-                "Vae":("VAE",),
+                "model":("MODEL",),
+                "clip":("CLIP",),
+                "vae":("VAE",),
                 "Prompt": ("STRING", {"default": "", "multiline": True},),
                 "Negative": ("STRING", {"default": "", "multiline": True, "placeholder": "No support Flux model"},),
                 "Active_prompt": ("STRING", {"default": "", "multiline": False},),
@@ -145,10 +145,11 @@ class auto_generate:
         "SDXL Hyper": [1024, "XL-BasePrompt", 0.3, 1536],
         "SD 1.5": [768, "1.5-BasePrompt", 0.4, 1920],
     }
-    def auto_generate(s, Model, Clip, Vae, Prompt, Negative, Active_prompt, Image_size, Steps, Denoise, seed, image = None, mask = None, parameter = None):
-        model, clip, vae = [Model, Clip, Vae]
+    def auto_generate(s, model, clip, vae, Prompt, Negative, Active_prompt, Image_size, Steps, Denoise, seed, image = None, mask = None, parameter = None):
         type_model = check_type_model(model)
         print(f"Type model : {type_model}")
+        if type_model == "SDXL" and Steps == 8:
+            type_model == "SDXL Lightning"
         w, h = ALL_NODE["SDVN Simple Any Input"]().simple_any(Image_size)[0]
         Denoise = 1 if image == None else Denoise
         max_size = s.model_para[type_model][0] / Denoise
