@@ -607,8 +607,7 @@ def preprocessor_list():
 class AutoControlNetApply:
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": {"positive": ("CONDITIONING", ),
-                             "negative": ("CONDITIONING", ),
+        return {"required": {
                              "image": ("IMAGE", ),
                              "control_net": (none2list(folder_paths.get_filename_list("controlnet")),),
                              "preprocessor": (preprocessor_list(),),
@@ -618,19 +617,23 @@ class AutoControlNetApply:
                              "start_percent": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001}),
                              "end_percent": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.001})
                              },
-                "optional": {"vae": ("VAE", ),
+                "optional": {
+                            "positive": ("CONDITIONING", ),
+                            "negative": ("CONDITIONING", ),
+                            "vae": ("VAE", ),
                              }
                 }
 
-    RETURN_TYPES = ("CONDITIONING", "CONDITIONING", "IMAGE")
-    RETURN_NAMES = ("positive", "negative", "image")
+    RETURN_TYPES = ("CONDITIONING", "CONDITIONING", "IMAGE", "PARAMETER")
+    RETURN_NAMES = ("positive", "negative", "image", "parameter")
     FUNCTION = "apply_controlnet"
 
     CATEGORY = "📂 SDVN"
 
-    def apply_controlnet(self, positive, negative, control_net, preprocessor, union_type, resolution, image, strength, start_percent, end_percent, vae=None, extra_concat=[]):
-        if control_net == "None":
-            return (positive, negative, image)
+    def apply_controlnet(self, image, control_net, preprocessor, union_type, resolution, strength, start_percent, end_percent, vae=None, positive = None, negative = None):
+        para = {"controlnet": [image, control_net, preprocessor, union_type, resolution, strength, start_percent, end_percent]}
+        if control_net == "None" or positive == None or negative == None:
+            return (positive, negative, image, para)
         if preprocessor == "InvertImage":
             image = ALL_NODE["ImageInvert"]().invert(image)[0]
         elif preprocessor != "None":
@@ -649,7 +652,7 @@ class AutoControlNetApply:
         p, n = ALL_NODE["ControlNetApplyAdvanced"]().apply_controlnet(
             positive, negative, control_net, image, strength, start_percent, end_percent, vae)
         results = ALL_NODE["PreviewImage"]().save_images(image)
-        results["result"] = (p, n, image)
+        results["result"] = (p, n, image, para)
         return results
 
 class Inpaint:
@@ -686,41 +689,48 @@ class Inpaint:
 class ApplyStyleModel:
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": {"positive": ("CONDITIONING", ),
-                             "image": ("IMAGE",),
-                             "style_model": (folder_paths.get_filename_list("style_models"), ),
-                             "clip_vision_model": (folder_paths.get_filename_list("clip_vision"), ),
-                             "strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.001}),
-                             "downsampling":([1,2,3,4,5,6], {"default": 1}),
-                             
+        return {"required": {
+                    "image": ("IMAGE",),
+                    "style_model": (folder_paths.get_filename_list("style_models"), ),
+                    "clip_vision_model": (folder_paths.get_filename_list("clip_vision"), ),
+                    "strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.001}),
+                    "downsampling":([1,2,3,4,5,6], {"default": 1}),
                              },
-                "hidden":  {"strength_type": (["multiply"], ),}
+                "optional": {
+                    "positive": ("CONDITIONING", ),
+                },
+                "hidden":  {
+                    "strength_type": (["multiply"], ),}
                              }
     
-    RETURN_TYPES = ("CONDITIONING",)
-    RETURN_NAMES = ("positive",)
+    RETURN_TYPES = ("CONDITIONING", "PARAMETER",)
+    RETURN_NAMES = ("positive", "parameter")
     FUNCTION = "applystyle"
 
     CATEGORY = "📂 SDVN"
 
-    def applystyle(self, positive, image, style_model, clip_vision_model, strength, downsampling, strength_type = "multiply"):
-        clip_vision_model = ALL_NODE["CLIPVisionLoader"]().load_clip(clip_vision_model)[0]
-        clip_vision_encode = ALL_NODE["CLIPVisionEncode"]().encode(clip_vision_model, image, "center")[0]
-        style_model = ALL_NODE["StyleModelLoader"]().load_style_model(style_model)[0]
-        mode="area" if downsampling==3 else "bicubic"
-        cond = style_model.get_cond(clip_vision_encode).flatten(start_dim=0, end_dim=1).unsqueeze(dim=0)
-        if downsampling>1:
-            (b,t,h)=cond.shape
-            m = int(np.sqrt(t))
-            cond=torch.nn.functional.interpolate(cond.view(b, m, m, h).transpose(1,-1), size=(m//downsampling, m//downsampling), mode=mode)
-            cond=cond.transpose(1,-1).reshape(b,-1,h)
-        if strength_type == "multiply":
-            cond *= strength
-        c = []
-        for t in positive:
-            n = [torch.cat((t[0], cond), dim=1), t[1].copy()]
-            c.append(n)
-        return (c, )
+    def applystyle(self, image, style_model, clip_vision_model, strength, downsampling, strength_type = "multiply", positive = None):
+        para = {"applystyle": [image, style_model, clip_vision_model, strength, downsampling, strength_type]}
+        if positive != None:
+            clip_vision_model = ALL_NODE["CLIPVisionLoader"]().load_clip(clip_vision_model)[0]
+            clip_vision_encode = ALL_NODE["CLIPVisionEncode"]().encode(clip_vision_model, image, "center")[0]
+            style_model = ALL_NODE["StyleModelLoader"]().load_style_model(style_model)[0]
+            mode="area" if downsampling==3 else "bicubic"
+            cond = style_model.get_cond(clip_vision_encode).flatten(start_dim=0, end_dim=1).unsqueeze(dim=0)
+            if downsampling>1:
+                (b,t,h)=cond.shape
+                m = int(np.sqrt(t))
+                cond=torch.nn.functional.interpolate(cond.view(b, m, m, h).transpose(1,-1), size=(m//downsampling, m//downsampling), mode=mode)
+                cond=cond.transpose(1,-1).reshape(b,-1,h)
+            if strength_type == "multiply":
+                cond *= strength
+            c = []
+            for t in positive:
+                n = [torch.cat((t[0], cond), dim=1), t[1].copy()]
+                c.append(n)
+            return (c, para, )
+        else:
+            return (positive, para)
 
 class CheckpointDownload:
     @classmethod
