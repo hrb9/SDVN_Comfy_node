@@ -38,93 +38,6 @@ class quick_menu:
     def quick_menu(s, Checkpoint, Lora, Lora2, Lora3, Lora4, Lora5, SimpleString, SimpleString2, String, String2):
         return (Checkpoint, Lora, Lora2, Lora3, Lora4, Lora5, SimpleString, SimpleString2, String, String2,)
 
-class auto_generate:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "Checkpoint":(folder_paths.get_filename_list("checkpoints"),),
-                "Lora":(["None",*folder_paths.get_filename_list("loras")],),
-                "Lora2":(["None",*folder_paths.get_filename_list("loras")],),
-                "Lora3":(["None",*folder_paths.get_filename_list("loras")],),
-                "Lora4":(["None",*folder_paths.get_filename_list("loras")],),
-                "Lora5":(["None",*folder_paths.get_filename_list("loras")],),
-                "Lora_Strength": ("STRING", {"default": "1,1,1,1,1", "multiline": False},),
-                "Prompt": ("STRING", {"default": "", "multiline": True},),
-                "Active_prompt": ("STRING", {"default": "", "multiline": False},),
-                "Image_size": ("STRING", {"default": "1024,1024", "multiline": False},),
-                "Steps": ("INT", {"default": 20,},),
-                "Denoise": ("FLOAT", {"default": 1,"min":0,"max":1},),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
-            },
-            "optional": {
-                "image": ("IMAGE",),
-                "mask": ("MASK",)
-            }
-            }
-
-    CATEGORY = "📂 SDVN/✨ Preset"
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("image",)
-    FUNCTION = "auto_generate"
-
-    model_para = {
-        "Flux": [1152, "None", 0.3],
-        "SDXL": [1024, "XL-BasePrompt", 0.3],
-        "SDXL Lightning": [1024, "XL-BasePrompt", 0.3],
-        "SDXL Hyper": [1024, "XL-BasePrompt", 0.3],
-        "SD 1.5": [768, "1.5-BasePrompt", 0.4],
-    }
-    def auto_generate(s, Checkpoint, Lora, Lora2, Lora3, Lora4, Lora5, Lora_Strength, Prompt, Active_prompt, Image_size, Steps, Denoise, seed, image = None, mask = None):
-        model, clip, vae = ALL_NODE["CheckpointLoaderSimple"]().load_checkpoint(Checkpoint)
-        list_lora = [Lora, Lora2, Lora3, Lora4, Lora5]
-        Lora_Strength = ALL_NODE["SDVN Simple Any Input"]().simple_any(Lora_Strength)[0]
-        for index in range(len(list_lora)):
-            if list_lora[index] != "None":
-                try:
-                    model, clip, _ = ALL_NODE["SDVN Load Lora"]().load_lora(False, "", "", list_lora[index], model, clip,  Lora_Strength[index] if index + 1 <= len(Lora_Strength) else Lora_Strength[-1], 1)["result"]
-                except:
-                    model, clip, _ = ALL_NODE["SDVN Load Lora"]().load_lora(False, "", "", list_lora[index], model, clip,  Lora_Strength[index] if index +1 <= len(Lora_Strength) else Lora_Strength[-1], 1)
-        if "flux" in Checkpoint.lower():
-            type_model = "Flux"
-        elif "xl" in Checkpoint.lower():
-            type_model = "SDXL"
-        else:
-            type_model = "SD 1.5"
-        w, h = ALL_NODE["SDVN Simple Any Input"]().simple_any(Image_size)[0]
-        Denoise = 1 if image == None else Denoise
-        max_size = s.model_para[type_model][0] / Denoise
-        if w > h:
-            n_w = max_size if max_size <= w else w
-            n_h = h * (max_size/w) if max_size <= w else h
-        else:
-            n_h = max_size if max_size <= h else h
-            n_w = w * (max_size/h) if max_size <= h else w
-        n_h = int(round(n_h))
-        n_w = int(round(n_w))
-        if image == None:
-            latent = ALL_NODE["EmptyLatentImage"]().generate(n_w, n_h, 1)[0]
-        else:
-            image = ALL_NODE["SDVN Upscale Image"]().upscale("Resize", n_w, n_h, 1, "None", image)[0]
-            latent = ALL_NODE["SDVN Inpaint"]().encode(True, image, vae, mask, None, None)[2]
-        Prompt = f"{Active_prompt}, {Prompt}"
-        p, n, _ = ALL_NODE["SDVN CLIP Text Encode"]().encode(clip, Prompt, "", s.model_para[type_model][1], "en", seed)
-        if type_model == "SDXL":
-            for i in list_lora:
-                if "lightning" in i.lower():
-                    type_model = "SDXL Lightning"
-                    break
-                if "hyper-sdxl" in i.lower():
-                    type_model = "SDXL Hyper" 
-        _, img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed, Tiled=False, tile_width=None, tile_height=None, steps=Steps, cfg=7, denoise=Denoise, negative=n, latent_image=latent, vae=vae, FluxGuidance = 3.5)
-        if w <= n_w:
-            return (img,)
-        else:
-            img = ALL_NODE["SDVN Upscale Image"]().upscale("Resize", w, h, 1, "4x-UltraSharp.pth", img)[0]
-            latent = ALL_NODE["SDVN Inpaint"]().encode(True, img, vae, mask, None, None)[2]
-            img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed, Tiled=True, tile_width=int(round(w/2)), tile_height=int(round(h/2)), steps=Steps, cfg=7, denoise=s.model_para[type_model][2], negative=n, latent_image=latent, vae=vae, FluxGuidance = 3.5)[1]
-            return (img,)
-
 class join_parameter:
     @classmethod
     def INPUT_TYPES(s):
@@ -189,13 +102,12 @@ class auto_generate_adv:
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("image",)
     FUNCTION = "auto_generate"
-
     model_para = {
-        "Flux": [1152, "None", 0.3],
-        "SDXL": [1024, "XL-BasePrompt", 0.3],
-        "SDXL Lightning": [1024, "XL-BasePrompt", 0.3],
-        "SDXL Hyper": [1024, "XL-BasePrompt", 0.3],
-        "SD 1.5": [768, "1.5-BasePrompt", 0.4],
+        "Flux": [1152, "None", 0.3, 1536],
+        "SDXL": [1024, "XL-BasePrompt", 0.3, 1536],
+        "SDXL Lightning": [1024, "XL-BasePrompt", 0.3, 1536],
+        "SDXL Hyper": [1024, "XL-BasePrompt", 0.3, 1536],
+        "SD 1.5": [768, "1.5-BasePrompt", 0.4, 1920],
     }
     def auto_generate(s, Checkpoint, Lora, Lora2, Lora3, Lora4, Lora5, Lora_Strength, Prompt, Negative, Active_prompt, Image_size, Steps, Denoise, seed, image = None, mask = None, parameter = None):
         model, clip, vae = ALL_NODE["CheckpointLoaderSimple"]().load_checkpoint(Checkpoint)
@@ -245,16 +157,51 @@ class auto_generate_adv:
                     type_model = "SDXL Lightning"
                     break
                 if "hyper-sdxl" in i.lower():
-                    type_model = "SDXL Hyper" 
-        _, img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed, Tiled=False, tile_width=None, tile_height=None, steps=Steps, cfg=7, denoise=Denoise, negative=n, latent_image=latent, vae=vae, FluxGuidance = 3.5)
+                    type_model = "SDXL Hyper"
+        tile_size = s.model_para[type_model][3]
+        _, img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed, Tiled=True if (n_w > tile_size or n_h > tile_size) and Denoise < 0.5 else False, tile_width=int(round(n_w/2)), tile_height=int(round(n_h/2)), steps=Steps, cfg=7, denoise=Denoise, negative=n, latent_image=latent, vae=vae, FluxGuidance = 3.5)
         if w == n_w:
             return (img,)
         else:
             img = ALL_NODE["SDVN Upscale Image"]().upscale("Resize", w, h, 1, "4x-UltraSharp.pth", img)[0]
             latent = ALL_NODE["SDVN Inpaint"]().encode(True, img, vae, mask, None, None)[2]
-            img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed, Tiled=True, tile_width=int(round(w/2)), tile_height=int(round(h/2)), steps=Steps, cfg=7, denoise=s.model_para[type_model][2], negative=n, latent_image=latent, vae=vae, FluxGuidance = 3.5)[1]
+            img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed,  Tiled=True if (n_w > tile_size or n_h > tile_size) else False, tile_width=int(round(w/2)), tile_height=int(round(h/2)), steps=Steps, cfg=7, denoise=s.model_para[type_model][2], negative=n, latent_image=latent, vae=vae, FluxGuidance = 3.5)[1]
             return (img,)
         
+class auto_generate:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "Checkpoint":(folder_paths.get_filename_list("checkpoints"),),
+                "Lora":(["None",*folder_paths.get_filename_list("loras")],),
+                "Lora2":(["None",*folder_paths.get_filename_list("loras")],),
+                "Lora3":(["None",*folder_paths.get_filename_list("loras")],),
+                "Lora4":(["None",*folder_paths.get_filename_list("loras")],),
+                "Lora5":(["None",*folder_paths.get_filename_list("loras")],),
+                "Lora_Strength": ("STRING", {"default": "1,1,1,1,1", "multiline": False},),
+                "Prompt": ("STRING", {"default": "", "multiline": True},),
+                "Active_prompt": ("STRING", {"default": "", "multiline": False},),
+                "Image_size": ("STRING", {"default": "1024,1024", "multiline": False},),
+                "Steps": ("INT", {"default": 20,},),
+                "Denoise": ("FLOAT", {"default": 1,"min":0,"max":1},),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
+            },
+            "optional": {
+                "image": ("IMAGE",),
+                "mask": ("MASK",)
+            }
+            }
+
+    CATEGORY = "📂 SDVN/✨ Preset"
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "auto_generate"
+
+    def auto_generate(s, Checkpoint, Lora, Lora2, Lora3, Lora4, Lora5, Lora_Strength, Prompt, Active_prompt, Image_size, Steps, Denoise, seed, image = None, mask = None):
+        r = auto_generate_adv().auto_generate(Checkpoint, Lora, Lora2, Lora3, Lora4, Lora5, Lora_Strength, Prompt, "", Active_prompt, Image_size, Steps, Denoise, seed, image, mask)[0]
+        return (r,)
+                
 NODE_CLASS_MAPPINGS = {
     "SDVN Quick Menu": quick_menu,
     "SDVN Auto Generate": auto_generate,
