@@ -178,7 +178,7 @@ class SimpleAnyInput:
         result = []
         for i in input:
             try:
-                if i%1 ==0:
+                if i%1 == 0:
                     r = int(eval(i))
                 else:
                     r = float(eval(i))  
