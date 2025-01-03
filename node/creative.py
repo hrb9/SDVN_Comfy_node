@@ -178,17 +178,17 @@ class SimpleAnyInput:
         result = []
         for i in input:
             try:
-                r = int(eval(i))
+                if i%1 ==0:
+                    r = int(eval(i))
+                else:
+                    r = float(eval(i))  
             except:
-                try:
-                    r = float(eval(i))
-                except:
-                    if i.lower() in ["true",  "yes", "y", "on"]:
-                        r = True
-                    elif i.lower() in ["false",  "no", "n", "off"]:
-                        r = False
-                    else:
-                        r = i
+                if i.lower() in ["true",  "yes", "y", "on"]:
+                    r = True
+                elif i.lower() in ["false",  "no", "n", "off"]:
+                    r = False
+                else:
+                    r = i
             result.append(r)
         return (result,)
 
