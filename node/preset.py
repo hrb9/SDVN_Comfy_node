@@ -146,6 +146,15 @@ class auto_generate:
         if type_model == "SDXL" and Steps == 8:
             type_model = "SDXL Lightning"
         w, h = ALL_NODE["SDVN Simple Any Input"]().simple_any(Image_size)[0]
+        if image != None:
+            samples = image.movedim(-1, 1)
+            i_w = samples.shape[3]
+            i_h = samples.shape[2]
+            if w/h > i_w/i_h:
+                w = i_w * h / i_h
+            else:
+                h = w * i_h / i_w
+
         Denoise = 1 if image == None else Denoise
         max_size = s.model_para[type_model][0] / Denoise
         if w > h:
