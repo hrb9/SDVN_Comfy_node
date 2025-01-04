@@ -12,19 +12,12 @@ class AnyType(str):
 
 
 any = AnyType("*")
-def check_type_model(model):
-    for key in model.get_key_patches():
-        if "double_blocks.18" in key:
-            type_model = "Flux"
-            break
-        if "input_blocks.11" in key:
-            type_model = "SD 1.5"
-            break
-        if "transformer_blocks.1" in key:
-            type_model = "SDXL"
-            break
-    return type_model
 
+def check_type_model(m):
+    type_name = m.model.__class__.__name__
+    type_name = "SD 1.5" if type_name == "BaseModel" else type_name
+    return type_name
+    
 class quick_menu:
     @classmethod
     def INPUT_TYPES(s):
@@ -144,12 +137,14 @@ class auto_generate:
         "SDXL Lightning": [1024, "XL-BasePrompt", 0.3, 1536],
         "SDXL Hyper": [1024, "XL-BasePrompt", 0.3, 1536],
         "SD 1.5": [768, "1.5-BasePrompt", 0.4, 1920],
+        "None": [768, "1.5-BasePrompt", 0.4, 1920],
     }
     def auto_generate(s, model, clip, vae, Prompt, Negative, Active_prompt, Image_size, Steps, Denoise, seed, image = None, mask = None, parameter = None):
         type_model = check_type_model(model)
+        type_model = "None" if type_model not in s.model_para else type_model
         print(f"Type model : {type_model}")
         if type_model == "SDXL" and Steps == 8:
-            type_model == "SDXL Lightning"
+            type_model = "SDXL Lightning"
         w, h = ALL_NODE["SDVN Simple Any Input"]().simple_any(Image_size)[0]
         Denoise = 1 if image == None else Denoise
         max_size = s.model_para[type_model][0] / Denoise
