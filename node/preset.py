@@ -151,9 +151,9 @@ class auto_generate:
             i_w = samples.shape[3]
             i_h = samples.shape[2]
             if w/h > i_w/i_h:
-                w = i_w * h / i_h
+                w = int(round(i_w * h / i_h))
             else:
-                h = w * i_h / i_w
+                h = int(round(w * i_h / i_w))
 
         Denoise = 1 if image == None else Denoise
         max_size = s.model_para[type_model][0] / Denoise
