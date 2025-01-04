@@ -444,6 +444,10 @@ StepsType_list = {
     "Flux schnell": 4,
 }
 
+def check_type_model(m):
+    type_name = m.model.__class__.__name__
+    type_name = "SD 1.5" if type_name == "BaseModel" else type_name
+    return type_name
 
 class Easy_KSampler:
     @classmethod
@@ -452,7 +456,7 @@ class Easy_KSampler:
             "required": {
                 "model": ("MODEL", {"tooltip": "The model used for denoising the input latent."}),
                 "positive": ("CONDITIONING", {"tooltip": "The conditioning describing the attributes you want to include in the image."}),
-                "ModelType": (none2list(list(ModelType_list)),),
+                "ModelType": (["None","Auto",*list(ModelType_list)],),
                 "StepsType": (none2list(list(StepsType_list)),),
                 "denoise": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01, "tooltip": "The amount of denoising applied, lower values will maintain the structure of the initial image allowing for image to image sampling."}),
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
@@ -478,8 +482,11 @@ class Easy_KSampler:
 
     CATEGORY = "📂 SDVN"
     DESCRIPTION = "Uses the provided model, positive and negative conditioning to denoise the latent image."
-
+    
     def sample(self, model, positive, ModelType, StepsType, sampler_name, scheduler, seed, Tiled=False, tile_width=None, tile_height=None, steps=20, cfg=7, denoise=1.0, negative=None, latent_image=None, vae=None, FluxGuidance = 3.5):
+        if ModelType == "Auto":
+            ModelType = check_type_model(model)
+        ModelType == 'None' if ModelType not in ModelType_list else ModelType
         if ModelType != 'None':
             cfg, sampler_name, scheduler = ModelType_list[ModelType]
         StepsType_list["Denoise"] = steps
