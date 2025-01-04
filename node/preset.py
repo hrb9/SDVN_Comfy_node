@@ -62,16 +62,16 @@ class load_model:
     RETURN_TYPES = ("MODEL", "CLIP", "VAE",)
     RETURN_NAMES = ("model", "clip", "vae")
     FUNCTION = "auto_generate"
-    def auto_generate(s, Checkpoint, Lora, Lora2, Lora3, Lora4, Lora5, Lora_Strength):
+    def auto_generate(s, Checkpoint, Lora_Strength, **kargs):
         model, clip, vae = ALL_NODE["CheckpointLoaderSimple"]().load_checkpoint(Checkpoint)
-        list_lora = [Lora, Lora2, Lora3, Lora4, Lora5]
         Lora_Strength = ALL_NODE["SDVN Simple Any Input"]().simple_any(Lora_Strength)[0]
-        for index in range(len(list_lora)):
-            if list_lora[index] != "None":
+        for index in range(len(kargs)):
+            lora = kargs[list(kargs)[index]]
+            if lora != "None":
                 try:
-                    model, clip, _ = ALL_NODE["SDVN Load Lora"]().load_lora(False, "", "", list_lora[index], model, clip,  Lora_Strength[index] if index + 1 <= len(Lora_Strength) else Lora_Strength[-1], 1)["result"]
+                    model, clip, _ = ALL_NODE["SDVN Load Lora"]().load_lora(False, "", "", lora, model, clip,  Lora_Strength[index] if index + 1 <= len(Lora_Strength) else Lora_Strength[-1], 1)["result"]
                 except:
-                    model, clip, _ = ALL_NODE["SDVN Load Lora"]().load_lora(False, "", "", list_lora[index], model, clip,  Lora_Strength[index] if index +1 <= len(Lora_Strength) else Lora_Strength[-1], 1)
+                    model, clip, _ = ALL_NODE["SDVN Load Lora"]().load_lora(False, "", "", lora, model, clip,  Lora_Strength[index] if index +1 <= len(Lora_Strength) else Lora_Strength[-1], 1)
         return (model, clip, vae,)
     
 class join_parameter:
@@ -97,14 +97,14 @@ class join_parameter:
     RETURN_NAMES = ("parameter",)
     FUNCTION = "join_parameter"
 
-    def join_parameter(s, any1 = None, any2 = None, any3 = None, any4 = None, any5 = None, any6 = None, any7 = None, any8 = None, any9 = None, any10 = None):
+    def join_parameter(s, **kargs):
         r = []
-        for i in [any1, any2, any3, any4, any5, any6, any7, any8, any9, any10]:
-            if i != None:
-                if isinstance(i, list):
-                    r += [*i]
+        for i in kargs:
+            if kargs[i] != None:
+                if isinstance(kargs[i], list):
+                    r += [*kargs[i]]
                 else:
-                    r += [i]
+                    r += [kargs[i]]
         return (r,)
 class auto_generate:
     @classmethod
