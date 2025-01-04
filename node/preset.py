@@ -177,7 +177,12 @@ class auto_generate:
         if w == n_w:
             return (img,)
         else:
-            img = ALL_NODE["SDVN Upscale Image"]().upscale("Resize", w, h, 1, "4x-UltraSharp.pth", img)[0]
+            try:
+                upscale_model = folder_paths.get_filename_list("upscale_models")[-1]
+            except:
+                upscale_model = "None"
+            print(f"Upscale by {upscale_model}")
+            img = ALL_NODE["SDVN Upscale Image"]().upscale("Resize", w, h, 1, upscale_model, img)[0]
             latent = ALL_NODE["SDVN Inpaint"]().encode(True, img, vae, mask, None, None)[2]
             img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed,  Tiled=True if (n_w > tile_size or n_h > tile_size) else False, tile_width=int(round(w/2)), tile_height=int(round(h/2)), steps=Steps, cfg=7, denoise=s.model_para[type_model][2], negative=n, latent_image=latent, vae=vae, FluxGuidance = 3.5)[1]
             return (img,)
