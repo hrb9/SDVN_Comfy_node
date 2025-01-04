@@ -40,8 +40,9 @@ class quick_menu:
     RETURN_NAMES = ("checkpoint name", "lora name", "lora name 2", "lora name 3", "lora name 4", "lora name 5", "simple string", "simple string 2", "string", "string 2")
     FUNCTION = "quick_menu"
 
-    def quick_menu(s, Checkpoint, Lora, Lora2, Lora3, Lora4, Lora5, SimpleString, SimpleString2, String, String2):
-        return (Checkpoint, Lora, Lora2, Lora3, Lora4, Lora5, SimpleString, SimpleString2, String, String2,)
+    def quick_menu(s, **kargs):
+        r_list = [kargs[i] for i in kargs]
+        return tuple(r_list)
 
 class load_model:
     @classmethod
@@ -145,7 +146,12 @@ class auto_generate:
         print(f"Type model : {type_model}")
         if type_model == "SDXL" and Steps == 8:
             type_model = "SDXL Lightning"
-        w, h = ALL_NODE["SDVN Simple Any Input"]().simple_any(Image_size)[0]
+        size = ALL_NODE["SDVN Simple Any Input"]().simple_any(Image_size)[0]
+        if len(size) == 1:
+            w = h = size[0]
+        else:
+            w, h = size[:2]
+
         if image != None:
             samples = image.movedim(-1, 1)
             i_w = samples.shape[3]
