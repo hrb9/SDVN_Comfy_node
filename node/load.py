@@ -42,17 +42,45 @@ def i2tensor(i) -> torch.Tensor:
     image = torch.from_numpy(image)[None,]
     return image
 
+def insta_download(url,index):
+    id = re.findall(r'p/(.*?)/', url)[0]
+    path_folder = os.path.join(folder_paths.get_input_directory(), 'instadownload')
+    command = ['instaloader', '--slide', str(index), '--no-captions', '--no-metadata-json', '--dirname-pattern', path_folder, '--filename-pattern', id, '--', f'-{id}']
+    subprocess.run(command, check=True,text=True, capture_output=True)
+    path_img = os.path.join(path_folder, f"{id}_{index}.jpg")
+    return path_img
 
 def run_gallery_dl(url):
+    if '--' in url:
+        try:
+            index = int(url.split('--')[1])
+        except:
+            index = 0
+        url = url.split('--')[0]
+    else:
+        index = 0
+    if 'http' not in url:
+        type_name = url.split('.')[-1].lower()
+        if type_name in ["jpeg", "webp", "png", "jpg", "bmp"]:
+            path = url
+        else:
+            path = LoadImageFolder().list_img_by_path(url.strip())[index]
+        return path
+    if 'instagram.com' in url:
+        index = index + 1
+        return insta_download(url,index)
     command = ['gallery-dl', '-G', url]
     try:
-        result = subprocess.run(command, check=True,
-                                text=True, capture_output=True)
+        result = subprocess.run(command, check=True,text=True, capture_output=True)
         result = result.stdout.strip()
         if 'http' not in result:
             result = 'https://raw.githubusercontent.com/StableDiffusionVN/SDVN_Comfy_node/refs/heads/main/preview/eror.jpg'
         if '\n' in result:
-            result = result.split('\n')[0]
+            try:
+                result = result.split('\n')[index]
+            except:
+                result = result.split('\n')[-1]
+        result = result.replace('|','')
     except:
         print('Cannot find image link')
         result = 'https://raw.githubusercontent.com/StableDiffusionVN/SDVN_Comfy_node/refs/heads/main/preview/eror.jpg'
@@ -144,13 +172,11 @@ class LoadImage:
     def load_image(self, Url, Load_url, image):
         image_path = folder_paths.get_annotated_filepath(image)
         if Url != '' and Load_url:
+            Url = run_gallery_dl(Url)
             if 'http' in Url:
-                Url = run_gallery_dl(Url)
-                i = Image.open(requests.get(Url, stream=True).raw)
-                image_path = ''
+                image = Image.open(requests.get(Url, stream=True).raw)
             else:
-                image_path = Url
-                i = Image.open(Url)
+                image = Image.open(Url)
         else:
             print(image_path)
             i = Image.open(image_path)
@@ -241,8 +267,8 @@ class LoadImageUrl:
     FUNCTION = "load_image_url"
 
     def load_image_url(self, Url):  
+        Url = run_gallery_dl(Url)
         if 'http' in Url:
-            Url = run_gallery_dl(Url)
             image = Image.open(requests.get(Url, stream=True).raw)
         else:
             image = Image.open(Url)
