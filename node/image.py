@@ -1,7 +1,7 @@
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 import torch, numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-import platform, math
+import platform, math, folder_paths, os, subprocess
 os_name = platform.system()
 
 def create_image_with_text(text, image_size=(1200, 100), font_size=40, align = "left"):
@@ -209,12 +209,44 @@ class image_layout:
                 img_layout = torch.cat(list_img, dim=0)
                 r = img_layout.unsqueeze(0)
         return (r,)
-        
+
+class img_scraper:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "url": ("STRING", {"default":"","multiline": False}),
+                "custom_save_folder": ("STRING",),
+                "save_folder": (["input","output"],),
+                "cookies": (["chrome","firefox"],),
+            }
+        }
+    OUTPUT_NODE = True
+    OUTPUT_IS_LIST = (True, )
+    CATEGORY = "📂 SDVN/👨🏻‍💻 Dev"
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "img_scraper"
+
+    def img_scraper(s, url, custom_save_folder, save_folder, cookies):
+        url = url.split('?')[0]
+        if custom_save_folder == "":
+            main_folder = folder_paths.get_input_directory() if save_folder == "input" else folder_paths.get_output_directory()
+        else:
+            main_folder = custom_save_folder
+        sub_folder = url.split('//')[-1].split('/')[0].split('www.')[-1]
+        folder = os.path.join(main_folder,sub_folder)
+        command = ["gallery-dl", "--cookies-from-browser", cookies, "--directory", folder, url]
+        subprocess.run(command, check=True,text=True, capture_output=True)
+        result = ALL_NODE["SDVN Load Image Folder"]().load_image(folder, -1, False)[0]
+        return (result,)
+    
 NODE_CLASS_MAPPINGS = {
     "SDVM Image List Repeat": img_list_repeat,
     "SDVN Image Repeat": img_repeat,
     "SDVN Image Layout": image_layout,
     "SDVN Load Image From List": load_img_from_list,
+    "SDVN Image Scraper": img_scraper,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -222,4 +254,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVM Image List Repeat": "🔄 Image List",
     "SDVN Image Repeat": "🔄 Image Repeat",
     "SDVN Load Image From List": "📁 Image From List",
+    "SDVN Image Scraper": "⏬️ Image Scraper"
 }
