@@ -174,9 +174,9 @@ class LoadImage:
         if Url != '' and Load_url:
             Url = run_gallery_dl(Url)
             if 'http' in Url:
-                image = Image.open(requests.get(Url, stream=True).raw)
+                i = Image.open(requests.get(Url, stream=True).raw)
             else:
-                image = Image.open(Url)
+                i = Image.open(Url)
         else:
             print(image_path)
             i = Image.open(image_path)
