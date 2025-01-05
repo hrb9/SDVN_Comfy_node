@@ -2,5 +2,6 @@
 aria2;sys_platform != 'darwin'
 openai
 gallery-dl
+instaloader
 google-generativeai
 googletrans-py
