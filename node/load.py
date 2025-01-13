@@ -45,7 +45,7 @@ def i2tensor(i) -> torch.Tensor:
 def insta_download(url,index):
     if "index=" in url:
         index = int(url.split('index=')[1])
-    id = re.findall(r'p/(.*?)/', url)[0]
+    id = re.findall(r'p/(.*)', url)[0].split('?')[0].split('/')[0].strip()
     path_folder = os.path.join(folder_paths.get_input_directory(), 'instadownload')
     command = ['instaloader', '--slide', str(index), '--no-captions', '--no-metadata-json', '--dirname-pattern', path_folder, '--filename-pattern', id, '--', f'-{id}']
     subprocess.run(command, check=True,text=True, capture_output=True)

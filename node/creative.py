@@ -132,17 +132,16 @@ class AnyInput:
             input = cls().get_prompt(input, seed, 'No')[0]
         input = GGTranslate().ggtranslate(input,translate)[0]
         true_values = ["true",  "1", "yes", "y", "on"]
-        input = input.lower()
         if output_list == "None":
             input = [input]
         elif output_list == "keywork":
             input = input.split(',')
         elif output_list == "line":
             input = input.splitlines()
+        input = [i.strip() for i in input]
         f = [*input]
-        print(f)
         i = [*input]
-        b = [*input]
+        b = [i.lower() for i in input]
         for x in f:
             try:
                 f[f.index(x)] = float(eval(x))
