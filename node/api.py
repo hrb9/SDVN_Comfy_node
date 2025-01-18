@@ -305,11 +305,12 @@ class ic_light_v2:
                 "mode": (["v2", "v2_vary"],{"default":"v2"}),
                 "bg_source": (['None', 'Left Light', 'Right Light', 'Top Light', 'Bottom Light'],{"default":"None"}),
                 "prompt": ("STRING",{"default":"","multiline": True}),
+                "translate": (lang_list(),),
                 "n_prompt": ("STRING",{"default":"","multiline": False}),
                 "hf_token": ("STRING",{"default":"","multiline": False}),
                 "image_size": ("INT", {"default":1024,"min":512,"max":2048}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, }),
                 "steps": ("INT", {"default":25,"min":1,"max":50}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, }),
             }
         }
 
@@ -318,8 +319,14 @@ class ic_light_v2:
     RETURN_NAMES = ("image","grey_img")
     FUNCTION = "ic_light_v2"
 
-    def ic_light_v2(s, image, mode, bg_source, prompt, n_prompt, hf_token, image_size, seed, steps):
+    def ic_light_v2(s, image, mode, bg_source, prompt, translate, n_prompt, hf_token, image_size, steps, seed):
 
+        if "DPRandomGenerator" in ALL_NODE:
+            cls = ALL_NODE["DPRandomGenerator"]
+            prompt = cls().get_prompt(prompt, seed, 'No')[0]
+            n_prompt = cls().get_prompt(n_prompt, seed, 'No')[0]
+        prompt = ALL_NODE["SDVN Translate"]().ggtranslate(prompt,translate)[0]
+        n_prompt = ALL_NODE["SDVN Translate"]().ggtranslate(n_prompt,translate)[0]
         if hf_token == "":
             api_list = api_check()
             if api_check() != None:
