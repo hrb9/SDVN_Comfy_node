@@ -1,14 +1,28 @@
+from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 import google.generativeai as genai
 from openai import OpenAI
-from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
-from torchvision.transforms import ToPILImage
-import torch
-import re, os, json
-from PIL import Image
-import numpy as np
-import io
-import base64
+import io, base64, torch, numpy as np, re, os, json
 from googletrans import LANGUAGES
+from PIL import Image, ImageOps
+from gradio_client import Client, handle_file
+
+def i2tensor(i) -> torch.Tensor:
+    i = ImageOps.exif_transpose(i)
+    image = i.convert("RGB")
+    image = np.array(image).astype(np.float32) / 255.0
+    image = torch.from_numpy(image)[None,]
+    return image 
+
+def tensor2pil(tensor: torch.Tensor) -> Image.Image:
+    if tensor.ndim == 4:
+        tensor = tensor.squeeze(0)
+    if tensor.ndim == 3 and tensor.shape[-1] == 3:
+        np_image = (tensor.numpy() * 255).astype(np.uint8)
+    else:
+        raise ValueError(
+            "Tensor phải có shape [H, W, C] hoặc [1, H, W, C] với C = 3 (RGB).")
+    pil_image = Image.fromarray(np_image)
+    return pil_image
 
 def lang_list():
     lang_list = ["None"]
@@ -282,15 +296,109 @@ class API_DALLE:
         image = cls().load_image_url(image_url)["result"][0]
         return (image,)
 
+class ic_light_v2:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "mode": (["v2", "v2_vary"],{"default":"v2"}),
+                "bg_source": (['None', 'Left Light', 'Right Light', 'Top Light', 'Bottom Light'],{"default":"None"}),
+                "prompt": ("STRING",{"default":"","multiline": True}),
+                "n_prompt": ("STRING",{"default":"","multiline": False}),
+                "hf_token": ("STRING",{"default":"","multiline": False}),
+                "image_size": ("INT", {"default":1024,"min":512,"max":2048}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, }),
+                "steps": ("INT", {"default":25,"min":1,"max":50}),
+            }
+        }
 
+    CATEGORY = "📂 SDVN/💬 API"
+    RETURN_TYPES = ("IMAGE","IMAGE")
+    RETURN_NAMES = ("image","grey_img")
+    FUNCTION = "ic_light_v2"
+
+    def ic_light_v2(s, image, mode, bg_source, prompt, n_prompt, hf_token, image_size, seed, steps):
+
+        if hf_token == "":
+            api_list = api_check()
+            if api_check() != None:
+                hf_token =  api_list["HuggingFace"]
+
+        samples = image.movedim(-1, 1)
+        w = samples.shape[3]
+        h = samples.shape[2]
+        width = image_size
+        height = image_size
+        if width/height < w/h:
+            height = round(h * width / w)
+        else:
+            width = round(w * height / h)
+        image = tensor2pil(image)
+
+        input_path = "/tmp/ic_light.jpg"
+        space_path = "lllyasviel/iclight-v2" if mode == "v2" else "lllyasviel/iclight-v2-vary"
+
+        if not os.path.isdir("/tmp"):
+            os.mkdir("/tmp")
+        image.save(input_path, format="JPEG")
+        if hf_token == "":
+            client = Client(space_path)
+        else:
+            client = Client(space_path, hf_token = hf_token)
+        if mode == "v2":
+            result = client.predict(
+                    input_fg = handle_file(input_path),
+                    bg_source = bg_source,
+                    prompt = prompt,
+                    image_width = width,
+                    image_height = height,
+                    num_samples = 1,
+                    seed = seed,
+                    steps = steps,
+                    n_prompt = n_prompt,
+                    cfg=1,
+                    gs=5,
+                    rs=1,
+                    init_denoise=0.999,
+                    api_name="/process"
+            )
+        else:
+            result = client.predict(
+                    input_fg = handle_file(input_path),
+                    bg_source = bg_source,
+                    prompt = prompt,
+                    image_width = width,
+                    image_height = height,
+                    num_samples = 1,
+                    seed = seed,
+                    steps = steps,
+                    n_prompt = n_prompt,
+                    cfg=2,
+                    gs=5,
+                    enable_hr_fix=True,
+                    hr_downscale=0.5,
+                    lowres_denoise=0.8,
+                    highres_denoise=0.99,
+                    api_name="/process"
+            )
+
+        img_path = result[0][0]['image']
+        img_grey_path = result[1]
+        img = ALL_NODE["SDVN Load Image Url"]().load_image_url(img_path)["result"][0]
+        img_grey = ALL_NODE["SDVN Load Image Url"]().load_image_url(img_grey_path)["result"][0]
+        return (img,img_grey,)
+    
 NODE_CLASS_MAPPINGS = {
     "SDVN Run Python Code": run_python_code,
     "SDVN API chatbot": API_chatbot,
     "SDVN DALL-E Generate Image": API_DALLE,
+    "SDVN IC-Light v2": ic_light_v2,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Run Python Code": "👨🏻‍💻 Run Python Code",
-    "SDVN API chatbot": "💬 API chatbot",
-    "SDVN DALL-E Generate Image": "🎨 DALL-E Generate Image",
+    "SDVN API chatbot": "💬 Chatbot",
+    "SDVN DALL-E Generate Image": "🎨 DALL-E",
+    "SDVN IC-Light v2": "✨ IC-Light v2",
 }

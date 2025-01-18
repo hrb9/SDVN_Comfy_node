@@ -2,7 +2,6 @@ from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 import torch, numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 import platform, math, folder_paths, os, subprocess
-from gradio_client import Client, handle_file
 
 os_name = platform.system()
 
@@ -254,66 +253,12 @@ class img_scraper:
         result = ALL_NODE["SDVN Load Image Folder"]().load_image(folder, -1, False)[0]
         return (result,)
     
-class ic_light_v2:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "image": ("IMAGE",),
-                "bg_source": (['None', 'Left Light', 'Right Light', 'Top Light', 'Bottom Light'],{"default":"None"}),
-                "prompt": ("STRING",{"default":"","multiline": True}),
-                "n_prompt": ("STRING",{"default":"","multiline": False}),
-                "image_size": ("INT", {"default":1024,"min":512,"max":2048}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, }),
-                "steps": ("INT", {"default":25,"min":1,"max":50}),
-            }
-        }
-
-    CATEGORY = "📂 SDVN/👨🏻‍💻 Dev"
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("image",)
-    FUNCTION = "ic_light_v2"
-
-    def ic_light_v2(s, image, bg_source, prompt, n_prompt, image_size, seed, steps):
-        samples = image.movedim(-1, 1)
-        w = samples.shape[3]
-        h = samples.shape[2]
-        width = image_size
-        height = image_size
-        if width/height < w/h:
-            height = round(h * width / w)
-        else:
-            width = round(w * height / h)
-        image = tensor2pil(image)
-        image.save("/tmp/ic_light.jpg", format="JPEG")
-        client = Client("lllyasviel/iclight-v2")
-        result = client.predict(
-                input_fg = handle_file('/tmp/ic_light.jpg'),
-                bg_source = bg_source,
-                prompt = prompt,
-                image_width = width,
-                image_height = height,
-                num_samples = 1,
-                seed = seed,
-                steps = steps,
-                n_prompt = n_prompt,
-                cfg=1,
-                gs=5,
-                rs=1,
-                init_denoise=0.999,
-                api_name="/process"
-        )
-        img_path = result[0][0]['image']
-        img = ALL_NODE["SDVN Load Image Url"]().load_image_url(img_path)["result"][0]
-        return (img,)
-    
 NODE_CLASS_MAPPINGS = {
     "SDVM Image List Repeat": img_list_repeat,
     "SDVN Image Repeat": img_repeat,
     "SDVN Image Layout": image_layout,
     "SDVN Load Image From List": load_img_from_list,
     "SDVN Image Scraper": img_scraper,
-    "SDVN IC Light v2": ic_light_v2,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -322,5 +267,4 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Image Repeat": "🔄 Image Repeat",
     "SDVN Load Image From List": "📁 Image From List",
     "SDVN Image Scraper": "⏬️ Image Scraper",
-    "SDVN IC Light v2": "✨ IC Light v2",
 }

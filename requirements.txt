@@ -5,4 +5,4 @@ gallery-dl
 instaloader
 google-generativeai
 googletrans-py
-gradio_client
+gradio_client>=1.5.4
