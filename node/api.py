@@ -395,12 +395,84 @@ class ic_light_v2:
         img = ALL_NODE["SDVN Load Image Url"]().load_image_url(img_path)["result"][0]
         img_grey = ALL_NODE["SDVN Load Image Url"]().load_image_url(img_grey_path)["result"][0]
         return (img,img_grey,)
+
+class joy_caption:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "caption_type": (["Descriptive", "Descriptive (Informal)", "Training Prompt", "MidJourney", "Booru tag list", "Booru-like tag list", "Art Critic", "Product Listing", "Social Media Post"],),
+                "caption_length": (["any", "very short", "short", "medium-length", "long", "very long"] + [str(i) for i in range(20, 261, 10)],),
+                "extra_options": ([
+                    "None",
+					"If there is a person/character in the image you must refer to them as {name}.",
+					"Do NOT include information about people/characters that cannot be changed (like ethnicity, gender, etc), but do still include changeable attributes (like hair style).",
+					"Include information about lighting.",
+					"Include information about camera angle.",
+					"Include information about whether there is a watermark or not.",
+					"Include information about whether there are JPEG artifacts or not.",
+					"If it is a photo you MUST include information about what camera was likely used and details such as aperture, shutter speed, ISO, etc.",
+					"Do NOT include anything sexual; keep it PG.",
+					"Do NOT mention the image's resolution.",
+					"You MUST include information about the subjective aesthetic quality of the image from low to very high.",
+					"Include information on the image's composition style, such as leading lines, rule of thirds, or symmetry.",
+					"Do NOT mention any text that is in the image.",
+					"Specify the depth of field and whether the background is in focus or blurred.",
+					"If applicable, mention the likely use of artificial or natural lighting sources.",
+					"Do NOT use any ambiguous language.",
+					"Include whether the image is sfw, suggestive, or nsfw.",
+					"ONLY describe the most important elements of the image."
+				],),
+                "name_input": ("STRING",{"default":"","multiline": False}),
+                "custom_prompt": ("STRING",{"default":"","multiline": True}),
+                "translate": (lang_list(),),
+                "hf_token": ("STRING",{"default":"","multiline": False}),
+            }
+        }
+
+    CATEGORY = "📂 SDVN/💬 API"
+    RETURN_TYPES = ("STRING","STRING",)
+    RETURN_NAMES = ("prompt","caption",)
+    FUNCTION = "joy_caption"
+
+    def joy_caption(s, image, caption_type, caption_length, extra_options, name_input, custom_prompt, translate, hf_token):
+        if custom_prompt != "":
+            custom_prompt = ALL_NODE["SDVN Translate"]().ggtranslate(custom_prompt,translate)[0]
+        if hf_token == "":
+            api_list = api_check()
+            if api_check() != None:
+                hf_token =  api_list["HuggingFace"]
+        extra_options = "" if extra_options == "None" else extra_options
+
+        image = tensor2pil(image)
+        input_path = "/tmp/joy_caption.jpg"
+        if not os.path.isdir("/tmp"):
+            os.mkdir("/tmp")
+        image.save(input_path, format="JPEG")
+
+        space_path = "fancyfeast/joy-caption-alpha-two"
+        if hf_token == "":
+            client = Client(space_path)
+        else:
+            client = Client(space_path, hf_token = hf_token)
+        result = client.predict(
+                input_image = handle_file(input_path),
+                caption_type = caption_type,
+                caption_length = caption_length,
+                extra_options = [extra_options],
+                name_input = name_input,
+                custom_prompt = custom_prompt,
+                api_name="/stream_chat"
+        )
+        return result
     
 NODE_CLASS_MAPPINGS = {
     "SDVN Run Python Code": run_python_code,
     "SDVN API chatbot": API_chatbot,
     "SDVN DALL-E Generate Image": API_DALLE,
     "SDVN IC-Light v2": ic_light_v2,
+    "SDVN Joy Caption": joy_caption, 
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -408,4 +480,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN API chatbot": "💬 Chatbot",
     "SDVN DALL-E Generate Image": "🎨 DALL-E",
     "SDVN IC-Light v2": "✨ IC-Light v2",
+    "SDVN Joy Caption": "✨ Joy Caption", 
 }
