@@ -1,7 +1,7 @@
 [project]
 name = "sdvn_comfy_node"
-description = "Update API (Ic-lightv2, JoyCaption), Image Adj node"
-version = "1.4.0"
+description = "Update API (Ic-lightv2, JoyCaption), Image Adj node, HSL"
+version = "1.4.1"
 license = {file = "LICENSE"}
 dependencies = ["#If MacOs - Please install aria2 manually via brew", "aria2;sys_platform != 'darwin'", "openai", "gallery-dl", "google-generativeai", "googletrans-py"]
 

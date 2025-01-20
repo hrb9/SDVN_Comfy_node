@@ -1,9 +1,8 @@
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 import torch, numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-import platform, math, folder_paths, os, subprocess
+import platform, math, folder_paths, os, subprocess, cv2
 import torchvision.transforms.functional as F
-
 os_name = platform.system()
 
 def create_image_with_text(text, image_size=(1200, 100), font_size=40, align = "left"):
@@ -261,7 +260,7 @@ class film_grain:
             "required": {
                 "image": ("IMAGE",),
                 "mode": (["Film grain", "Gaussian noise"],),
-                "intensity": ("FLOAT",{"default":0.5,"min":0,"max":2,"display":"slider","round": 0.001,"lazy": True}),
+                "weight": ("FLOAT",{"default":0,"min":0,"max":100,"display":"slider","round": 1,"lazy": True}),
             }
         }
     
@@ -270,8 +269,8 @@ class film_grain:
     RETURN_NAMES = ("image",)
     FUNCTION = "film_grain"
 
-    def film_grain(s, image, mode, intensity):
-        intensity = intensity/10
+    def film_grain(s, image, mode, weight):
+        intensity = weight/500
         if mode == "Film grain":
             grain = torch.empty_like(image).uniform_(-intensity, intensity)
             r = torch.clamp(image + grain, 0, 1)
@@ -310,13 +309,13 @@ class img_adj:
         return {
             "required": {
                 "image": ("IMAGE",),
-                "exposure": ("FLOAT",{"default":0,"min":-1,"max":1,"display":"slider","round": 0.001,"lazy": True}),
-                "contrast": ("FLOAT",{"default":1,"min":0,"max":10,"display":"slider","round": 0.001,"lazy": True}),
-                "saturation": ("FLOAT",{"default":1,"min":0,"max":10,"display":"slider","round": 0.001,"lazy": True}),
-                "vibrance": ("FLOAT",{"default":0,"min":-10,"max":10,"display":"slider","round": 0.001,"lazy": True}),
-                "grain": ("FLOAT",{"default":0,"min":0,"max":2,"display":"slider","round": 0.001,"lazy": True}),
+                "exposure": ("FLOAT",{"default":0,"min":-5,"max":5,"display":"slider","round": 0.05,"lazy": True}),
+                "contrast": ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
+                "saturation": ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
+                "vibrance": ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
                 "temp": ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
                 "tint": ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
+                "grain": ("FLOAT",{"default":0,"min":0,"max":100,"display":"slider","round": 1,"lazy": True}),
             }
         }
     
@@ -326,7 +325,11 @@ class img_adj:
     FUNCTION = "img_adj"
 
     def img_adj(s, image, exposure, contrast, saturation, vibrance, grain, temp, tint):
-        intensity = grain/10
+        exposure = exposure/5
+        contrast = contrast/100 + 1
+        saturation = saturation/100 + 1
+        vibrance = vibrance/100
+        intensity = grain/500
         image = image.permute(0, 3, 1, 2).squeeze(0)
 
         image = torch.clamp(image + exposure, 0, 1)
@@ -347,6 +350,72 @@ class img_adj:
         
         return (image,)
 
+COLOR_RANGES = {
+    "all": [(0,180)],
+    "red": [(0, 10), (160, 180)],
+    "orange": [(10, 25)],
+    "yellow": [(25, 35)],
+    "green": [(35, 85)],
+    "aqua": [(85, 100)],
+    "blue": [(100, 130)],
+    "purple": [(130, 145)],
+    "magenta": [(145, 160)],
+}
+
+class hls_adj:
+    @classmethod
+    def INPUT_TYPES(s):
+        r = {"image": ("IMAGE",)}
+        for i in COLOR_RANGES:
+            r[f"{i}_hue"] = ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True})
+            r[f"{i}_saturation"] = ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True})
+            r[f"{i}_lightness"] = ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True})
+        return {
+            "required": r
+        }
+    
+    CATEGORY = "📂 SDVN/🏞️ Image"
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "hls_adj"
+
+    def hls(s, pil_image, color, hue, saturation, lightness):
+        hue = hue/10
+        saturation = saturation/100 + 1
+        lightness = lightness/1000 + 1
+        image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+        image_hls = cv2.cvtColor(image, cv2.COLOR_BGR2HLS)
+        mask = np.zeros(image_hls.shape[:2], dtype=np.uint8)
+        for lower, upper in COLOR_RANGES[color]:
+            lower_bound = np.array([lower, 0, 0])
+            upper_bound = np.array([upper, 255, 255])
+            color_mask = cv2.inRange(image_hls, lower_bound, upper_bound)
+            mask = cv2.bitwise_or(mask, color_mask)
+
+        h, l, s = cv2.split(image_hls)
+        h = np.where(mask > 0, (h + hue) % 180, h)
+        s = np.where(mask > 0, np.clip(s * saturation, 0, 255), s)
+        l = np.where(mask > 0, np.clip(l * lightness, 0, 255), l)
+
+        h = h.astype('uint8')
+        l = l.astype('uint8')
+        s = s.astype('uint8')
+        adjusted_hls = cv2.merge([h, l, s])
+        adjusted_image = cv2.cvtColor(adjusted_hls, cv2.COLOR_HLS2BGR)
+        pil_img =  Image.fromarray(cv2.cvtColor(adjusted_image, cv2.COLOR_BGR2RGB))
+        return pil_img
+    
+    def hls_adj(self, image, **kargs):
+        pil_image = tensor2pil(image)
+        for i in kargs:
+            if "hue" in i:
+                color = i.split("_")[0]
+                if kargs[f"{color}_hue"] !=0 or  kargs[f"{color}_saturation"] !=0 or  kargs[f"{color}_lightness"] !=0:
+                    h, s, l = [kargs[f"{color}_hue"], kargs[f"{color}_saturation"], kargs[f"{color}_lightness"]]
+                    pil_image = self.hls(pil_image, color, h, s, l)
+        r = i2tensor(pil_image)
+        return (r,)
+
 NODE_CLASS_MAPPINGS = {
     "SDVN Image Scraper": img_scraper,
     "SDVM Image List Repeat": img_list_repeat,
@@ -356,6 +425,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Image Film Grain": film_grain,
     "SDVN Image White Balance": white_balance,
     "SDVN Image Adjust": img_adj,
+    "SDVN Image HSL": hls_adj,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -367,4 +437,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Image Film Grain": "🪄 Film Grain",
     "SDVN Image White Balance": "🪄 White Balance",
     "SDVN Image Adjust": "🪄 Image Adjust",
+    "SDVN Image HSL": "🪄 HSL Adjust",
 }
