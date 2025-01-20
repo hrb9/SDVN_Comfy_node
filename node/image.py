@@ -2,6 +2,7 @@ from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 import torch, numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 import platform, math, folder_paths, os, subprocess
+import torchvision.transforms.functional as F
 
 os_name = platform.system()
 
@@ -252,19 +253,118 @@ class img_scraper:
         subprocess.run(command, check=True,text=True, capture_output=True)
         result = ALL_NODE["SDVN Load Image Folder"]().load_image(folder, -1, False)[0]
         return (result,)
+
+class film_grain:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "mode": (["Film grain", "Gaussian noise"],),
+                "intensity": ("FLOAT",{"default":0.5,"min":0,"max":2,"display":"slider","round": 0.001,"lazy": True}),
+            }
+        }
     
+    CATEGORY = "📂 SDVN/🏞️ Image"
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "film_grain"
+
+    def film_grain(s, image, mode, intensity):
+        intensity = intensity/10
+        if mode == "Film grain":
+            grain = torch.empty_like(image).uniform_(-intensity, intensity)
+            r = torch.clamp(image + grain, 0, 1)
+        if mode == "Gaussian noise":
+            mean = 0.0
+            noise = torch.randn_like(image) * intensity + mean
+            r = torch.clamp(image + noise, 0, 1)
+        return (r,)
+
+class white_balance:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "temp": ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
+                "tint": ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
+            }
+        }
+    
+    CATEGORY = "📂 SDVN/🏞️ Image"
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "white_balance"
+
+    def white_balance(s, image, temp, tint):
+        temp_adjustment = torch.tensor([1.0 + temp * 0.01, 1.0, 1.0 - temp * 0.01], device=image.device)
+        tint_adjustment = torch.tensor([1.0 + tint * 0.01, 1.0 - tint * 0.01, 1.0], device=image.device)
+        image = image * temp_adjustment * tint_adjustment
+        image = torch.clamp(image, 0, 1)
+        return (image,)
+
+class img_adj:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "exposure": ("FLOAT",{"default":0,"min":-1,"max":1,"display":"slider","round": 0.001,"lazy": True}),
+                "contrast": ("FLOAT",{"default":1,"min":0,"max":10,"display":"slider","round": 0.001,"lazy": True}),
+                "saturation": ("FLOAT",{"default":1,"min":0,"max":10,"display":"slider","round": 0.001,"lazy": True}),
+                "vibrance": ("FLOAT",{"default":0,"min":-10,"max":10,"display":"slider","round": 0.001,"lazy": True}),
+                "grain": ("FLOAT",{"default":0,"min":0,"max":2,"display":"slider","round": 0.001,"lazy": True}),
+                "temp": ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
+                "tint": ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
+            }
+        }
+    
+    CATEGORY = "📂 SDVN/🏞️ Image"
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "img_adj"
+
+    def img_adj(s, image, exposure, contrast, saturation, vibrance, grain, temp, tint):
+        intensity = grain/10
+        image = image.permute(0, 3, 1, 2).squeeze(0)
+
+        image = torch.clamp(image + exposure, 0, 1)
+        image = F.adjust_contrast(image, contrast)
+        image = F.adjust_saturation(image, saturation)
+        vibrance_factor = (image - torch.mean(image, dim=0, keepdim=True)) * vibrance
+        image = torch.clamp(image + vibrance_factor, 0, 1)
+        grain = torch.empty_like(image).uniform_(-intensity, intensity)
+        image = torch.clamp(image + grain, 0, 1)
+
+        image = image.permute(1, 2, 0).unsqueeze(0)
+
+        if temp != 0 or tint != 0:
+            temp_adjustment = torch.tensor([1.0 + temp * 0.01, 1.0, 1.0 - temp * 0.01], device=image.device)
+            tint_adjustment = torch.tensor([1.0 + tint * 0.01, 1.0 - tint * 0.01, 1.0], device=image.device)
+            image = image * temp_adjustment * tint_adjustment
+            image = torch.clamp(image, 0, 1)
+        
+        return (image,)
+
 NODE_CLASS_MAPPINGS = {
+    "SDVN Image Scraper": img_scraper,
     "SDVM Image List Repeat": img_list_repeat,
     "SDVN Image Repeat": img_repeat,
-    "SDVN Image Layout": image_layout,
     "SDVN Load Image From List": load_img_from_list,
-    "SDVN Image Scraper": img_scraper,
+    "SDVN Image Layout": image_layout,
+    "SDVN Image Film Grain": film_grain,
+    "SDVN Image White Balance": white_balance,
+    "SDVN Image Adjust": img_adj,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SDVN Image Layout": "🪄 Image Layout",
+    "SDVN Image Scraper": "⏬️ Image Scraper",
     "SDVM Image List Repeat": "🔄 Image List",
     "SDVN Image Repeat": "🔄 Image Repeat",
     "SDVN Load Image From List": "📁 Image From List",
-    "SDVN Image Scraper": "⏬️ Image Scraper",
+    "SDVN Image Layout": "🪄 Image Layout",
+    "SDVN Image Film Grain": "🪄 Film Grain",
+    "SDVN Image White Balance": "🪄 White Balance",
+    "SDVN Image Adjust": "🪄 Image Adjust",
 }
