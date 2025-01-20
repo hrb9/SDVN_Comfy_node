@@ -260,7 +260,7 @@ class film_grain:
             "required": {
                 "image": ("IMAGE",),
                 "mode": (["Film grain", "Gaussian noise"],),
-                "weight": ("FLOAT",{"default":0,"min":0,"max":100,"display":"slider","round": 1,"lazy": True}),
+                "weight": ("INT",{"default":0,"min":0,"max":100,"display":"slider","round": 1,"lazy": True}),
             }
         }
     
@@ -286,8 +286,8 @@ class white_balance:
         return {
             "required": {
                 "image": ("IMAGE",),
-                "temp": ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
-                "tint": ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
+                "temp": ("INT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
+                "tint": ("INT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
             }
         }
     
@@ -309,13 +309,13 @@ class img_adj:
         return {
             "required": {
                 "image": ("IMAGE",),
-                "exposure": ("FLOAT",{"default":0,"min":-5,"max":5,"display":"slider","round": 0.05,"lazy": True}),
-                "contrast": ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
-                "saturation": ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
-                "vibrance": ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
-                "temp": ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
-                "tint": ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
-                "grain": ("FLOAT",{"default":0,"min":0,"max":100,"display":"slider","round": 1,"lazy": True}),
+                "exposure": ("INT",{"default":0,"min":-5,"max":5,"display":"slider","round": 0.05,"lazy": True}),
+                "contrast": ("INT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
+                "saturation": ("INT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
+                "vibrance": ("INT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
+                "temp": ("INT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
+                "tint": ("INT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
+                "grain": ("INT",{"default":0,"min":0,"max":100,"display":"slider","round": 1,"lazy": True}),
             }
         }
     
@@ -367,9 +367,9 @@ class hls_adj:
     def INPUT_TYPES(s):
         r = {"image": ("IMAGE",)}
         for i in COLOR_RANGES:
-            r[f"{i}_hue"] = ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True})
-            r[f"{i}_saturation"] = ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True})
-            r[f"{i}_lightness"] = ("FLOAT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True})
+            r[f"{i}_hue"] = ("INT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True})
+            r[f"{i}_saturation"] = ("INT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True})
+            r[f"{i}_lightness"] = ("INT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True})
         return {
             "required": r
         }
