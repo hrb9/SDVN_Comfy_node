@@ -215,10 +215,6 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
             answer = ""
             client = OpenAI(
                 base_url="https://api-inference.huggingface.co/v1/", api_key=APIkey)
-            if image != None:
-                image = encode_image(image)
-                prompt = [{"type": "text", "text": prompt, }, {
-                    "type": "image_url", "image_url": {"url":  f"data:image/jpeg;base64,{image}"}, },]
             messages = [
                 {"role": "user", "content": prompt}
             ]
@@ -233,8 +229,6 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
             )
             for chunk in stream:
                 answer += chunk.choices[0].delta.content
-            if image != None:
-                answer = answer.split('return True')[-1]
         if "OpenAI" in chatbot:
             answer = ""
             client = OpenAI(
