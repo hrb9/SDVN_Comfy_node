@@ -133,6 +133,8 @@ model_list = {
     "OpenAI | GPT 4-o mini": "gpt-4o-mini",
     "OpenAI | GPT 4-o": "gpt-4o",
     "OpenAI | GPT 3.5 Turbo": "gpt-3.5-turbo-0125",
+    "HuggingFace | DeepSeek R1 32B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+    "HuggingFace | DeepSeek R1 1.5B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
     "HuggingFace | Meta Llama-3.2": "meta-llama/Llama-3.2-3B-Instruct",
     "HuggingFace | Qwen 2.5-72B": "Qwen/Qwen2.5-72B-Instruct"
 }
@@ -213,6 +215,10 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
             answer = ""
             client = OpenAI(
                 base_url="https://api-inference.huggingface.co/v1/", api_key=APIkey)
+            if image != None:
+                image = encode_image(image)
+                prompt = [{"type": "text", "text": prompt, }, {
+                    "type": "image_url", "image_url": {"url":  f"data:image/jpeg;base64,{image}"}, },]
             messages = [
                 {"role": "user", "content": prompt}
             ]
@@ -227,6 +233,8 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
             )
             for chunk in stream:
                 answer += chunk.choices[0].delta.content
+            if image != None:
+                answer = answer.split('return True')[-1]
         if "OpenAI" in chatbot:
             answer = ""
             client = OpenAI(
