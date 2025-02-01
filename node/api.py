@@ -128,10 +128,14 @@ def function(input):
         return ([*output],)
 
 model_list = {
-    "Gemini | 1.5 Flash": "gemini-1.5-flash",
-    "Gemini | 1.5 Pro": "gemini-1.5-pro",
-    "OpenAI | GPT 4-o mini": "gpt-4o-mini",
-    "OpenAI | GPT 4-o": "gpt-4o",
+    "Gemini | 2.0 Flash (Img support)" : "gemini-2.0-flash-exp",
+    "Gemini | 1.5 Flash (Img support)": "gemini-1.5-flash",
+    "Gemini | 1.5 Pro (Img support)": "gemini-1.5-pro",
+    "OpenAI | GPT o3-mini": "o3-mini",
+    "OpenAI | GPT o1": "o1",
+    "OpenAI | GPT o1-mini": "o1-mini",
+    "OpenAI | GPT 4-o mini (Img support)": "gpt-4o-mini",
+    "OpenAI | GPT 4-o (Img support)": "gpt-4o",
     "OpenAI | GPT 3.5 Turbo": "gpt-3.5-turbo-0125",
     "HuggingFace | DeepSeek R1 32B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
     "HuggingFace | DeepSeek R1 1.5B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
