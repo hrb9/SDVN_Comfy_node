@@ -119,7 +119,7 @@ class auto_generate:
                 "Active_prompt": ("STRING", {"default": "", "multiline": False},),
                 "Image_size": ("STRING", {"default": "1024,1024", "multiline": False},),
                 "Steps": ("INT", {"default": 20,},),
-                "Denoise": ("FLOAT", {"default": 1,"min":0,"max":1},),
+                "Denoise": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
             },
             "optional": {
