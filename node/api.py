@@ -131,6 +131,7 @@ model_list = {
     "Gemini | 2.0 Flash (Img support)" : "gemini-2.0-flash-exp",
     "Gemini | 1.5 Flash (Img support)": "gemini-1.5-flash",
     "Gemini | 1.5 Pro (Img support)": "gemini-1.5-pro",
+    "Deepseek | R1": "deepseek-chat",
     "OpenAI | GPT o3-mini": "o3-mini",
     "OpenAI | GPT o1": "o1",
     "OpenAI | GPT o1-mini": "o1-mini",
@@ -142,6 +143,7 @@ model_list = {
     "HuggingFace | Meta Llama-3.2": "meta-llama/Llama-3.2-3B-Instruct",
     "HuggingFace | Qwen 2.5-72B": "Qwen/Qwen2.5-72B-Instruct"
 }
+
 preset_prompt = {
     "None": [],
     "Python Function": [
@@ -196,6 +198,8 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
                     APIkey =  api_list["HuggingFace"]
                 if "OpenAI" in chatbot:
                     APIkey =  api_list["OpenAI"]
+                if "Deepseek" in chatbot:
+                    APIkey =  api_list["Deepseek"]
 
         if "DPRandomGenerator" in ALL_NODE:
             cls = ALL_NODE["DPRandomGenerator"]
@@ -255,6 +259,17 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
                     answer += chunk.choices[0].delta.content
             if image != None:
                 answer = answer.split('return True')[-1]
+        if "Deepseek" in chatbot:
+            client = OpenAI(api_key=APIkey, base_url="https://api.deepseek.com")
+            response = client.chat.completions.create(
+                model = model_name,
+                messages=[
+                    {"role": "system", "content": {preset_prompt[preset][0]['content']} if preset != "None" else "You are a helpful assistant"},
+                    {"role": "user", "content": prompt},
+                ],
+                stream=False
+                )
+            answer = response.choices[0].message.content
         return (answer.strip(),)
 
 
