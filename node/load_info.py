@@ -4,6 +4,7 @@ from PIL.PngImagePlugin import PngInfo
 import json, ast, os, torch
 import numpy as np
 from collections import defaultdict
+import yaml
         
 class img_info:
     @classmethod
@@ -276,6 +277,7 @@ list_data_check = {"Trigger_word": "Trigger_word",
 
 def metadata_covert(path):
     data = get_metadata(path)
+    yaml_string = yaml.dump(data, default_flow_style=False)
     if 'ss_tag_frequency' in data :
         tag_dict = tag_list(data)
         list_tag = ", ".join(list(tag_dict)[:20])
@@ -288,6 +290,7 @@ def metadata_covert(path):
     full_data = ""
     for key, value in result.items():
         full_data += f"{key}: {value}\n\n"
+    full_data += yaml_string
     result["Full_Data"] = full_data
     return result
 

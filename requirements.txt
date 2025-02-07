@@ -7,3 +7,4 @@ googletrans-py
 gradio_client>=1.5.4
 opencv-python
 google-genai
+PyYAML
