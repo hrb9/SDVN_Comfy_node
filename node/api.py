@@ -331,7 +331,6 @@ class API_Imagen:
                 "person_gen": ("BOOLEAN", {"default": True},),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
                 "prompt": ("STRING", {"default": "", "multiline": True, "placeholder": "Prompt"}),
-                "translate": (lang_list(),),
             }
         }
 
@@ -340,14 +339,13 @@ class API_Imagen:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "api_imagen"
 
-    def api_imagen(self, Gemini_API, aspect_ratio, person_gen, seed, prompt, translate):
+    def api_imagen(self, Gemini_API, aspect_ratio, person_gen, seed, prompt):
         if Gemini_API == "":
             api_list = api_check()
             Gemini_API =  api_list["Gemini"]
         if "DPRandomGenerator" in ALL_NODE:
             cls = ALL_NODE["DPRandomGenerator"]
             prompt = cls().get_prompt(prompt, seed, 'No')[0]
-        prompt = ALL_NODE["SDVN Translate"]().ggtranslate(prompt,translate)[0]
         client = genai.Client(api_key=Gemini_API)
         result = client.models.generate_images(
             model='imagen-3.0-generate-002',
