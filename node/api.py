@@ -360,7 +360,7 @@ class API_Imagen:
             ),
         )
         for generated_image in result.generated_images:
-            image = generated_image.image
+            image = Image.open(BytesIO(generated_image.image.image_bytes))
             image = i2tensor(image)
         return (image,)
 
