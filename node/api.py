@@ -1,10 +1,12 @@
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
-import google.generativeai as genai
+from google import genai
 from openai import OpenAI
 import io, base64, torch, numpy as np, re, os, json
 from googletrans import LANGUAGES
 from PIL import Image, ImageOps
 from gradio_client import Client, handle_file
+from google.genai import types
+from io import BytesIO
 
 def i2tensor(i) -> torch.Tensor:
     i = ImageOps.exif_transpose(i)
@@ -128,15 +130,14 @@ def function(input):
         return ([*output],)
 
 model_list = {
-    "Gemini | 2.0 Flash (Img support)" : "gemini-2.0-flash-exp",
-    "Gemini | 1.5 Flash (Img support)": "gemini-1.5-flash",
-    "Gemini | 1.5 Pro (Img support)": "gemini-1.5-pro",
+    "Gemini | 2.0 Flash (Img support)" : "gemini-2.0-flash-001",
+    "Gemini | 2.0 Flash Lite (Img support)": "gemini-2.0-flash-lite-preview-02-05",
+    "OpenAI | GPT 4-o mini (Img support)": "gpt-4o-mini",
+    "OpenAI | GPT 4-o (Img support)": "gpt-4o",
     "Deepseek | R1": "deepseek-chat",
     "OpenAI | GPT o3-mini": "o3-mini",
     "OpenAI | GPT o1": "o1",
     "OpenAI | GPT o1-mini": "o1-mini",
-    "OpenAI | GPT 4-o mini (Img support)": "gpt-4o-mini",
-    "OpenAI | GPT 4-o (Img support)": "gpt-4o",
     "OpenAI | GPT 3.5 Turbo": "gpt-3.5-turbo-0125",
     "HuggingFace | DeepSeek R1 32B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
     "HuggingFace | DeepSeek R1 1.5B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
@@ -210,14 +211,17 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
         prompt = f"{main_prompt}.{sub_prompt}"
         model_name = model_list[chatbot]
         if 'Gemini' in chatbot:
-            genai.configure(api_key=APIkey)
-            model = genai.GenerativeModel(model_name)
             prompt += preset_prompt[preset][0]["content"] if preset != "None" else ""
+            client = genai.Client(api_key=APIkey)
             if image == None:
-                response = model.generate_content(prompt)
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[prompt])
             else:
                 image = tensor2pil(image)
-                response = model.generate_content([prompt, image])
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[prompt, image])
             answer = response.text
         if "HuggingFace" in chatbot:
             answer = ""
@@ -315,6 +319,49 @@ class API_DALLE:
         image_url = response.data[0].url
         print(image_url)
         image = cls().load_image_url(image_url)["result"][0]
+        return (image,)
+
+class API_Imagen:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "Gemini_API": ("STRING", {"default": "", "multiline": False, "tooltip": "Get API: https://aistudio.google.com/apikey"}),
+                "aspect_ratio": (['1:1', '3:4', '4:3', '9:16', '16:9'],{"default": "1:1"}),
+                "person_gen": ("BOOLEAN", {"default": True},),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
+                "prompt": ("STRING", {"default": "", "multiline": True, "placeholder": "Prompt"}),
+                "translate": (lang_list(),),
+            }
+        }
+
+    CATEGORY = "📂 SDVN/💬 API"
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "api_imagen"
+
+    def api_imagen(self, Gemini_API, aspect_ratio, person_gen, seed, prompt, translate):
+        if Gemini_API == "":
+            api_list = api_check()
+            Gemini_API =  api_list["Gemini"]
+        if "DPRandomGenerator" in ALL_NODE:
+            cls = ALL_NODE["DPRandomGenerator"]
+            prompt = cls().get_prompt(prompt, seed, 'No')[0]
+        prompt = ALL_NODE["SDVN Translate"]().ggtranslate(prompt,translate)[0]
+        client = genai.Client(api_key=Gemini_API)
+        result = client.models.generate_images(
+            model='imagen-3.0-generate-002',
+            prompt=prompt,
+            config=types.GenerateImagesConfig(
+                number_of_images= 1,
+                aspect_ratio = aspect_ratio,
+                output_mime_type = 'image/jpeg',
+                person_generation = 'ALLOW_ADULT' if person_gen else 'DONT_ALLOW',
+            ),
+        )
+        for generated_image in result.generated_images:
+            image = generated_image.image
+            image = i2tensor(image)
         return (image,)
 
 class ic_light_v2:
@@ -493,7 +540,8 @@ NODE_CLASS_MAPPINGS = {
     "SDVN API chatbot": API_chatbot,
     "SDVN DALL-E Generate Image": API_DALLE,
     "SDVN IC-Light v2": ic_light_v2,
-    "SDVN Joy Caption": joy_caption, 
+    "SDVN Joy Caption": joy_caption,
+    "SDVN Google Imagen": API_Imagen, 
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -501,5 +549,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN API chatbot": "💬 Chatbot",
     "SDVN DALL-E Generate Image": "🎨 DALL-E",
     "SDVN IC-Light v2": "✨ IC-Light v2",
-    "SDVN Joy Caption": "✨ Joy Caption", 
+    "SDVN Joy Caption": "✨ Joy Caption",
+    "SDVN Google Imagen": "🎨 Google Imagen",
 }
