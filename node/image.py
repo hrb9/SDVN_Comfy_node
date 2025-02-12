@@ -416,6 +416,47 @@ class hls_adj:
         r = i2tensor(pil_image)
         return (r,)
 
+class FlipImage:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image": ("IMAGE",),  # Hình ảnh đầu vào
+                "flip_direction": (["horizontal", "vertical"], {"default": "horizontal"}),  # Hướng lật: ngang hoặc dọc
+            }
+        }
+
+    CATEGORY = "📂 SDVN/🏞️ Image"  # Danh mục của node
+    RETURN_TYPES = ("IMAGE",)  # Trả về hình ảnh đã lật
+    RETURN_NAMES = ("flipped_image",)  # Tên của đầu ra
+    FUNCTION = "flip_image"  # Hàm xử lý chính
+
+    def flip_image(self, image, flip_direction):
+        # Chuyển đổi tensor thành hình ảnh PIL
+        pil_image = self.tensor2pil(image)
+
+        # Lật ảnh theo hướng được chọn
+        if flip_direction == "horizontal":
+            flipped_image = pil_image.transpose(Image.FLIP_LEFT_RIGHT)
+        else:
+            flipped_image = pil_image.transpose(Image.FLIP_TOP_BOTTOM)
+
+        # Chuyển đổi hình ảnh PIL trở lại tensor
+        flipped_tensor = self.pil2tensor(flipped_image)
+        return (flipped_tensor,)
+
+    def tensor2pil(self, tensor):
+        # Chuyển đổi tensor thành hình ảnh PIL
+        if tensor.ndim == 4:
+            tensor = tensor.squeeze(0)
+        np_image = (tensor.numpy() * 255).astype(np.uint8)
+        return Image.fromarray(np_image)
+
+    def pil2tensor(self, pil_image):
+        # Chuyển đổi hình ảnh PIL thành tensor
+        np_image = np.array(pil_image).astype(np.float32) / 255.0
+        return torch.from_numpy(np_image).unsqueeze(0)
+
 NODE_CLASS_MAPPINGS = {
     "SDVN Image Scraper": img_scraper,
     "SDVM Image List Repeat": img_list_repeat,
@@ -426,6 +467,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Image White Balance": white_balance,
     "SDVN Image Adjust": img_adj,
     "SDVN Image HSL": hls_adj,
+    "SDVN Flip Image": FlipImage,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -438,4 +480,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Image White Balance": "🪄 White Balance",
     "SDVN Image Adjust": "🪄 Image Adjust",
     "SDVN Image HSL": "🪄 HSL Adjust",
+    "SDVN Flip Image": "🔄 Flip Image",
 }
