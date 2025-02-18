@@ -457,9 +457,6 @@ class FlipImage:
         np_image = np.array(pil_image).astype(np.float32) / 255.0
         return torch.from_numpy(np_image).unsqueeze(0)
 
-import torch
-import torch.nn.functional as F
-
 class FillSquare:
     @classmethod
     def INPUT_TYPES(cls):
