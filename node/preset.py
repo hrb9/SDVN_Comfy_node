@@ -120,6 +120,7 @@ class auto_generate:
                 "Image_size": ("STRING", {"default": "1024,1024", "multiline": False},),
                 "Steps": ("INT", {"default": 20,},),
                 "Denoise": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
+                "Inpaint_model": ("BOOLEAN", {"default": False},),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
             },
             "optional": {
@@ -140,7 +141,7 @@ class auto_generate:
         "SD 1.5": [768, "1.5-BasePrompt", 0.4, 1920],
         "None": [768, "1.5-BasePrompt", 0.4, 1920],
     }
-    def auto_generate(s, model, clip, vae, Prompt, Negative, Active_prompt, Image_size, Steps, Denoise, seed, image = None, mask = None, parameter = None):
+    def auto_generate(s, model, clip, vae, Prompt, Negative, Active_prompt, Image_size, Steps, Denoise, Inpaint_model, seed, image = None, mask = None, parameter = None):
         type_model = check_type_model(model)
         type_model = "None" if type_model not in s.model_para else type_model
         print(f"Type model : {type_model}")
@@ -171,13 +172,13 @@ class auto_generate:
             n_w = w * (max_size/h) if max_size < h else w
         n_h = int(round(n_h))
         n_w = int(round(n_w))
+        Prompt = f"{Active_prompt}, {Prompt}"
+        p, n, _ = ALL_NODE["SDVN CLIP Text Encode"]().encode(clip, Prompt, Negative, s.model_para[type_model][1], "en", seed)
         if image == None:
             latent = ALL_NODE["EmptyLatentImage"]().generate(n_w, n_h, 1)[0]
         else:
             image = ALL_NODE["SDVN Upscale Image"]().upscale("Resize", n_w, n_h, 1, "None", image)[0]
-            latent = ALL_NODE["SDVN Inpaint"]().encode(True, image, vae, mask, None, None)[2]
-        Prompt = f"{Active_prompt}, {Prompt}"
-        p, n, _ = ALL_NODE["SDVN CLIP Text Encode"]().encode(clip, Prompt, Negative, s.model_para[type_model][1], "en", seed)
+            p, n, latent = ALL_NODE["SDVN Inpaint"]().encode(False if Inpaint_model else True, image, vae, mask, p, n)
         if parameter != None:
             if not isinstance(parameter, list):
                 parameter = [parameter]
@@ -188,7 +189,7 @@ class auto_generate:
                     p = ALL_NODE["SDVN Apply Style Model"]().applystyle(*para["applystyle"], p)[0]
 
         tile_size = s.model_para[type_model][3]
-        _, img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed, Tiled=True if (n_w > tile_size or n_h > tile_size) and Denoise < 0.5 else False, tile_width=int(round(n_w/2)), tile_height=int(round(n_h/2)), steps=Steps, cfg=7, denoise=Denoise, negative=n, latent_image=latent, vae=vae, FluxGuidance = 3.5)
+        _, img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed, Tiled=True if (n_w > tile_size or n_h > tile_size) and Denoise < 0.5 else False, tile_width=int(round(n_w/2)), tile_height=int(round(n_h/2)), steps=Steps, cfg=7, denoise=Denoise, negative=n, latent_image=latent, vae=vae, FluxGuidance = 35 if Inpaint_model and type_model == "Flux" else 3.5)
         if w == n_w:
             return (img,)
         else:
@@ -199,7 +200,7 @@ class auto_generate:
             print(f"Upscale by {upscale_model}")
             img = ALL_NODE["SDVN Upscale Image"]().upscale("Resize", w, h, 1, upscale_model, img)[0]
             latent = ALL_NODE["SDVN Inpaint"]().encode(True, img, vae, mask, None, None)[2]
-            img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed,  Tiled=True if (n_w > tile_size or n_h > tile_size) else False, tile_width=int(round(w/2)), tile_height=int(round(h/2)), steps=Steps, cfg=7, denoise=s.model_para[type_model][2], negative=n, latent_image=latent, vae=vae, FluxGuidance = 3.5)[1]
+            img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed,  Tiled=True if (n_w > tile_size or n_h > tile_size) else False, tile_width=int(round(w/2)), tile_height=int(round(h/2)), steps=Steps, cfg=7, denoise=s.model_para[type_model][2], negative=n, latent_image=latent, vae=vae, FluxGuidance = 35 if Inpaint_model and type_model == "Flux" else 3.5)[1]
             return (img,)
         
                 
