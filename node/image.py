@@ -457,6 +457,46 @@ class FlipImage:
         np_image = np.array(pil_image).astype(np.float32) / 255.0
         return torch.from_numpy(np_image).unsqueeze(0)
 
+import torch
+import torch.nn.functional as F
+
+class FillSquare:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+            }
+        }
+
+    CATEGORY = "📂 SDVN/🏞️ Image"
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("padded_image",)
+    FUNCTION = "fill_to_square"
+
+    def fill_to_square(self, image):
+        _, H, W, C = image.shape
+
+        if H == W:
+            return (image, )
+
+        if H > W:
+            pad_total = H - W
+            pad_left = pad_total // 2
+            pad_right = pad_total - pad_left
+            padding = (pad_left, pad_right, 0, 0)
+        else:
+            pad_total = W - H
+            pad_top = pad_total // 2
+            pad_bottom = pad_total - pad_top
+            padding = (0, 0, pad_top, pad_bottom)
+
+        image = image.permute(0, 3, 1, 2)
+        padded_image = F.pad(image, padding, mode='constant', value=1.0)
+        padded_image = padded_image.permute(0, 2, 3, 1)
+
+        return (padded_image, )
+
 NODE_CLASS_MAPPINGS = {
     "SDVN Image Scraper": img_scraper,
     "SDVM Image List Repeat": img_list_repeat,
@@ -468,6 +508,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Image Adjust": img_adj,
     "SDVN Image HSL": hls_adj,
     "SDVN Flip Image": FlipImage,
+    "SDVN Fill Square": FillSquare,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -481,4 +522,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Image Adjust": "🪄 Image Adjust",
     "SDVN Image HSL": "🪄 HSL Adjust",
     "SDVN Flip Image": "🔄 Flip Image",
+     "SDVN Fill Square": "⬜ Fill Square",
 }
