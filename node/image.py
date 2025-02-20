@@ -457,42 +457,78 @@ class FlipImage:
         np_image = np.array(pil_image).astype(np.float32) / 255.0
         return torch.from_numpy(np_image).unsqueeze(0)
 
-class FillSquare:
+class FillBackground:
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "image": ("IMAGE",),
+                "image": ("IMAGE",), 
+                "background_color": ("STRING", {"default": "#FFFFFF"}),
             }
         }
 
-    CATEGORY = "📂 SDVN/🏞️ Image"
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("padded_image",)
-    FUNCTION = "fill_to_square"
+    CATEGORY = "📂 SDVN/🏞️ Image"  # Danh mục của node
+    RETURN_TYPES = ("IMAGE",)  # Trả về hình ảnh đã fill nền
+    RETURN_NAMES = ("filled_image",)  # Tên của đầu ra
+    FUNCTION = "fill_background"  # Hàm xử lý chính
 
-    def fill_to_square(self, image):
-        _, H, W, C = image.shape
+    def fill_background(self, image, background_color):
+        # Chuyển đổi tensor thành hình ảnh PIL
+        pil_image = self.tensor2pil(image)
 
-        if H == W:
-            return (image, )
+        # Chuyển đổi màu HEX thành tuple RGB
+        try:
+            bg_color = self.hex_to_rgb(background_color)
+        except ValueError as e:
+            print(f"Invalid HEX color: {e}. Using white as default.")
+            bg_color = (255, 255, 255)  # Màu trắng mặc định
+        filled_image = self.fill_transparent_background(pil_image, bg_color)
 
-        if H > W:
-            pad_total = H - W
-            pad_left = pad_total // 2
-            pad_right = pad_total - pad_left
-            padding = (pad_left, pad_right, 0, 0)
+        # Chuyển đổi hình ảnh PIL trở lại tensor
+        filled_tensor = self.pil2tensor(filled_image)
+        return (filled_tensor,)
+
+    def hex_to_rgb(self, hex_color):
+        # Chuyển đổi mã HEX thành tuple RGB
+        hex_color = hex_color.lstrip('#')
+        if len(hex_color) != 6:
+            raise ValueError("HEX color must be in format '#RRGGBB'")
+        return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+    def fill_transparent_background(self, pil_image, bg_color):
+        # Kiểm tra nếu ảnh có kênh alpha (trong suốt)
+        if pil_image.mode in ('RGBA', 'LA') or (pil_image.mode == 'P' and 'transparency' in pil_image.info):
+            # Tạo ảnh mới với nền màu đã chọn
+            background = Image.new("RGB", pil_image.size, bg_color)
+            background.paste(pil_image, mask=pil_image.split()[-1])  # Dán ảnh gốc lên nền
+            return background
         else:
-            pad_total = W - H
-            pad_top = pad_total // 2
-            pad_bottom = pad_total - pad_top
-            padding = (0, 0, pad_top, pad_bottom)
+            return Image.new("RGB", pil_image.size, bg_color)
 
-        image = image.permute(0, 3, 1, 2)
-        padded_image = F.pad(image, padding, mode='constant', value=1.0)
-        padded_image = padded_image.permute(0, 2, 3, 1)
+    def overlay_color(self, pil_image, bg_color):
+        # Tạo một hình ảnh mới với màu nền
+        background = Image.new("RGB", pil_image.size, bg_color)
 
-        return (padded_image, )
+        # Nếu ảnh có kênh alpha, sử dụng nó làm mask
+        if pil_image.mode in ('RGBA', 'LA') or (pil_image.mode == 'P' and 'transparency' in pil_image.info):
+            background.paste(pil_image, mask=pil_image.split()[-1])
+        else:
+            # Nếu không có kênh alpha, đè màu lên toàn bộ ảnh
+            background.paste(pil_image)
+
+        return background
+
+    def tensor2pil(self, tensor):
+        # Chuyển đổi tensor thành hình ảnh PIL
+        if tensor.ndim == 4:
+            tensor = tensor.squeeze(0)
+        np_image = (tensor.numpy() * 255).astype(np.uint8)
+        return Image.fromarray(np_image)
+
+    def pil2tensor(self, pil_image):
+        # Chuyển đổi hình ảnh PIL thành tensor
+        np_image = np.array(pil_image).astype(np.float32) / 255.0
+        return torch.from_numpy(np_image).unsqueeze(0)
 
 NODE_CLASS_MAPPINGS = {
     "SDVN Image Scraper": img_scraper,
@@ -505,7 +541,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Image Adjust": img_adj,
     "SDVN Image HSL": hls_adj,
     "SDVN Flip Image": FlipImage,
-    "SDVN Fill Square": FillSquare,
+    "SDVN Fill Background": FillBackground,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -519,5 +555,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Image Adjust": "🪄 Image Adjust",
     "SDVN Image HSL": "🪄 HSL Adjust",
     "SDVN Flip Image": "🔄 Flip Image",
-     "SDVN Fill Square": "⬜ Fill Square",
+    "SDVN Fill Background": "🎨 Fill Background",
 }
