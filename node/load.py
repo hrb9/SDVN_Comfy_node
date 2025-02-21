@@ -892,11 +892,11 @@ class ApplyStyleModel:
             m = int(np.sqrt(t))
             if downsampling>1:
                 cond = cond.view(b, m, m, h)
-                (b,t,h)=cond.shape
                 if mask is not None:
                     cond = cond*mask
-                cond=torch.nn.functional.interpolate(cond.view(b, m, m, h).transpose(1,-1), size=(m//downsampling, m//downsampling), mode=mode)
+                cond=torch.nn.functional.interpolate(cond.view(b, m, m, h).transpose(1,-1), size=(m//downsampling, m//downsampling), mode=mode)#
                 cond=cond.transpose(1,-1).reshape(b,-1,h)
+                mask = None if mask is None else torch.nn.functional.interpolate(mask.view(b, m, m, 1).transpose(1,-1), size=(m//downsampling, m//downsampling), mode=mode).transpose(-1,1)
             cond = cond*(strength*strength)
             c = []
             if mask is not None:
