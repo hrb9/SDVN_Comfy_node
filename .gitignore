@@ -8,3 +8,4 @@ node/API_key.json
 API_key.json
 installed.txt
 my_styles.csv
+*.pem

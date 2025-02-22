@@ -1,7 +1,7 @@
 [project]
 name = "sdvn_comfy_node"
-description = "Update API chatbot model"
-version = "1.4.2"
+description = "Update Apply Style"
+version = "1.4.3"
 license = {file = "LICENSE"}
 dependencies = ["#If MacOs - Please install aria2 manually via brew", "aria2;sys_platform != 'darwin'", "openai", "gallery-dl", "google-generativeai", "googletrans-py"]
 
