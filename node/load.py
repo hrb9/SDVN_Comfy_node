@@ -135,8 +135,7 @@ def download_model(url, name, type):
     command = ['aria2c', '-c', '-x', '16', '-s', '16',
                '-k', '1M', f'{url}{token(url)}', '-d', checkpoint_path, '-o', name]
     subprocess.run(command, check=True, text=True, capture_output=True)
-
-
+    
 class LoadImage:
     @classmethod
     def INPUT_TYPES(s):
