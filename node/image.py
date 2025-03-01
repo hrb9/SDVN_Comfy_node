@@ -530,6 +530,68 @@ class FillBackground:
         np_image = np.array(pil_image).astype(np.float32) / 255.0
         return torch.from_numpy(np_image).unsqueeze(0)
 
+class ICLora_layout:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image1": ("IMAGE",),  
+                "image2": ("IMAGE",),    
+                "height_size": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1})
+                },
+            "optional":{
+                "mask1": ("MASK",),    
+                "mask2": ("MASK",),  
+            }
+        }
+
+    CATEGORY = "📂 SDVN/🏞️ Image"  
+    RETURN_TYPES = ("IMAGE", "MASK", "CROP", "CROP") 
+    RETURN_NAMES = ("ic_layout", "mask_layout", "crop_image1", "crop_image1") 
+    FUNCTION = "ICLora_layout"  
+
+    def ICLora_layout(self, image1, image2, height_size, mask1 = None, mask2 = None):
+        img_layout, n_w1, n_w2 = self.layout(image1,image2,height_size)
+        if mask1 != None:
+            mask1 = ALL_NODE["MaskToImage"]().mask_to_image(mask1)[0]
+        else:
+            mask1 = torch.zeros(1, height_size, n_w1, 3)
+        if mask2 != None:
+            mask2 = ALL_NODE["MaskToImage"]().mask_to_image(mask2)[0]
+        else:
+            mask2 = torch.zeros(1, height_size, n_w2, 3)
+        mask_layout = self.layout(mask1,mask2,height_size)[0]
+        mask_layout = ALL_NODE["ImageToMask"]().image_to_mask(mask_layout,"red")[0]
+        return (img_layout, mask_layout, [n_w1,height_size,0,0], [n_w2,height_size,n_w1,0])
+    
+    def layout (self, image1, image2, h):
+        w1 = image1.movedim(-1, 1).shape[3]
+        h1 = image1.movedim(-1, 1).shape[2]
+        w2 = image2.movedim(-1, 1).shape[3]
+        h2 = image2.movedim(-1, 1).shape[2]
+        n_w1 = round(w1 * h / h1)
+        n_w2 = round(w2 * h / h2)
+        img1 = ALL_NODE["ImageScale"]().upscale(image1, "nearest-exact", n_w1, h, "disabled")[0].squeeze(0)
+        img2 = ALL_NODE["ImageScale"]().upscale(image2, "nearest-exact", n_w2, h, "disabled")[0].squeeze(0)
+        img_layout = torch.cat([img1,img2], dim=1).unsqueeze(0)
+        return (img_layout, n_w1, n_w2)
+
+class ICLora_Layout_Crop:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "crop": ("CROP",),  
+                "image": ("IMAGE",),    
+                }}
+    CATEGORY = "📂 SDVN/🏞️ Image"  
+    RETURN_TYPES = ("IMAGE",) 
+    RETURN_NAMES = ("image",) 
+    FUNCTION = "ICLora_Layout_Crop" 
+
+    def ICLora_Layout_Crop(s, crop, image):
+        return (ALL_NODE["ImageCrop"]().crop(image, *crop)[0],)
+
 NODE_CLASS_MAPPINGS = {
     "SDVN Image Scraper": img_scraper,
     "SDVM Image List Repeat": img_list_repeat,
@@ -542,6 +604,8 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Image HSL": hls_adj,
     "SDVN Flip Image": FlipImage,
     "SDVN Fill Background": FillBackground,
+    "SDVN IC Lora Layout": ICLora_layout,
+    "SDVN IC Lora Layout Crop": ICLora_Layout_Crop,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -556,4 +620,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Image HSL": "🪄 HSL Adjust",
     "SDVN Flip Image": "🔄 Flip Image",
     "SDVN Fill Background": "🎨 Fill Background",
+    "SDVN IC Lora Layout": "🧩 IC Lora Layout",
+    "SDVN IC Lora Layout Crop": "✂️ IC Lora Layout Crop",
 }
