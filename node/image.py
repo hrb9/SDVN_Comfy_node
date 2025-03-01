@@ -421,39 +421,33 @@ class FlipImage:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "image": ("IMAGE",),  # Hình ảnh đầu vào
-                "flip_direction": (["horizontal", "vertical"], {"default": "horizontal"}),  # Hướng lật: ngang hoặc dọc
+                "image": ("IMAGE",),  
+                "flip_direction": (["horizontal", "vertical"], {"default": "horizontal"}),
             }
         }
 
-    CATEGORY = "📂 SDVN/🏞️ Image"  # Danh mục của node
-    RETURN_TYPES = ("IMAGE",)  # Trả về hình ảnh đã lật
-    RETURN_NAMES = ("flipped_image",)  # Tên của đầu ra
-    FUNCTION = "flip_image"  # Hàm xử lý chính
+    CATEGORY = "📂 SDVN/🏞️ Image" 
+    RETURN_TYPES = ("IMAGE",)  
+    RETURN_NAMES = ("flipped_image",)  
+    FUNCTION = "flip_image" 
 
     def flip_image(self, image, flip_direction):
-        # Chuyển đổi tensor thành hình ảnh PIL
         pil_image = self.tensor2pil(image)
 
-        # Lật ảnh theo hướng được chọn
         if flip_direction == "horizontal":
             flipped_image = pil_image.transpose(Image.FLIP_LEFT_RIGHT)
         else:
             flipped_image = pil_image.transpose(Image.FLIP_TOP_BOTTOM)
-
-        # Chuyển đổi hình ảnh PIL trở lại tensor
         flipped_tensor = self.pil2tensor(flipped_image)
         return (flipped_tensor,)
 
     def tensor2pil(self, tensor):
-        # Chuyển đổi tensor thành hình ảnh PIL
         if tensor.ndim == 4:
             tensor = tensor.squeeze(0)
         np_image = (tensor.numpy() * 255).astype(np.uint8)
         return Image.fromarray(np_image)
 
     def pil2tensor(self, pil_image):
-        # Chuyển đổi hình ảnh PIL thành tensor
         np_image = np.array(pil_image).astype(np.float32) / 255.0
         return torch.from_numpy(np_image).unsqueeze(0)
 
@@ -467,66 +461,54 @@ class FillBackground:
             }
         }
 
-    CATEGORY = "📂 SDVN/🏞️ Image"  # Danh mục của node
-    RETURN_TYPES = ("IMAGE",)  # Trả về hình ảnh đã fill nền
-    RETURN_NAMES = ("filled_image",)  # Tên của đầu ra
-    FUNCTION = "fill_background"  # Hàm xử lý chính
+    CATEGORY = "📂 SDVN/🏞️ Image" 
+    RETURN_TYPES = ("IMAGE",) 
+    RETURN_NAMES = ("filled_image",)  
+    FUNCTION = "fill_background" 
 
     def fill_background(self, image, background_color):
-        # Chuyển đổi tensor thành hình ảnh PIL
         pil_image = self.tensor2pil(image)
-
-        # Chuyển đổi màu HEX thành tuple RGB
         try:
             bg_color = self.hex_to_rgb(background_color)
         except ValueError as e:
             print(f"Invalid HEX color: {e}. Using white as default.")
-            bg_color = (255, 255, 255)  # Màu trắng mặc định
+            bg_color = (255, 255, 255)
         filled_image = self.fill_transparent_background(pil_image, bg_color)
 
-        # Chuyển đổi hình ảnh PIL trở lại tensor
         filled_tensor = self.pil2tensor(filled_image)
         return (filled_tensor,)
 
     def hex_to_rgb(self, hex_color):
-        # Chuyển đổi mã HEX thành tuple RGB
         hex_color = hex_color.lstrip('#')
         if len(hex_color) != 6:
             raise ValueError("HEX color must be in format '#RRGGBB'")
         return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
     def fill_transparent_background(self, pil_image, bg_color):
-        # Kiểm tra nếu ảnh có kênh alpha (trong suốt)
         if pil_image.mode in ('RGBA', 'LA') or (pil_image.mode == 'P' and 'transparency' in pil_image.info):
-            # Tạo ảnh mới với nền màu đã chọn
             background = Image.new("RGB", pil_image.size, bg_color)
-            background.paste(pil_image, mask=pil_image.split()[-1])  # Dán ảnh gốc lên nền
+            background.paste(pil_image, mask=pil_image.split()[-1])
             return background
         else:
             return Image.new("RGB", pil_image.size, bg_color)
 
     def overlay_color(self, pil_image, bg_color):
-        # Tạo một hình ảnh mới với màu nền
         background = Image.new("RGB", pil_image.size, bg_color)
 
-        # Nếu ảnh có kênh alpha, sử dụng nó làm mask
         if pil_image.mode in ('RGBA', 'LA') or (pil_image.mode == 'P' and 'transparency' in pil_image.info):
             background.paste(pil_image, mask=pil_image.split()[-1])
         else:
-            # Nếu không có kênh alpha, đè màu lên toàn bộ ảnh
             background.paste(pil_image)
 
         return background
 
     def tensor2pil(self, tensor):
-        # Chuyển đổi tensor thành hình ảnh PIL
         if tensor.ndim == 4:
             tensor = tensor.squeeze(0)
         np_image = (tensor.numpy() * 255).astype(np.uint8)
         return Image.fromarray(np_image)
 
     def pil2tensor(self, pil_image):
-        # Chuyển đổi hình ảnh PIL thành tensor
         np_image = np.array(pil_image).astype(np.float32) / 255.0
         return torch.from_numpy(np_image).unsqueeze(0)
 
