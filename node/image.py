@@ -547,7 +547,7 @@ class ICLora_layout:
 
     CATEGORY = "📂 SDVN/🏞️ Image"  
     RETURN_TYPES = ("IMAGE", "MASK", "CROP", "CROP") 
-    RETURN_NAMES = ("ic_layout", "mask_layout", "crop_image1", "crop_image1") 
+    RETURN_NAMES = ("ic_layout", "mask_layout", "crop_image1", "crop_image2") 
     FUNCTION = "ICLora_layout"  
 
     def ICLora_layout(self, image1, image2, height_size, mask1 = None, mask2 = None):
