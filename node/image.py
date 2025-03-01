@@ -581,8 +581,8 @@ class ICLora_Layout_Crop:
     def INPUT_TYPES(cls):
         return {
             "required": {
+                "image": ("IMAGE",),   
                 "crop": ("CROP",),  
-                "image": ("IMAGE",),    
                 }}
     CATEGORY = "📂 SDVN/🏞️ Image"  
     RETURN_TYPES = ("IMAGE",) 
