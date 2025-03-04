@@ -187,7 +187,10 @@ class LoadImage:
             mask = 1. - torch.from_numpy(mask)
         else:
             mask = torch.zeros((64, 64), dtype=torch.float32, device="cpu")
-        return (i2tensor(i), mask.unsqueeze(0), image_path)
+        image = i2tensor(i)
+        results = ALL_NODE["PreviewImage"]().save_images(image)
+        results["result"] = (image,mask.unsqueeze(0), image_path)
+        return results
 
     @classmethod
     def IS_CHANGED(self, Url, Load_url, image=None):
