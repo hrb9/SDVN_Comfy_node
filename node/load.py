@@ -160,7 +160,7 @@ class LoadImage:
             "required": {
                 "Load_url": ("BOOLEAN", {"default": True},),
                 "Url": ("STRING", {"default": "", "multiline": False},),
-                "image": (sorted(file_list), {"image_upload": True})
+                "image": (sorted(none2list(file_list)), {"image_upload": True})
             }
         }
 
@@ -171,7 +171,10 @@ class LoadImage:
     FUNCTION = "load_image"
 
     def load_image(self, Url, Load_url, image):
-        image_path = folder_paths.get_annotated_filepath(image)
+        if image != "None":
+            image_path = folder_paths.get_annotated_filepath(image)
+        else:
+            image_path = None
         if Url != '' and Load_url:
             Url = run_gallery_dl(Url)
             if 'http' in Url:
@@ -194,16 +197,18 @@ class LoadImage:
 
     @classmethod
     def IS_CHANGED(self, Url, Load_url, image=None):
-        image_path = folder_paths.get_annotated_filepath(image)
-        m = hashlib.sha256()
-        with open(image_path, 'rb') as f:
-            m.update(f.read())
-        return m.digest().hex()
+        if image != "None":
+            image_path = folder_paths.get_annotated_filepath(image)
+            m = hashlib.sha256()
+            with open(image_path, 'rb') as f:
+                m.update(f.read())
+            return m.digest().hex()
 
     @classmethod
     def VALIDATE_INPUTS(self, Url, Load_url, image=None):
-        if not folder_paths.exists_annotated_filepath(image):
-            return "Invalid image file: {}".format(image)
+        if image != "None":
+            if not folder_paths.exists_annotated_filepath(image):
+                return "Invalid image file: {}".format(image)
 
         return True
 
