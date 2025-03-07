@@ -192,8 +192,9 @@ class LoadImage:
         image = i2tensor(i)
         results = ALL_NODE["PreviewImage"]().save_images(image)
         results["result"] = (image,mask.unsqueeze(0), image_path)
-        if 'clipspace' in image_path:
-            del results["ui"]
+        if image_path != None:
+            if 'clipspace' in image_path:
+                del results["ui"]
         return results
 
     @classmethod
