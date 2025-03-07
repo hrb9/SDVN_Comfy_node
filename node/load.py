@@ -175,14 +175,13 @@ class LoadImage:
             image_path = folder_paths.get_annotated_filepath(image)
         else:
             image_path = None
-        if Url != '' and Load_url:
+        if Url != '' and Load_url and 'clipspace' not in image:
             Url = run_gallery_dl(Url)
             if 'http' in Url:
                 i = Image.open(requests.get(Url, stream=True).raw)
             else:
                 i = Image.open(Url)
         else:
-            print(image_path)
             i = Image.open(image_path)
         ii = ImageOps.exif_transpose(i)
         if 'A' in ii.getbands():
@@ -193,6 +192,8 @@ class LoadImage:
         image = i2tensor(i)
         results = ALL_NODE["PreviewImage"]().save_images(image)
         results["result"] = (image,mask.unsqueeze(0), image_path)
+        if 'clipspace' in image_path:
+            del results["ui"]
         return results
 
     @classmethod
