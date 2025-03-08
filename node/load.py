@@ -171,10 +171,8 @@ class LoadImage:
     FUNCTION = "load_image"
 
     def load_image(self, Url, Load_url, image):
-        if image != "None":
-            image_path = folder_paths.get_annotated_filepath(image)
-        else:
-            image_path = None
+        image_path = folder_paths.get_annotated_filepath(image)
+        image_path = image_path if image != "None" and os.path.exists(image_path) else None
         if Url != '' and Load_url and 'clipspace' not in image:
             Url = run_gallery_dl(Url)
             if 'http' in Url:
@@ -199,8 +197,8 @@ class LoadImage:
 
     @classmethod
     def IS_CHANGED(self, Url, Load_url, image=None):
-        if image != "None":
-            image_path = folder_paths.get_annotated_filepath(image)
+        image_path = folder_paths.get_annotated_filepath(image)
+        if image != "None" and os.path.exists(image_path):
             m = hashlib.sha256()
             with open(image_path, 'rb') as f:
                 m.update(f.read())
@@ -208,7 +206,8 @@ class LoadImage:
 
     @classmethod
     def VALIDATE_INPUTS(self, Url, Load_url, image=None):
-        if image != "None":
+        image_path = folder_paths.get_annotated_filepath(image)
+        if image != "None" and os.path.exists(image_path):
             if not folder_paths.exists_annotated_filepath(image):
                 return "Invalid image file: {}".format(image)
 
