@@ -327,21 +327,24 @@ class Gemini_Flash2_Image:
         return {
             "required": {
                 "Gemini_API": ("STRING", {"default": "", "multiline": False, "tooltip": "Get API: https://aistudio.google.com/apikey"}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
+                "max_size_input": ("INT", {"default":0,"min":0,"max":2048,"step":64}),
                 "prompt": ("STRING", {"default": "", "multiline": True, "placeholder": "Prompt"}),
-                "translate": (lang_list(),),
+                "translate": (lang_list(),{"default":"english"}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
             },
             "optional": {
                 "image": ("IMAGE",)
             }
         }
-
+    INPUT_IS_LIST = True
     CATEGORY = "📂 SDVN/💬 API"
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "api_imagen"
 
-    def api_imagen(self, Gemini_API, seed, prompt, translate, image = None):
+    def api_imagen(self, Gemini_API, max_size_input, seed, prompt, translate, image = None):
+        Gemini_API, max_size_input, seed, prompt, translate = [Gemini_API[0], max_size_input[0], seed[0], prompt[0], translate[0]]
+  
         if Gemini_API == "":
             api_list = api_check()
             Gemini_API =  api_list["Gemini"]
@@ -350,12 +353,13 @@ class Gemini_Flash2_Image:
             prompt = cls().get_prompt(prompt, seed, 'No')[0]
         prompt = ALL_NODE["SDVN Translate"]().ggtranslate(prompt,translate)[0]
         client = genai.Client(api_key=Gemini_API)
-        if image != None:  
-            image = tensor2pil(image)
-
+        if image != None:
+            if max_size_input != 0:
+                list_img = [ALL_NODE["SDVN Upscale Image"]().upscale("Maxsize", max_size_input, max_size_input, 1, "None", i)[0] for i in image]
+            list_img = [tensor2pil(i) for i in image]
         response = client.models.generate_content(
             model="gemini-2.0-flash-exp-image-generation",
-            contents=[prompt, image] if image != None else prompt,
+            contents=[prompt, *list_img] if image != None else prompt,
             config=types.GenerateContentConfig(
             response_modalities=['Text', 'Image']
             )
