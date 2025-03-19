@@ -321,15 +321,12 @@ class API_DALLE:
         image = cls().load_image_url(image_url)["result"][0]
         return (image,)
 
-class API_Imagen:
+class Gemini_Flash2_Image:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
                 "Gemini_API": ("STRING", {"default": "", "multiline": False, "tooltip": "Get API: https://aistudio.google.com/apikey"}),
-                "Model": (["Gemini 2 (No support ratio)", "Imagen 3"], {"default": "Gemini 2 (No support ratio)"}),
-                "aspect_ratio": (['1:1', '3:4', '4:3', '9:16', '16:9'],{"default": "1:1"}),
-                "person_gen": ("BOOLEAN", {"default": True},),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
                 "prompt": ("STRING", {"default": "", "multiline": True, "placeholder": "Prompt"}),
                 "translate": (lang_list(),),
@@ -344,7 +341,7 @@ class API_Imagen:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "api_imagen"
 
-    def api_imagen(self, Gemini_API, Model, aspect_ratio, person_gen, seed, prompt, translate, image = None):
+    def api_imagen(self, Gemini_API, seed, prompt, translate, image = None):
         if Gemini_API == "":
             api_list = api_check()
             Gemini_API =  api_list["Gemini"]
@@ -353,48 +350,64 @@ class API_Imagen:
             prompt = cls().get_prompt(prompt, seed, 'No')[0]
         prompt = ALL_NODE["SDVN Translate"]().ggtranslate(prompt,translate)[0]
         client = genai.Client(api_key=Gemini_API)
-        if image == None:
-            if Model == "Imagen 3":
-                result = client.models.generate_images(
-                    model='imagen-3.0-generate-002',
-                    prompt=prompt,
-                    config=types.GenerateImagesConfig(
-                        number_of_images= 1,
-                        aspect_ratio = aspect_ratio,
-                        output_mime_type = 'image/jpeg',
-                        person_generation = 'ALLOW_ADULT' if person_gen else 'DONT_ALLOW',
-                    ),
-                )
-                for generated_image in result.generated_images:
-                    image = Image.open(BytesIO(generated_image.image.image_bytes))
-            else:
-                response = client.models.generate_content(
-                    model="gemini-2.0-flash-exp-image-generation",
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                    response_modalities=['Text', 'Image']
-                    )
-                )
-
-                for part in response.candidates[0].content.parts:
-                    if part.text is not None:
-                        print(part.text)
-                    elif part.inline_data is not None:
-                        image = Image.open(BytesIO((part.inline_data.data)))       
-        else:
+        if image != None:  
             image = tensor2pil(image)
-            response = client.models.generate_content(
-                model="gemini-2.0-flash-exp-image-generation",
-                contents=[prompt, image],
-                config=types.GenerateContentConfig(
-                response_modalities=['Text', 'Image']
-                )
+
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-exp-image-generation",
+            contents=[prompt, image] if image != None else prompt,
+            config=types.GenerateContentConfig(
+            response_modalities=['Text', 'Image']
             )
-            for part in response.candidates[0].content.parts:
-                if part.text is not None:
-                    print(part.text)
-                elif part.inline_data is not None:
-                    image = Image.open(BytesIO(part.inline_data.data))
+        )
+        for part in response.candidates[0].content.parts:
+            if part.text is not None:
+                print(part.text)
+            elif part.inline_data is not None:
+                image = Image.open(BytesIO(part.inline_data.data))              
+        image = i2tensor(image)
+        return (image,)
+
+class API_Imagen:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "Gemini_API": ("STRING", {"default": "", "multiline": False, "tooltip": "Get API: https://aistudio.google.com/apikey"}),
+                "aspect_ratio": (['1:1', '3:4', '4:3', '9:16', '16:9'],{"default": "1:1"}),
+                "person_gen": ("BOOLEAN", {"default": True},),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
+                "prompt": ("STRING", {"default": "", "multiline": True, "placeholder": "Prompt"}),
+                "translate": (lang_list(),),
+            }
+        }
+
+    CATEGORY = "📂 SDVN/💬 API"
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "api_imagen"
+
+    def api_imagen(self, Gemini_API, aspect_ratio, person_gen, seed, prompt, translate):
+        if Gemini_API == "":
+            api_list = api_check()
+            Gemini_API =  api_list["Gemini"]
+        if "DPRandomGenerator" in ALL_NODE:
+            cls = ALL_NODE["DPRandomGenerator"]
+            prompt = cls().get_prompt(prompt, seed, 'No')[0]
+        prompt = ALL_NODE["SDVN Translate"]().ggtranslate(prompt,translate)[0]
+        client = genai.Client(api_key=Gemini_API)
+        response = client.models.generate_images(
+            model='imagen-3.0-generate-002',
+            prompt=prompt,
+            config=types.GenerateImagesConfig(
+                number_of_images= 1,
+                aspect_ratio = aspect_ratio,
+                output_mime_type = 'image/jpeg',
+                person_generation = 'ALLOW_ADULT' if person_gen else 'DONT_ALLOW',
+            ),
+        )
+        for generated_image in response.generated_images:
+            image = Image.open(BytesIO(generated_image.image.image_bytes))
         image = i2tensor(image)
         return (image,)
         
@@ -575,7 +588,8 @@ NODE_CLASS_MAPPINGS = {
     "SDVN DALL-E Generate Image": API_DALLE,
     "SDVN IC-Light v2": ic_light_v2,
     "SDVN Joy Caption": joy_caption,
-    "SDVN Google Imagen": API_Imagen, 
+    "SDVN Google Imagen": API_Imagen,
+    "SDVN Gemini Flash 2 Image": Gemini_Flash2_Image, 
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -584,5 +598,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN DALL-E Generate Image": "🎨 DALL-E",
     "SDVN IC-Light v2": "✨ IC-Light v2",
     "SDVN Joy Caption": "✨ Joy Caption",
-    "SDVN Google Imagen": "🎨 Google Gen Image",
+    "SDVN Google Imagen": "🎨 Google Imagen",
+    "SDVN Gemini Flash 2 Image": "🎨 Gemini Flash 2 Image"
 }
