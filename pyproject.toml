@@ -1,7 +1,7 @@
 [project]
 name = "sdvn_comfy_node"
 description = "Update Support Gemini Flash 2 Image"
-version = "1.4.4"
+version = "1.4.5"
 license = {file = "LICENSE"}
 dependencies = ["#If MacOs - Please install aria2 manually via brew", "aria2;sys_platform != 'darwin'", "openai", "gallery-dl", "google-generativeai", "googletrans-py"]
 
