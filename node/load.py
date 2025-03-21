@@ -942,6 +942,26 @@ class CheckpointDownload:
     def checkpoint_download(self, Download_url, Ckpt_url_name):
         download_model(Download_url, Ckpt_url_name, "checkpoints")
         return ALL_NODE["CheckpointLoaderSimple"]().load_checkpoint(Ckpt_url_name)
+    
+class CheckpointDownloadList:
+    model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib.json")
+    with open(model_lib_path, 'r') as json_file:
+        modellist = json.load(json_file)
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "Model": (list(s.modellist),),
+            }
+        }
+    RETURN_TYPES = ("MODEL", "CLIP", "VAE")
+    FUNCTION = "checkpoint_download_list"
+
+    CATEGORY = "📂 SDVN/📥 Download"
+
+    def checkpoint_download_list(s, Model): 
+        return  ALL_NODE["SDVN Checkpoint Download"]().checkpoint_download(s.modellist[Model], Model)
 
 class LoraDownload:
     @classmethod
@@ -1100,6 +1120,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Upscale Image": UpscaleImage,
     "SDVN UPscale Latent": UpscaleLatentImage,
     "SDVN Checkpoint Download": CheckpointDownload,
+    "SDVN Checkpoint Download List": CheckpointDownloadList,
     "SDVN Lora Download": LoraDownload,
     "SDVN CLIPVision Download":CLIPVisionDownload,
     "SDVN UpscaleModel Download":UpscaleModelDownload,
@@ -1126,6 +1147,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Upscale Image": "↗️ Upscale Image",
     "SDVN UPscale Latent": "↗️ Upscale Latent",
     "SDVN Checkpoint Download": "📥 Checkpoint Download",
+    "SDVN Checkpoint Download List": "📥 Checkpoint Download List",
     "SDVN Lora Download": "📥 Lora Download",
     "SDVN CLIPVision Download":"📥 CLIPVision Download",
     "SDVN UpscaleModel Download":"📥 UpscaleModel Download",
