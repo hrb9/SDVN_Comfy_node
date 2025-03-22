@@ -474,8 +474,8 @@ StepsType_list = {
     "Denoise": 20,
     "Lightning 8steps": 8,
     "Hyper 8steps": 8,
-    "Lightning 4steps": 8,
-    "Hyper 4steps": 8,
+    "Lightning 4steps": 4,
+    "Hyper 4steps": 4,
     "Flux dev turbo (hyper 8steps)": 8,
     "Flux schnell": 4,
 }
