@@ -1147,6 +1147,31 @@ class InstantIDModelDownload:
     def download(self, Download_url, Url_name):
         download_model(Download_url, Url_name, "instantid")
         return ALL_NODE["InstantIDModelLoader"]().load_model(Url_name)
+
+class DualClipDownload:
+    model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib_any.json")
+    with open(model_lib_path, 'r') as json_file:
+        modellist = json.load(json_file)
+    list_clip = []
+    for key, value in modellist.items():
+        if value[1] == "CLIP":
+            list_clip.append(key)
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": { 
+                    "CLIP_name1": (s.list_clip,),
+                    "CLIP_name2": (s.list_clip,),
+                    "type": (["sdxl", "sd3", "flux", "hunyuan_video"], ),
+                             }}
+    RETURN_TYPES = ("CLIP",)
+    FUNCTION = "download"
+
+    CATEGORY = "📂 SDVN/📥 Download"
+
+    def download(s, CLIP_name1, CLIP_name2, type):
+        download_model(s.modellist[CLIP_name1][0], CLIP_name1, "text_encoders")
+        download_model(s.modellist[CLIP_name2][0], CLIP_name2, "text_encoders")
+        return ALL_NODE["DualCLIPLoader"]().load_clip(CLIP_name1, CLIP_name2, type, device="default")
     
 class AnyDownloadList:
     model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib_any.json")
@@ -1158,11 +1183,7 @@ class AnyDownloadList:
         return {
             "required": {
                 "Model": (list(s.modellist),),
-                "ClipType": (["None","stable_diffusion", "stable_cascade", "sd3", "stable_audio", "mochi", "ltxv", "pixart", "cosmos", "lumina2", "wan"],)
             },
-            "hidden": {
-                "Type": (["Auto","Controlnet", "CLIPVision", "UpscaleModel", "VAE", "UNET/Diffusion", "CLIP", "CLIPVision", "StyleModel", "IPAdapterModel", "InstatnIDModel"],{"default": "Auto"}),
-            }
         }
     RETURN_TYPES = (any,)
     RETURN_NAMES = ("any_model",)
@@ -1170,10 +1191,10 @@ class AnyDownloadList:
 
     CATEGORY = "📂 SDVN/📥 Download"
 
-    def any_download_list(s, Model, ClipType, Type):
+    def any_download_list(s, Model):
         download_link =  s.modellist[Model][0]
         model_name = Model
-        Type = s.modellist[Model][1] if Type == "Auto" else Type
+        Type = s.modellist[Model][1]
         if Type == "Controlnet":
             r = ALL_NODE["SDVN ControlNet Download"]().download(download_link, model_name)[0]
         if Type == "CLIPVision":
@@ -1183,9 +1204,10 @@ class AnyDownloadList:
         if Type == "VAE":
             r = ALL_NODE["SDVN VAE Download"]().download(download_link, model_name)[0]
         if Type == "UNET/Diffusion":
-            r = ALL_NODE["SDVN UNET Download"]().download(download_link, model_name)[0]
+            weight_dtype = s.modellist[Model][2]
+            r = ALL_NODE["SDVN UNET Download"]().download(download_link, model_name, weight_dtype)[0]
         if Type == "CLIP":
-            ClipType == "stable_diffusion" if ClipType == "None" else ClipType
+            ClipType = s.modellist[Model][2]
             r = ALL_NODE["SDVN CLIP Download"]().download(download_link, model_name, ClipType)[0]
         if Type == "IPAdapterModel":
             r = ALL_NODE["SDVN IPAdapterModel Download"]().download(download_link, model_name)[0]
@@ -1220,6 +1242,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN IPAdapterModel Download": IPAdapterModelDownload,
     "SDVN InstantIDModel Download": InstantIDModelDownload,
     "SDVN AnyDownload List": AnyDownloadList,
+    "SDVN DualCLIP Download": DualClipDownload,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -1250,4 +1273,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN IPAdapterModel Download": "📥  IPAdapterModel Download",
     "SDVN InstantIDModel Download": "📥  InstantIDModel Download",
     "SDVN AnyDownload List": "📥  AnyDownload List",
+    "SDVN DualCLIP Download": "📥  DualCLIP Download",
 }
