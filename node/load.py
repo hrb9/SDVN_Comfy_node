@@ -6,7 +6,19 @@ from googletrans import LANGUAGES
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 from comfy.cldm.control_types import UNION_CONTROLNET_TYPES
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
-    
+
+class AnyType(str):
+    """A special class that is always equal in not equal comparisons. Credit to pythongosssss"""
+
+    def __eq__(self, _) -> bool:
+        return True
+
+    def __ne__(self, __value: object) -> bool:
+        return False
+
+
+any = AnyType("*")
+
 def style_list():
     file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"styles.csv")
     with open(file_path, mode="r", encoding="utf-8") as file:
@@ -132,9 +144,10 @@ def download_model(url, name, type):
     url = url.replace("&", "\&").split("?")[0]
     url = check_link(url)
     checkpoint_path = os.path.join(folder_paths.models_dir, type)
-    command = ['aria2c', '-c', '-x', '16', '-s', '16',
-               '-k', '1M', f'{url}{token(url)}', '-d', checkpoint_path, '-o', name]
-    subprocess.run(command, check=True, text=True, capture_output=True)
+    if not os.path.isfile(checkpoint_path):
+        command = ['aria2c', '-c', '-x', '16', '-s', '16',
+                '-k', '1M', f'{url}{token(url)}', '-d', checkpoint_path, '-o', name]
+        subprocess.run(command, check=True, text=True, capture_output=True)
     
 class LoadImage:
     @classmethod
@@ -962,7 +975,7 @@ class CheckpointDownloadList:
 
     def checkpoint_download_list(s, Model): 
         return  ALL_NODE["SDVN Checkpoint Download"]().checkpoint_download(s.modellist[Model], Model)
-
+    
 class LoraDownload:
     @classmethod
     def INPUT_TYPES(s):
@@ -1076,7 +1089,7 @@ class CLIPDownload:
         return {"required": { 
                     "Download_url": ("STRING", {"default": "", "multiline": False},),
                     "Url_name": ("STRING", {"default": "model.safetensors", "multiline": False}),
-                    "type": (["stable_diffusion", "stable_cascade", "sd3", "stable_audio", "mochi", "ltxv"],)
+                    "type": (["stable_diffusion", "stable_cascade", "sd3", "stable_audio", "mochi", "ltxv", "pixart", "cosmos", "lumina2", "wan"],)
                              }}
     RETURN_TYPES = ("CLIP",)
     FUNCTION = "download"
@@ -1102,9 +1115,84 @@ class StyleModelDownload:
     def download(self, Download_url, Url_name):
         download_model(Download_url, Url_name, "style_models")
         return ALL_NODE["StyleModelLoader"]().load_style_model(Url_name)
+
+class IPAdapterModelDownload:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": { 
+                    "Download_url": ("STRING", {"default": "", "multiline": False},),
+                    "Url_name": ("STRING", {"default": "model.safetensors", "multiline": False},)
+                             }}
+    RETURN_TYPES = ("IPADAPTER",)
+    FUNCTION = "download"
+
+    CATEGORY = "📂 SDVN/📥 Download"
+
+    def download(self, Download_url, Url_name):
+        download_model(Download_url, Url_name, "ipadapter")
+        return ALL_NODE["IPAdapterModelLoader"]().load_ipadapter_model(Url_name)
+
+class InstantIDModelDownload:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": { 
+                    "Download_url": ("STRING", {"default": "", "multiline": False},),
+                    "Url_name": ("STRING", {"default": "model.safetensors", "multiline": False},)
+                             }}
+    RETURN_TYPES = ("INSTANTID",)
+    FUNCTION = "download"
+
+    CATEGORY = "📂 SDVN/📥 Download"
+
+    def download(self, Download_url, Url_name):
+        download_model(Download_url, Url_name, "instantid")
+        return ALL_NODE["InstantIDModelLoader"]().load_model(Url_name)
     
-                
-# NOTE: names should be globally unique
+class AnyDownloadList:
+    model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib_any.json")
+    with open(model_lib_path, 'r') as json_file:
+        modellist = json.load(json_file)
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "Model": (list(s.modellist),),
+                "ClipType": (["None","stable_diffusion", "stable_cascade", "sd3", "stable_audio", "mochi", "ltxv", "pixart", "cosmos", "lumina2", "wan"],)
+            },
+            "hidden": {
+                "Type": (["Auto","Controlnet", "CLIPVision", "UpscaleModel", "VAE", "UNET/Diffusion", "CLIP", "CLIPVision", "StyleModel", "IPAdapterModel", "InstatnIDModel"],{"default": "Auto"}),
+            }
+        }
+    RETURN_TYPES = (any,)
+    RETURN_NAMES = ("any_model",)
+    FUNCTION = "any_download_list"
+
+    CATEGORY = "📂 SDVN/📥 Download"
+
+    def any_download_list(s, Model, ClipType, Type):
+        download_link =  s.modellist[Model][0]
+        model_name = Model
+        Type = s.modellist[Model][1] if Type == "Auto" else Type
+        if Type == "Controlnet":
+            r = ALL_NODE["SDVN ControlNet Download"]().download(download_link, model_name)[0]
+        if Type == "CLIPVision":
+            r = ALL_NODE["SDVN CLIPVision Download"]().download(download_link, model_name)[0]
+        if Type == "UpscaleModel":
+            r = ALL_NODE["SDVN UpscaleModel Download"]().download(download_link, model_name)[0]
+        if Type == "VAE":
+            r = ALL_NODE["SDVN VAE Download"]().download(download_link, model_name)[0]
+        if Type == "UNET/Diffusion":
+            r = ALL_NODE["SDVN UNET Download"]().download(download_link, model_name)[0]
+        if Type == "CLIP":
+            ClipType == "stable_diffusion" if ClipType == "None" else ClipType
+            r = ALL_NODE["SDVN CLIP Download"]().download(download_link, model_name, ClipType)[0]
+        if Type == "IPAdapterModel":
+            r = ALL_NODE["SDVN IPAdapterModel Download"]().download(download_link, model_name)[0]
+        if Type == "InstatnIDModel":
+            r = ALL_NODE["SDVN InstatnIDModel Download"]().download(download_link, model_name)[0]
+        return  (r,)
+    
 NODE_CLASS_MAPPINGS = {
     "SDVN Load Checkpoint": CheckpointLoaderDownload,
     "SDVN Load Lora": LoraLoader,
@@ -1129,6 +1217,9 @@ NODE_CLASS_MAPPINGS = {
     "SDVN UNET Download":UNETDownload,
     "SDVN CLIP Download":CLIPDownload,
     "SDVN StyleModel Download":StyleModelDownload,
+    "SDVN IPAdapterModel Download": IPAdapterModelDownload,
+    "SDVN InstantIDModel Download": InstantIDModelDownload,
+    "SDVN AnyDownload List": AnyDownloadList,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -1149,11 +1240,14 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Checkpoint Download": "📥 Checkpoint Download",
     "SDVN Checkpoint Download List": "📥 Checkpoint Download List",
     "SDVN Lora Download": "📥 Lora Download",
-    "SDVN CLIPVision Download":"📥 CLIPVision Download",
-    "SDVN UpscaleModel Download":"📥 UpscaleModel Download",
-    "SDVN VAE Download":"📥 VAE Download",
-    "SDVN ControlNet Download":"📥 ControlNet Download",
-    "SDVN UNET Download":"📥 UNET Download",
-    "SDVN CLIP Download":"📥 CLIP Download",
-    "SDVN StyleModel Download":"📥  StyleModel Download",
+    "SDVN CLIPVision Download": "📥 CLIPVision Download",
+    "SDVN UpscaleModel Download": "📥 UpscaleModel Download",
+    "SDVN VAE Download": "📥 VAE Download",
+    "SDVN ControlNet Download": "📥 ControlNet Download",
+    "SDVN UNET Download": "📥 UNET Download",
+    "SDVN CLIP Download": "📥 CLIP Download",
+    "SDVN StyleModel Download": "📥  StyleModel Download",
+    "SDVN IPAdapterModel Download": "📥  IPAdapterModel Download",
+    "SDVN InstantIDModel Download": "📥  InstantIDModel Download",
+    "SDVN AnyDownload List": "📥  AnyDownload List",
 }
