@@ -419,8 +419,8 @@ class CLIPTextEncode:
 
     def encode(self, clip, positive, negative, style, translate, seed):
         if style != "None":
-            positive += f"{positive}, {style_list()[1][style_list()[0].index(style)][1]}"
-            negative += f"{negative}, {style_list()[1][style_list()[0].index(style)][2]}" if len(style_list()[1][style_list()[0].index(style)]) > 2 else ""
+            positive = f"{positive}, {style_list()[1][style_list()[0].index(style)][1]}"
+            negative = f"{negative}, {style_list()[1][style_list()[0].index(style)][2]}" if len(style_list()[1][style_list()[0].index(style)]) > 2 else ""
         if "DPRandomGenerator" in ALL_NODE:
             cls = ALL_NODE["DPRandomGenerator"]
             positive = cls().get_prompt(positive, seed, 'No')[0]
