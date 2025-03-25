@@ -368,6 +368,7 @@ class LoraLoader:
     CATEGORY = "📂 SDVN"
 
     def load_lora(self, Download, Download_url, Lora_url_name, lora_name, model = None, clip = None, strength_model=1, strength_clip=1):
+        strength_clip = 0 if clip == None else strength_clip
         if not Download or Download_url == '':
             if lora_name == "None":
                 return (model, clip)
@@ -382,8 +383,7 @@ class LoraLoader:
                 if os.path.exists(os.path.join(os.path.dirname(path),f"{name}.{i}")):
                     i_cover = os.path.join(os.path.dirname(path),f"{name}.{i}")
                     index += 1
-
-        if model == None or clip == None:
+        if model == None and clip == None:
             results = (None, None,)
         else:
             results = ALL_NODE["LoraLoader"]().load_lora(model, clip, lora_name, strength_model, strength_clip)
