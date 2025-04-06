@@ -2,22 +2,18 @@ from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 from googletrans import Translator, LANGUAGES
 import torch, os
 import folder_paths
+import nodes
 
 def check_mask(mask_tensor):
     if not isinstance(mask_tensor, torch.Tensor):
         return False
-    if mask_tensor.dtype != torch.float32:
-        return False
-    if mask_tensor.ndim != 3 or mask_tensor.size(0) != 1:
-        return False
-    if not (0.0 <= mask_tensor.min() and mask_tensor.max() <= 1.0):
-        return False
-    return True
+    if mask_tensor.ndim == 3:
+        return True
 
 def check_img(input_tensor):
     if not isinstance(input_tensor, torch.Tensor):
         return False
-    if input_tensor.ndim == 4 and input_tensor.size(0) == 1 and input_tensor.size(-1) == 3:
+    if input_tensor.ndim == 4 and input_tensor.size(0) == 1:
         return True
     return False
 
@@ -340,7 +336,7 @@ class AnyShow:
             },
         }
 
-    INPUT_IS_LIST = True
+    # INPUT_IS_LIST = True
     RETURN_TYPES = ()
     FUNCTION = "show"
     OUTPUT_NODE = True
@@ -348,14 +344,16 @@ class AnyShow:
     CATEGORY = "📂 SDVN/💡 Creative"
 
     def show(self, any):
-        if check_img(any[0]):
-            results = ALL_NODE["PreviewImage"]().save_images(any[0])
+        if check_img(any):
+            results = ALL_NODE["PreviewImage"]().save_images(any)
             return results
-        elif check_mask(any[0]):
-            i = ALL_NODE["MaskToImage"]().mask_to_image(any[0])[0]
+        elif check_mask(any):
+            mask = any
+            i = mask.reshape((-1, 1, mask.shape[-2], mask.shape[-1])).movedim(1, -1).expand(-1, -1, -1, 3)
             results = ALL_NODE["PreviewImage"]().save_images(i)
             return results
         else:
+            any = [str(any)]
             return {"ui": {"text": any}}
 
 class Runtest:
@@ -811,15 +809,46 @@ class inpaint_crop:
         }
 
     CATEGORY = "📂 SDVN/💡 Creative"
-    RETURN_TYPES = ("STITCH", "IMAGE", "MASK")
-    RETURN_NAMES = ("stitch", "cropped_image", "cropped_mask")
+    RETURN_TYPES = ("STITCHER", "IMAGE", "MASK")
+    RETURN_NAMES = ("stitcher", "cropped_image", "cropped_mask")
     FUNCTION = "inpaint_crop"
 
     def inpaint_crop(self, image, mask, crop_size, padding):
-        if "InpaintCrop" not in ALL_NODE:
-            raise Exception("Install node InpaintCrop(https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch)")
-        input = ALL_NODE["InpaintCrop"]().inpaint_crop(image, mask, 20, 1.0, True, 16.0, False, 16.0, "ranged size", "bicubic", 1024, 1024, 1.00, padding, crop_size - 128, crop_size - 128, crop_size, crop_size, None)
+        if "InpaintCropImproved" not in ALL_NODE:
+            raise Exception("Install node InpaintCrop and update (https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch)")
+        input = ALL_NODE["InpaintCropImproved"]().inpaint_crop(image, "bilinear", "bicubic", False, "ensure minimum resolution", 1024, 1024, nodes.MAX_RESOLUTION, nodes.MAX_RESOLUTION, False, 1, 1, 1, 1, 0.1, True, 0, False, 32, 1.2, True, crop_size, crop_size, padding, mask, None)
+        input[0]["mask"] = mask
+        input[0]["crop_size"] = crop_size
+        input[0]["padding"] = padding
         return input
+    
+class LoopInpaintStitch:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "stitchers": ("STITCHER",),
+                "inpainted_images": ("IMAGE",),
+            }
+        }
+
+    CATEGORY = "📂 SDVN/💡 Creative"
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "inpaint_stitch"
+    INPUT_IS_LIST = True
+
+    def inpaint_stitch(self, stitchers, inpainted_images):
+        canva = stitchers[0]['canvas_image']
+        index = 0
+        for inpainted_image in inpainted_images:
+            print(f'Vòng lặp {index}')
+            stitchers[index]['canvas_image'] = canva
+            image = ALL_NODE["InpaintStitchImproved"]().inpaint_stitch(stitchers[index], inpainted_image)[0]
+            index += 1
+            if index < len(inpainted_images):
+                canva = ALL_NODE["SDVN Inpaint Crop"]().inpaint_crop(image, stitchers[index]["mask"], stitchers[index]["crop_size"], stitchers[index]["padding"])[0]["canvas_image"]
+        return (image,)
 
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
@@ -845,6 +874,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Menu Option": menu_option,
     "SDVN Dic Convert": dic_convert,
     "SDVN Inpaint Crop": inpaint_crop,
+    "SDVN Loop Inpaint Stitch": LoopInpaintStitch,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -871,4 +901,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Menu Option": "📋 Menu Option",
     "SDVN Dic Convert": "🔄 Dic Convert",
     "SDVN Inpaint Crop": "⚡️ Crop Inpaint",
+    "SDVN Loop Inpaint Stitch": "🔄 Loop Inpaint Stitch",
 }
