@@ -4,7 +4,9 @@
     "t5xxl_fp8_e4m3fn.safetensors": ["https://huggingface.co/StableDiffusionVN/Flux/blob/main/Clip/t5xxl_fp8_e4m3fn.safetensors","CLIP", "sd3"],
     "Instant_flux-union.safetensors": ["https://huggingface.co/StableDiffusionVN/Flux/blob/main/Controlnet/Instant_flux-union.safetensors","Controlnet"],
     "flux1-redux-dev.safetensors": ["https://huggingface.co/StableDiffusionVN/Flux/blob/main/Redux/flux1-redux-dev.safetensors","StyleModel"],
+    "flex1_redux_siglip2_512.safetensors": ["https://huggingface.co/ostris/Flex.1-alpha-Redux/blob/main/flex1_redux_siglip2_512.safetensors","StyleModel"],
     "sigclip_vision_patch14_384.safetensors": ["https://huggingface.co/StableDiffusionVN/Flux/blob/main/Redux/sigclip_vision_patch14_384.safetensors","CLIPVision"],
+    "siglip2_so400m_patch16_512.safetensors": ["https://huggingface.co/ostris/ComfyUI-Advanced-Vision/blob/main/clip_vision/siglip2_so400m_patch16_512.safetensors","CLIPVision"],
     "flux_vae.safetensors": ["https://huggingface.co/StableDiffusionVN/Flux/blob/main/Vae/flux_vae.safetensors","VAE"],
     "clip_vision_h.safetensors": ["https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/clip_vision/clip_vision_h.safetensors","CLIPVision"],
     "wan2.1_i2v_720p_14B_fp8_scaled.safetensors": ["https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/diffusion_models/wan2.1_i2v_720p_14B_fp8_scaled.safetensors","UNET/Diffusion", "default"],
@@ -64,5 +66,9 @@
     "sdxl_dw_openpose.safetensors": ["https://huggingface.co/StableDiffusionVN/XLControlnet/resolve/main/Lite/sdxl_dw_openpose.safetensors","Controlnet"],
     "sdxl_normal_dsine.safetensors": ["https://huggingface.co/StableDiffusionVN/XLControlnet/resolve/main/Lite/sdxl_normal_dsine.safetensors","Controlnet"],
     "xinsir_tile-sdxl.safetensors": ["https://huggingface.co/StableDiffusionVN/XLControlnet/resolve/main/xinsir/xinsir_tile-sdxl.safetensors","Controlnet"],
-    "xinsir_union_promax-sdxl.safetensors": ["https://huggingface.co/StableDiffusionVN/XLControlnet/resolve/main/xinsir/xinsir_union_promax-sdxl.safetensors","Controlnet"]
+    "xinsir_union_promax-sdxl.safetensors": ["https://huggingface.co/StableDiffusionVN/XLControlnet/resolve/main/xinsir/xinsir_union_promax-sdxl.safetensors","Controlnet"],
+    "1x_NMKD-BrightenRedux_200k.pth": ["https://huggingface.co/uwg/upscaler/blob/main/ESRGAN/1x_NMKD-BrightenRedux_200k.pth","UpscaleModel"],
+    "1x-RGB-max-Denoise-lite-details.pth": ["https://huggingface.co/uwg/upscaler/blob/main/ESRGAN/1x-RGB-max-Denoise-lite-details.pth","UpscaleModel"],
+    "4x_NMKD-Superscale-SP_178000_G.pth": ["https://huggingface.co/uwg/upscaler/blob/main/ESRGAN/4x_NMKD-Superscale-SP_178000_G.pth","UpscaleModel"],
+    "WaifuGAN_v3_30000.pth": ["https://huggingface.co/uwg/upscaler/blob/main/ESRGAN/WaifuGAN_v3_30000.pth","UpscaleModel"]
 }

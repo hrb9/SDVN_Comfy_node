@@ -1,11 +1,13 @@
 
-import requests, math, json, os, re, sys, torch, hashlib, subprocess, numpy as np, csv
+import requests, math, json, os, re, sys, torch, hashlib, subprocess, numpy as np, csv, logging
 import folder_paths, comfy.sd, comfy.utils
 from PIL import Image, ImageOps
 from googletrans import LANGUAGES
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 from comfy.cldm.control_types import UNION_CONTROLNET_TYPES
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
+import comfy.clip_vision
+from comfy.utils import load_torch_file
 
 class AnyType(str):
     """A special class that is always equal in not equal comparisons. Credit to pythongosssss"""
@@ -827,15 +829,15 @@ def patchifyMask(mask, patchSize=14):
     toks = imgSize//patchSize
     return torch.nn.MaxPool2d(kernel_size=(patchSize,patchSize),stride=patchSize)(mask.view(b,imgSize,imgSize)).view(b,toks,toks,1)
 
-def prepareImageAndMask(visionEncoder, image, mask, mode, autocrop_margin, desiredSize=384):
+def prepareImageAndMask(image, mask, mode, autocrop_margin, desiredSize=384):
     mode = IMAGE_MODES.index(mode)
     (B,H,W,C) = image.shape
-    if mode==0: # center crop square
+    if mode==1:
         imgsize = min(H,W)
         ratio = desiredSize/imgsize
         (w,h) = (round(W*ratio), round(H*ratio))
         image, mask = crop(image, standardizeMask(mask), ((w - desiredSize)//2, (h - desiredSize)//2, w, h), desiredSize)
-    elif mode==1:
+    elif mode==0:
         if mask is None:
             mask = torch.ones(size=(B,H,W))
         imgsize = max(H,W)
@@ -852,37 +854,30 @@ def prepareImageAndMask(visionEncoder, image, mask, mode, autocrop_margin, desir
         image, mask = letterbox(image, standardizeMask(mask), w, h, desiredSize)
     return (image,mask)
 
-def processMask(mask,imgSize=384, patchSize=14):
-    if len(mask.shape) == 2:
-        (h,w)=mask.shape
-        mask=mask.view(1,1,h,w)
-    elif len(mask.shape)==3:
-        (b,h,w)=mask.shape
-        mask=mask.view(b,1,h,w)
-    scalingFactor = imgSize/min(h,w)
-    # scale
-    mask=torch.nn.functional.interpolate(mask, size=(round(h*scalingFactor),round(w*scalingFactor)), mode="bicubic")
-    # crop
-    horizontalBorder = (imgSize-mask.shape[3])//2
-    verticalBorder = (imgSize-mask.shape[2])//2
-    mask=mask[:, :, verticalBorder:(verticalBorder+imgSize),horizontalBorder:(horizontalBorder+imgSize)].view(b,imgSize,imgSize)
-    toks = imgSize//patchSize
-    return torch.nn.MaxPool2d(kernel_size=(patchSize,patchSize),stride=patchSize)(mask).view(b,toks,toks,1)
-
 IMAGE_MODES = [
-    "center crop (square)",
-    "keep aspect ratio",
-    "autocrop with mask"
+    "none",
+    "center",
+    "mask crop"
 ]
 
 class ApplyStyleModel:
+    model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib_any.json")
+    with open(model_lib_path, 'r') as json_file:
+        modellist = json.load(json_file)
+    list_style_model = []
+    list_vision_model = []
+    for key, value in modellist.items():
+        if value[1] == "StyleModel":
+            list_style_model.append(key)
+        if value[1] == "CLIPVision":
+            list_vision_model.append(key)
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
                     "image": ("IMAGE",),
-                    "style_model": (folder_paths.get_filename_list("style_models"), ),
-                    "clip_vision_model": (folder_paths.get_filename_list("clip_vision"), ),
-                    "mode": (IMAGE_MODES, {"default": "center crop (square)"}),
+                    "style_model": (list(set(folder_paths.get_filename_list("style_models") + s.list_style_model)), ),
+                    "clip_vision_model": (list(set(folder_paths.get_filename_list("clip_vision") + s.list_vision_model)), ),
+                    "mode": (IMAGE_MODES, {"default": "none"}),
                     "strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.001}),
                     "downsampling":([1,2,3,4,5,6], {"default": 1}),
                              },
@@ -898,14 +893,24 @@ class ApplyStyleModel:
 
     CATEGORY = "📂 SDVN"
 
-    def applystyle(self, image, style_model, clip_vision_model, mode, strength, downsampling, mask = None, positive = None):
+    def applystyle(s, image, style_model, clip_vision_model, mode, strength, downsampling, mask = None, positive = None):
         para = {"applystyle": [image, style_model, clip_vision_model, mode, strength, downsampling, mask]}
         if positive != None:
-            clip_vision_model = ALL_NODE["CLIPVisionLoader"]().load_clip(clip_vision_model)[0]
-            image, masko = prepareImageAndMask(clip_vision_model, image, mask, mode, 0.1)
-            mask = patchifyMask(masko)
-            clip_vision_encode = ALL_NODE["CLIPVisionEncode"]().encode(clip_vision_model, image, "center")[0]
-            style_model = ALL_NODE["StyleModelLoader"]().load_style_model(style_model)[0]
+            vision_size = 384 if "384" in clip_vision_model else 512
+            if clip_vision_model in s.modellist:
+                clip_vision_model = ALL_NODE["SDVN AnyDownload List"]().any_download_list(clip_vision_model)[0]
+            else:
+                clip_vision_model = ALL_NODE["SDVN AdvVisionLoader"]().load_vision(clip_vision_model)[0]
+            if mask is not None:
+                print("! Mask mode only works with Redux 384")
+                image, masko = prepareImageAndMask(image, mask, mode, 0.1, vision_size)
+                mask = patchifyMask(masko, 16 if vision_size == 512 else 14)
+            crop_mode = "none" if mode != "center" else "center"
+            clip_vision_encode = ALL_NODE["CLIPVisionEncode"]().encode(clip_vision_model, image, crop_mode)[0]
+            if style_model in s.modellist:
+                style_model = ALL_NODE["SDVN AnyDownload List"]().any_download_list(style_model)[0]
+            else:
+                style_model = ALL_NODE["StyleModelLoader"]().load_style_model(style_model)[0]
 
             mode="area" if downsampling==3 else "bicubic"
             cond = style_model.get_cond(clip_vision_encode).flatten(start_dim=0, end_dim=1).unsqueeze(dim=0)
@@ -1016,7 +1021,7 @@ class CLIPVisionDownload:
 
     def download(self, Download_url, Url_name):
         download_model(Download_url, Url_name, "clip_vision")
-        return ALL_NODE["CLIPVisionLoader"]().load_clip(Url_name)
+        return ALL_NODE["SDVN AdvVisionLoader"]().load_vision(Url_name)
 
 class UpscaleModelDownload:
     @classmethod
@@ -1213,8 +1218,72 @@ class AnyDownloadList:
             r = ALL_NODE["SDVN IPAdapterModel Download"]().download(download_link, model_name)[0]
         if Type == "InstatnIDModel":
             r = ALL_NODE["SDVN InstatnIDModel Download"]().download(download_link, model_name)[0]
+        if Type == "StyleModel":
+            r = ALL_NODE["SDVN StyleModel Download"]().download(download_link, model_name)[0]
         return  (r,)
-    
+
+def load_advanced_vision_from_sd(sd, prefix="", convert_keys=False):
+    config_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    json_config = None
+    if convert_keys:
+        sd = comfy.clip_vision.convert_to_transformers(sd, prefix)
+    if "vision_model.encoder.layers.22.layer_norm1.weight" in sd:
+        if sd["vision_model.encoder.layers.0.layer_norm1.weight"].shape[0] == 1152:
+            if sd["vision_model.embeddings.position_embedding.weight"].shape[0] == 1024:
+                json_config = os.path.join(
+                    config_root,
+                    "clip_vision_siglip2_so400m_512.json"
+                )
+                print("Advanced Vision Model: clip_vision_siglip2_so400m_512 detected")
+
+    if json_config is None:
+        return None
+
+    clip = comfy.clip_vision.ClipVisionModel(json_config)
+    m, u = clip.load_sd(sd)
+    if len(m) > 0:
+        logging.warning("missing clip vision: {}".format(m))
+    u = set(u)
+    keys = list(sd.keys())
+    for k in keys:
+        if k not in u:
+            sd.pop(k)
+    return clip
+
+
+def load_advanced_vision(ckpt_path):
+    sd = load_torch_file(ckpt_path)
+    if "visual.transformer.resblocks.0.attn.in_proj_weight" in sd:
+        return load_advanced_vision_from_sd(sd, prefix="visual.", convert_keys=True)
+    else:
+        return load_advanced_vision_from_sd(sd)
+
+
+class AdvancedVisionLoader:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "clip_name": (folder_paths.get_filename_list("clip_vision"), ),
+            }}
+    RETURN_TYPES = ("CLIP_VISION",)
+    FUNCTION = "load_vision"
+
+    CATEGORY = "loaders"
+
+    def load_vision(self, clip_name):
+        clip_path = folder_paths.get_full_path_or_raise(
+            "clip_vision",
+            clip_name
+        )
+        # try to load it through ours first
+        clip_vision = load_advanced_vision(clip_path)
+
+        # load it through comfy
+        if clip_vision is None:
+            clip_vision = comfy.clip_vision.load(clip_path)
+        return (clip_vision,)
+
 NODE_CLASS_MAPPINGS = {
     "SDVN Load Checkpoint": CheckpointLoaderDownload,
     "SDVN Load Lora": LoraLoader,
@@ -1243,6 +1312,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN InstantIDModel Download": InstantIDModelDownload,
     "SDVN AnyDownload List": AnyDownloadList,
     "SDVN DualCLIP Download": DualClipDownload,
+    "SDVN AdvVisionLoader": AdvancedVisionLoader,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -1274,4 +1344,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN InstantIDModel Download": "📥  InstantIDModel Download",
     "SDVN AnyDownload List": "📥  AnyDownload List",
     "SDVN DualCLIP Download": "📥  DualCLIP Download",
+    "SDVN AdvVisionLoader": "👁️  Advanced Vision Loader",
 }

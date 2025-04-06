@@ -798,6 +798,28 @@ other:output4
             output = SimpleAnyInput().simple_any(d[list(d)[-1]])[0]
         return (output,)
 
+class inpaint_crop:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "mask": ("MASK",),
+                "crop_size": ([512,768,896,1024,1280], {"default": 768}),
+            },
+        }
+
+    CATEGORY = "📂 SDVN/💡 Creative"
+    RETURN_TYPES = ("STITCH", "IMAGE", "MASK")
+    RETURN_NAMES = ("stitch", "cropped_image", "cropped_mask")
+    FUNCTION = "inpaint_crop"
+
+    def inpaint_crop(self, image, mask, crop_size):
+        if "InpaintCrop" not in ALL_NODE:
+            raise Exception("Install node InpaintCrop(https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch)")
+        input = ALL_NODE["InpaintCrop"]().inpaint_crop(image, mask, 20, 1.0, True, 16.0, False, 16.0, "ranged size", "bicubic", 1024, 1024, 1.00, 32, crop_size - 128, crop_size - 128, crop_size, crop_size, None)
+        return input
+
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
     "SDVN Any Input Type": AnyInput,
@@ -821,6 +843,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Filter List": filter_list,
     "SDVN Menu Option": menu_option,
     "SDVN Dic Convert": dic_convert,
+    "SDVN Inpaint Crop": inpaint_crop,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -846,4 +869,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Simple Any Input": "🔡 Simple Any Input",
     "SDVN Menu Option": "📋 Menu Option",
     "SDVN Dic Convert": "🔄 Dic Convert",
+    "SDVN Inpaint Crop": "⚡️ Crop Inpaint",
 }
