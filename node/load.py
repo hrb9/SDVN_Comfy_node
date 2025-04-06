@@ -663,11 +663,19 @@ def preprocessor_list():
 
 
 class AutoControlNetApply:
+    model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib_any.json")
+    with open(model_lib_path, 'r') as json_file:
+        modellist = json.load(json_file)
+    list_controlnet_model = []
+    for key, value in modellist.items():
+        if value[1] == "Controlnet":
+            list_controlnet_model.append(key)
+
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
                              "image": ("IMAGE", ),
-                             "control_net": (none2list(folder_paths.get_filename_list("controlnet")),),
+                             "control_net": (list(set(none2list(folder_paths.get_filename_list("controlnet")) + s.list_controlnet_model)),),
                              "preprocessor": (preprocessor_list(),),
                              "union_type": (["None","auto"] + list(UNION_CONTROLNET_TYPES.keys()),),
                              "resolution": ("INT", {"default": 512, "min": 512, "max": 2048, "step": 1}),
@@ -704,7 +712,10 @@ class AutoControlNetApply:
             else:
                 print(
                     "You have not installed it yet Controlnet Aux (https://github.com/Fannovel16/comfyui_controlnet_aux)")
-        control_net = ALL_NODE["ControlNetLoader"]().load_controlnet(control_net)[0]
+        if control_net in self.modellist:
+            control_net = ALL_NODE["SDVN AnyDownload List"]().any_download_list(control_net)[0]
+        else:
+            control_net = ALL_NODE["ControlNetLoader"]().load_controlnet(control_net)[0]
         if union_type != "None":
             control_net = ALL_NODE["SetUnionControlNetType"]().set_controlnet_type(control_net,union_type)[0]
         p, n = ALL_NODE["ControlNetApplyAdvanced"]().apply_controlnet(
