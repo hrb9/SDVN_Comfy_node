@@ -878,8 +878,8 @@ class ApplyStyleModel:
                     "style_model": (list(set(folder_paths.get_filename_list("style_models") + s.list_style_model)), ),
                     "clip_vision_model": (list(set(folder_paths.get_filename_list("clip_vision") + s.list_vision_model)), ),
                     "mode": (IMAGE_MODES, {"default": "none"}),
-                    "strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.001}),
-                    "downsampling":([1,2,3,4,5,6], {"default": 1}),
+                    "strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 3.0, "step": 0.1}),
+                    "downsampling":("INT", {"default": 1, "min": 0, "max": 6, "step": 1}),
                              },
                 "optional": {
                     "mask": ("MASK", ),
