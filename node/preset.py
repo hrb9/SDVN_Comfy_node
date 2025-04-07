@@ -120,7 +120,7 @@ class auto_generate:
                 "Negative": ("STRING", {"default": "", "multiline": True, "placeholder": "No support Flux model"},),
                 "Active_prompt": ("STRING", {"default": "", "multiline": False},),
                 "Image_size": ("STRING", {"default": "1024,1024", "multiline": False},),
-                "Steps": ("INT", {"default": 20,},),
+                "Steps": ("INT", {"default": 20, "min": 0, "max": 100, "step": 1},),
                 "Denoise": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
                 "Inpaint_model": ("BOOLEAN", {"default": False},),
                 "Random_prompt": ("BOOLEAN", {"default": False},),

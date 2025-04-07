@@ -45,12 +45,17 @@ function sdvnshowcontrol(node) {
 
 function hookWidgetCallbacks(node) {
     for (const w of node.widgets || []) {
-        if (typeof w.callback === "function") {
-            const originalCallback = w.callback.bind(w);
-            w.callback = function () {
-                originalCallback();
+        if (typeof w.callback === "function" && !w.__sdvn_callback_wrapped) {
+            const originalCallback = w.callback;
+            w.callback = function (...args) {
+                // Gọi lại callback gốc, giữ đúng ngữ cảnh this
+                if (typeof originalCallback === "function") {
+                    originalCallback.apply(this, args);
+                }
+                // Gọi lại hàm kiểm tra hiển thị
                 sdvnshowcontrol(node);
             };
+            w.__sdvn_callback_wrapped = true;
         }
     }
 }
