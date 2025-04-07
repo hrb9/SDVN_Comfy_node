@@ -1,5 +1,7 @@
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 import folder_paths
+import comfy.samplers
+import random
 
 class AnyType(str):
     """A special class that is always equal in not equal comparisons. Credit to pythongosssss"""
@@ -121,7 +123,13 @@ class auto_generate:
                 "Steps": ("INT", {"default": 20,},),
                 "Denoise": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
                 "Inpaint_model": ("BOOLEAN", {"default": False},),
+                "Random_prompt": ("BOOLEAN", {"default": False},),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
+                "AdvSetting": ("BOOLEAN", {"default": False},),
+                "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
+                "sampler_name": (comfy.samplers.KSampler.SAMPLERS, {"tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
+                "scheduler": (comfy.samplers.KSampler.SCHEDULERS, {"tooltip": "The scheduler controls how noise is gradually removed to form the image."}),
+                "FluxGuidance":  ("FLOAT", {"default": 3.5, "min": 0.0, "max": 100.0, "step": 0.1}),
             },
             "optional": {
                 "image": ("IMAGE",),
@@ -141,7 +149,7 @@ class auto_generate:
         "SD 1.5": [768, "1.5-BasePrompt", 0.4, 1920],
         "None": [768, "1.5-BasePrompt", 0.4, 1920],
     }
-    def auto_generate(s, model, clip, vae, Prompt, Negative, Active_prompt, Image_size, Steps, Denoise, Inpaint_model, seed, image = None, mask = None, parameter = None):
+    def auto_generate(s, model, clip, vae, Prompt, Negative, Active_prompt, Image_size, Steps, Denoise, Inpaint_model, Random_prompt, AdvSetting, cfg, sampler_name, scheduler, FluxGuidance, seed, image = None, mask = None, parameter = None):
         type_model = check_type_model(model)
         type_model = "None" if type_model not in s.model_para else type_model
         print(f"Type model : {type_model}")
@@ -173,7 +181,8 @@ class auto_generate:
         n_h = int(round(n_h))
         n_w = int(round(n_w))
         Prompt = f"{Active_prompt}, {Prompt}"
-        p, n, _ = ALL_NODE["SDVN CLIP Text Encode"]().encode(clip, Prompt, Negative, s.model_para[type_model][1], "en", seed)
+        rand_seed = random.randint(0, 0xffffffffffffffff)
+        p, n, _ = ALL_NODE["SDVN CLIP Text Encode"]().encode(clip, Prompt, Negative, s.model_para[type_model][1], "en", rand_seed if Random_prompt else seed)
         if image == None:
             latent = ALL_NODE["EmptyLatentImage"]().generate(n_w, n_h, 1)[0]
         else:
@@ -189,7 +198,10 @@ class auto_generate:
                     p = ALL_NODE["SDVN Apply Style Model"]().applystyle(*para["applystyle"], p)[0]
 
         tile_size = s.model_para[type_model][3]
-        _, img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed, Tiled=True if (n_w > tile_size or n_h > tile_size) and Denoise < 0.5 else False, tile_width=int(round(n_w/2)), tile_height=int(round(n_h/2)), steps=Steps, cfg=7, denoise=Denoise, negative=n, latent_image=latent, vae=vae, FluxGuidance = 35 if Inpaint_model and type_model == "Flux" else 3.5)
+        if AdvSetting:
+            type_model = "None"
+
+        _, img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", sampler_name, scheduler, seed, Tiled=True if (n_w > tile_size or n_h > tile_size) and Denoise < 0.5 else False, tile_width=int(round(n_w/2)), tile_height=int(round(n_h/2)), steps=Steps, cfg=cfg, denoise=Denoise, negative=n, latent_image=latent, vae=vae, FluxGuidance = 35 if Inpaint_model and type_model == "Flux" and AdvSetting == False else FluxGuidance)
         if w == n_w:
             return (img,)
         else:
@@ -200,7 +212,7 @@ class auto_generate:
             print(f"Upscale by {upscale_model}")
             img = ALL_NODE["SDVN Upscale Image"]().upscale("Resize", w, h, 1, upscale_model, img)[0]
             latent = ALL_NODE["SDVN Inpaint"]().encode(True, img, vae, mask, None, None)[2]
-            img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", "euler", "normal", seed,  Tiled=True if (n_w > tile_size or n_h > tile_size) else False, tile_width=int(round(w/2)), tile_height=int(round(h/2)), steps=Steps, cfg=7, denoise=s.model_para[type_model][2], negative=n, latent_image=latent, vae=vae, FluxGuidance = 35 if Inpaint_model and type_model == "Flux" else 3.5)[1]
+            img = ALL_NODE["SDVN KSampler"]().sample(model, p, type_model, "Denoise", sampler_name, scheduler, seed,  Tiled=True if (n_w > tile_size or n_h > tile_size) else False, tile_width=int(round(w/2)), tile_height=int(round(h/2)), steps=Steps, cfg=cfg, denoise=s.model_para[type_model][2], negative=n, latent_image=latent, vae=vae, FluxGuidance = 35 if Inpaint_model and type_model == "Flux" and AdvSetting == False else FluxGuidance)[1]
             return (img,)
         
                 
