@@ -145,10 +145,11 @@ def token(link):
 def download_model(url, name, type):
     url = url.replace("&", "\&").split("?")[0]
     url = check_link(url)
-    checkpoint_path = os.path.join(folder_paths.models_dir, type)
-    if not os.path.isfile(checkpoint_path):
+    folder_path = os.path.join(folder_paths.models_dir, type)
+    path_model = os.path.join(folder_path, name)
+    if not os.path.isfile(path_model):
         command = ['aria2c', '-c', '-x', '16', '-s', '16',
-                '-k', '1M', f'{url}{token(url)}', '-d', checkpoint_path, '-o', name]
+                '-k', '1M', f'{url}{token(url)}', '-d', folder_path, '-o', name]
         subprocess.run(command, check=True, text=True, capture_output=True)
     
 class LoadImage:
