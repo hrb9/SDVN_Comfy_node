@@ -1404,7 +1404,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Load Image": "🏞️ Load Image",
     "SDVN Load Image Folder": "🏞️ Load Image Folder",
     "SDVN Load Image Url": "📥 Load Image Url",
-    "SDVN LoadPintrest": "📥 Load LoadPintrest",
+    "SDVN LoadPintrest": "📥 Load Pintrest",
     "SDVN CLIP Text Encode": "🔡 CLIP Text Encode",
     "SDVN KSampler": "⌛️ KSampler",
     "SDVN Controlnet Apply": "🎚️ Controlnet Apply",
