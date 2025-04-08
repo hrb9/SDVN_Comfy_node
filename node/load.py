@@ -911,7 +911,7 @@ class ApplyStyleModel:
             if clip_vision_model in s.modellist:
                 clip_vision_model = ALL_NODE["SDVN AnyDownload List"]().any_download_list(clip_vision_model)[0]
             else:
-                clip_vision_model = ALL_NODE["SDVN AdvVisionLoader"]().load_vision(clip_vision_model)[0]
+                clip_vision_model = ALL_NODE["CLIPVisionLoader"]().load_clip(clip_vision_model)[0]
             if mask is not None:
                 print("! Mask mode only works with Redux 384")
                 image, masko = prepareImageAndMask(image, mask, mode, 0.1, vision_size)
@@ -1032,7 +1032,7 @@ class CLIPVisionDownload:
 
     def download(self, Download_url, Url_name):
         download_model(Download_url, Url_name, "clip_vision")
-        return ALL_NODE["SDVN AdvVisionLoader"]().load_vision(Url_name)
+        return ALL_NODE["CLIPVisionLoader"]().load_clip(Url_name)
 
 class UpscaleModelDownload:
     @classmethod
@@ -1233,68 +1233,6 @@ class AnyDownloadList:
             r = ALL_NODE["SDVN StyleModel Download"]().download(download_link, model_name)[0]
         return  (r,)
 
-def load_advanced_vision_from_sd(sd, prefix="", convert_keys=False):
-    config_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    json_config = None
-    if convert_keys:
-        sd = comfy.clip_vision.convert_to_transformers(sd, prefix)
-    if "vision_model.encoder.layers.22.layer_norm1.weight" in sd:
-        if sd["vision_model.encoder.layers.0.layer_norm1.weight"].shape[0] == 1152:
-            if sd["vision_model.embeddings.position_embedding.weight"].shape[0] == 1024:
-                json_config = os.path.join(
-                    config_root,
-                    "clip_vision_siglip2_so400m_512.json"
-                )
-                print("Advanced Vision Model: clip_vision_siglip2_so400m_512 detected")
-
-    if json_config is None:
-        return None
-
-    clip = comfy.clip_vision.ClipVisionModel(json_config)
-    m, u = clip.load_sd(sd)
-    if len(m) > 0:
-        logging.warning("missing clip vision: {}".format(m))
-    u = set(u)
-    keys = list(sd.keys())
-    for k in keys:
-        if k not in u:
-            sd.pop(k)
-    return clip
-
-
-def load_advanced_vision(ckpt_path):
-    sd = load_torch_file(ckpt_path)
-    if "visual.transformer.resblocks.0.attn.in_proj_weight" in sd:
-        return load_advanced_vision_from_sd(sd, prefix="visual.", convert_keys=True)
-    else:
-        return load_advanced_vision_from_sd(sd)
-
-
-class AdvancedVisionLoader:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "clip_name": (folder_paths.get_filename_list("clip_vision"), ),
-            }}
-    RETURN_TYPES = ("CLIP_VISION",)
-    FUNCTION = "load_vision"
-
-    CATEGORY = "loaders"
-
-    def load_vision(self, clip_name):
-        clip_path = folder_paths.get_full_path_or_raise(
-            "clip_vision",
-            clip_name
-        )
-        # try to load it through ours first
-        clip_vision = load_advanced_vision(clip_path)
-
-        # load it through comfy
-        if clip_vision is None:
-            clip_vision = comfy.clip_vision.load(clip_path)
-        return (clip_vision,)
-
 NODE_CLASS_MAPPINGS = {
     "SDVN Load Checkpoint": CheckpointLoaderDownload,
     "SDVN Load Lora": LoraLoader,
@@ -1323,7 +1261,6 @@ NODE_CLASS_MAPPINGS = {
     "SDVN InstantIDModel Download": InstantIDModelDownload,
     "SDVN AnyDownload List": AnyDownloadList,
     "SDVN DualCLIP Download": DualClipDownload,
-    "SDVN AdvVisionLoader": AdvancedVisionLoader,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -1355,5 +1292,4 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN InstantIDModel Download": "📥  InstantIDModel Download",
     "SDVN AnyDownload List": "📥  AnyDownload List",
     "SDVN DualCLIP Download": "📥  DualCLIP Download",
-    "SDVN AdvVisionLoader": "👁️  Advanced Vision Loader",
 }
