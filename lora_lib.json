@@ -1,0 +1,11 @@
+{
+    "Flux_Turbo_8steps.safetensors": "https://huggingface.co/StableDiffusionVN/clone/blob/main/Lora/StepLora/Flux_Turbo_8steps.safetensors",
+    "Hyper-SD15-8steps.safetensors": "https://huggingface.co/StableDiffusionVN/clone/blob/main/Lora/StepLora/Hyper-SD15-8steps.safetensors",
+    "Hyper-SDXL-8steps.safetensors": "https://huggingface.co/StableDiffusionVN/clone/blob/main/Lora/StepLora/Hyper-SDXL-8steps.safetensors",
+    "SDXL_Lightning_8steps.safetensors": "https://huggingface.co/StableDiffusionVN/clone/blob/main/Lora/StepLora/SDXL_Lightning_8steps.safetensors",
+    "ip-adapter-faceid-plusv2_sd15_lora.safetensors": "https://huggingface.co/StableDiffusionVN/clone/blob/main/Lora/FaceID/ip-adapter-faceid-plusv2_sd15_lora.safetensors",
+    "ip-adapter-faceid-plusv2_sdxl_lora.safetensors": "https://huggingface.co/StableDiffusionVN/clone/blob/main/Lora/FaceID/ip-adapter-faceid-plusv2_sdxl_lora.safetensors",
+    "flux1-canny-dev-lora.safetensors": "https://huggingface.co/StableDiffusionVN/clone/blob/main/Lora/Flux_ControlnetLora/flux1-canny-dev-lora.safetensors",
+    "flux1-depth-dev-lora.safetensors": "https://huggingface.co/StableDiffusionVN/clone/blob/main/Lora/Flux_ControlnetLora/flux1-depth-dev-lora.safetensors",
+    "lightning-cfg2-dpmppcfg-8-128.safetensors": "https://huggingface.co/StableDiffusionVN/SDXL/blob/main/StepsLora/lightning-cfg2-dpmppcfg-8-128.safetensors"
+}

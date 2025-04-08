@@ -1,13 +1,10 @@
-
-import requests, math, json, os, re, sys, torch, hashlib, subprocess, numpy as np, csv, logging
-import folder_paths, comfy.sd, comfy.utils
+import requests, math, json, os, re, sys, torch, hashlib, subprocess, numpy as np, csv, random
+import folder_paths, comfy.utils
 from PIL import Image, ImageOps
 from googletrans import LANGUAGES
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 from comfy.cldm.control_types import UNION_CONTROLNET_TYPES
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
-import comfy.clip_vision
-from comfy.utils import load_torch_file
 
 class AnyType(str):
     """A special class that is always equal in not equal comparisons. Credit to pythongosssss"""
@@ -302,7 +299,114 @@ class LoadImageUrl:
         results["result"] = (image,)
         return results
 
+#Pintrest
+
+def pintrest_fillter(url):
+    id_dic = {}
+    if "/pin/" in url:
+        id = url.split("/pin/")[-1].split("/")[0]
+        id_dic = {"other": [id]}
+    else:
+        id_fillter = [x for x in url.split("https://www.pinterest.com/")[-1].split("/") if x != ""]
+        if len(id_fillter) == 1:
+            id_dic = user_id_filter(id_fillter[0])
+        elif len(id_fillter) == 2:
+            id_dic = {id_fillter[1]:board_id_filter(id_fillter[0], id_fillter[1])}
+        else:
+            print("Not support url")
+            id_dic = None
+    return id_dic 
+
+def pin_content(url):
+    command = ['wget', url, '-O', 'pin.html']
+    subprocess.run(command, check=True, text=True, capture_output=True)
+    with open('pin.html', 'r', encoding='utf-8') as file:
+        html_content = file.read()
+    return html_content
+
+def pin_id_filter(content):
+    pattern = r'"cacheable_id":"(\d+)"'
+    pattern2 = r'href="/pin/(\d+)/"'
+    id = re.findall(pattern, content)
+    id2 = re.findall(pattern2, content)
+    return list(set(id+id2))
+
+def pin_user_filter(content, user):
+    pattern = rf'"url":"/{user}/(.*?)/"'
+    board_id = re.findall(pattern, content)
+    return list(set(board_id))
+
+def pin_board_filter(content, user, board):
+    pattern = rf'href="/{user}/{board}/(.*?)/"'
+    sub_board_id = re.findall(pattern, content)
+    return list(set(sub_board_id))
+
+def board_id_filter(user, board):
+    url = f"https://www.pinterest.com/{user}/{board}/"
+    content = pin_content(url)
+    b_id_list = pin_id_filter(content)
+    return b_id_list
+
+def user_id_filter(user):
+    url = f"https://www.pinterest.com/{user}/"
+    content = pin_content(url)
+    user_dic = {}
+    board_id = pin_user_filter(content, user)
+    for board in board_id:
+        user_dic[board] = board_id_filter(user, board)
+    return user_dic
+
+class LoadPintrest:
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+            "Url": ("STRING", {"default": "", "multiline": False},),
+            "Number": ("INT", {"default": 1, "min": 1},),
+            "Random": ("BOOLEAN", {"default": True},),
+            "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
+        }
+        }
+    CATEGORY = "📂 SDVN"
+    RETURN_TYPES = ("IMAGE",)
+    OUTPUT_IS_LIST = (True,)
+    FUNCTION = "load_image_url"
+
+    def load_image_url(s, Url, Number, Random, seed):
+        if "www.pinterest.com" not in Url:
+            Url = "https://www.pinterest.com/" + Url
+        if "https://" not in Url:
+            Url = "https://" + Url
+
+        id_dict = pintrest_fillter(Url)
+        id_list = []
+        for key in id_dict:
+            id_list += id_dict[key]
+        id_target = []
+        if Random:
+            for i in range(Number):
+                id_target.append(random.choice(id_list))
+                id_list.remove(id_target[-1])
+        else:
+            id_target = id_list[:Number]
+        image_list = []
+        for id in id_target:
+            link = f"https://www.pinterest.com/pin/{id}/"
+            link = run_gallery_dl(link)
+            if 'http' in link:
+                image = Image.open(requests.get(link, stream=True).raw)
+            else:
+                image = Image.open(link)
+            image = i2tensor(image)
+            image_list.append(image)
+        # results = ALL_NODE["PreviewImage"]().save_images(image_list)
+        # results["result"] = (image_list,)
+        return (image_list,)
+
 class CheckpointLoaderDownload:
+    model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib.json")
+    with open(model_lib_path, 'r') as json_file:
+        modellist = json.load(json_file)
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -312,7 +416,7 @@ class CheckpointLoaderDownload:
                 "Ckpt_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
             },
             "optional": {
-                "Ckpt_name": (none2list(folder_paths.get_filename_list("checkpoints")), {"tooltip": "The name of the checkpoint (model) to load."})
+                "Ckpt_name": (list(set(none2list(folder_paths.get_filename_list("checkpoints") + list(s.modellist)))), {"tooltip": "The name of the checkpoint (model) to load."})
             }
         }
     RETURN_TYPES = ("MODEL", "CLIP", "VAE", "STRING")
@@ -326,6 +430,11 @@ class CheckpointLoaderDownload:
     DESCRIPTION = "Loads a diffusion model checkpoint, diffusion models are used to denoise latents."
 
     def load_checkpoint(self, Download, Download_url, Ckpt_url_name, Ckpt_name=None):
+        if not Download or Download_url == '':
+            if Ckpt_name in self.modellist:
+                Download = True
+                Download_url = self.modellist[Ckpt_name]
+                Ckpt_url_name = Ckpt_name        
         if Download and Download_url != "":
             download_model(Download_url, Ckpt_url_name, "checkpoints")
             Ckpt_name = Ckpt_url_name
@@ -347,6 +456,10 @@ class CheckpointLoaderDownload:
             return (results[0],results[1],results[2],path)
         
 class LoraLoader:
+    model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"lora_lib.json")
+    with open(model_lib_path, 'r') as json_file:
+        loralist = json.load(json_file)
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -354,7 +467,7 @@ class LoraLoader:
                 "Download": ("BOOLEAN", {"default": True},),
                 "Download_url": ("STRING", {"default": "", "multiline": False},),
                 "Lora_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
-                "lora_name": (none2list(folder_paths.get_filename_list("loras")), {"default": "None", "tooltip": "The name of the LoRA."}),
+                "lora_name": (list(set(none2list(folder_paths.get_filename_list("loras") + list(s.loralist)))), {"default": "None", "tooltip": "The name of the LoRA."}),
             },
             "optional": {
                 "model": ("MODEL", {"tooltip": "The diffusion model the LoRA will be applied to."}),
@@ -374,6 +487,10 @@ class LoraLoader:
         if not Download or Download_url == '':
             if lora_name == "None":
                 return (model, clip)
+            if lora_name in self.loralist:
+                Download = True
+                Download_url = self.loralist[lora_name]
+                Lora_url_name = lora_name
         if Download and Download_url != '':
             download_model(Download_url, Lora_url_name, "loras")
             lora_name = Lora_url_name
@@ -575,11 +692,18 @@ class Easy_KSampler:
 
 
 class UpscaleImage:
+    model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib_any.json")
+    with open(model_lib_path, 'r') as json_file:
+        modellist = json.load(json_file)
+    list_upscale_model = []
+    for key, value in modellist.items():
+        if value[1] == "UpscaleModel":
+            list_upscale_model.append(key)
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
             "mode": (["Maxsize", "Resize", "Scale"], ),
-            "model_name": (none2list(folder_paths.get_filename_list("upscale_models")), {"default": "None", }),
+            "model_name": (list(set(none2list(folder_paths.get_filename_list("upscale_models")+ s.list_upscale_model))), {"default": "None", }),
             "scale": ("FLOAT", {"default": 1, "min": 0, "max": 10, "step": 0.01, }),
             "width": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
             "height": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
@@ -611,8 +735,10 @@ class UpscaleImage:
             elif height == 0:
                 height = max(1, round(h * width / w))
             if model_name != "None":
-                upscale_model = ALL_NODE["UpscaleModelLoader"](
-                ).load_model(model_name)[0]
+                if model_name in self.modellist:
+                    upscale_model = ALL_NODE["SDVN AnyDownload List"]().any_download_list(model_name)[0]
+                else:
+                    upscale_model = ALL_NODE["UpscaleModelLoader"]().load_model(model_name)[0]
                 image = ALL_NODE["ImageUpscaleWithModel"]().upscale(
                     upscale_model, image)[0]
             samples = image.movedim(-1, 1)
@@ -623,11 +749,18 @@ class UpscaleImage:
 
 
 class UpscaleLatentImage:
+    model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib_any.json")
+    with open(model_lib_path, 'r') as json_file:
+        modellist = json.load(json_file)
+    list_upscale_model = []
+    for key, value in modellist.items():
+        if value[1] == "UpscaleModel":
+            list_upscale_model.append(key)
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
             "mode": (["Maxsize", "Resize", "Scale"], ),
-            "model_name": (none2list(folder_paths.get_filename_list("upscale_models")), {"default": "None", }),
+            "model_name": (list(set(none2list(folder_paths.get_filename_list("upscale_models")+ s.list_upscale_model))), {"default": "None", }),
             "scale": ("FLOAT", {"default": 2, "min": 0, "max": 10, "step": 0.01, }),
             "width": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
             "height": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
@@ -1239,6 +1372,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Load Image": LoadImage,
     "SDVN Load Image Folder": LoadImageFolder,
     "SDVN Load Image Url": LoadImageUrl,
+    "SDVN LoadPintrest": LoadPintrest,
     "SDVN CLIP Text Encode": CLIPTextEncode,
     "SDVN Controlnet Apply": AutoControlNetApply,
     "SDVN Inpaint": Inpaint,
@@ -1270,6 +1404,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Load Image": "🏞️ Load Image",
     "SDVN Load Image Folder": "🏞️ Load Image Folder",
     "SDVN Load Image Url": "📥 Load Image Url",
+    "SDVN LoadPintrest": "📥 Load LoadPintrest",
     "SDVN CLIP Text Encode": "🔡 CLIP Text Encode",
     "SDVN KSampler": "⌛️ KSampler",
     "SDVN Controlnet Apply": "🎚️ Controlnet Apply",
