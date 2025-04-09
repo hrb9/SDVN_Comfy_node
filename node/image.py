@@ -590,6 +590,14 @@ class MaskRegions:
     OUTPUT_IS_LIST = (True,)
     FUNCTION = "separate_regions"
 
+    @staticmethod
+    def get_top_left_coords(tensor):
+        coords = (tensor > 0).nonzero(as_tuple=False)
+        if coords.numel() == 0:
+            return (99999, 99999)  # rất xa nếu lỗi
+        _, y, x = coords.min(dim=0).values
+        return (x.item(), y.item())  # sắp theo x trước
+    
     def separate_regions(s,mask):
         threshold=0.3
         max_iter=100
@@ -626,7 +634,11 @@ class MaskRegions:
             # Xoá vùng đã lấy ra khỏi mask
             mask = mask * (region == 0).float()
 
-        return (regions,)
+        # Tính vị trí (x, y) của mỗi vùng
+        
+        regions_sorted = sorted(regions, key=s.get_top_left_coords)
+        
+        return (regions_sorted,)
 
 NODE_CLASS_MAPPINGS = {
     "SDVN Image Scraper": img_scraper,
