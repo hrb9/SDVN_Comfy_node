@@ -326,7 +326,7 @@ class LoadPintrest:
 
     def pintrest_board_download(s, url, range):
         input_folder = folder_paths.get_input_directory()
-        id_folder = url.split("https://www.pinterest.com/")[-1]
+        id_folder = url.split("https://www.pinterest.com/")[-1] if "/search/pins/" not in url else "search/"+(url.split("https://www.pinterest.com/search/pins/?q=")[-1].replace("%20", "_"))
         save_folder = os.path.join(input_folder, "pintrest", id_folder)
         if range != "":
             command = ['gallery-dl', '--range', range, url, "-D", save_folder]
