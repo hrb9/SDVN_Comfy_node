@@ -259,6 +259,30 @@ class Switch:
         else:
             return (false,)
 
+class AutoSwitch:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "input1": (any,),
+                "input2": (any,),
+                "input3": (any,),
+                "input4": (any,),
+                "input5": (any,),
+                "input6": (any,),
+            }}
+    CATEGORY = "📂 SDVN/💡 Creative"
+    RETURN_TYPES = (any,)
+    RETURN_NAMES = ("output",)
+    FUNCTION = "switch"
+
+    def switch(s, input1, input2, input3, input4, input5, input6):
+        input_list = [input1, input2, input3, input4, input5, input6]
+        for i in input_list:
+            if i != None:
+                return i
+        return (None,)
+        
 class Logic:
     @classmethod
     def INPUT_TYPES(s):
@@ -861,6 +885,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Image Size": ImageSize,
     "SDVN Seed": Seed,
     "SDVN Switch": Switch,
+    "SDVN AutoSwitch": AutoSwitch,
     "SDVN Logic": Logic,
     "SDVN Boolean": Boolean,
     "SDVN Translate": GGTranslate,
@@ -887,6 +912,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Image Size": "📐 Image Size",
     "SDVN Seed": "🔢 Seed",
     "SDVN Switch": "🔄 Switch",
+    "SDVN AutoSwitch" :"🔄 Auto Switch",
     "SDVN Logic": "#️⃣ Logic Switch",
     "SDVN Boolean": "#️⃣ Boolean",
     "SDVN Translate": "🔃 Translate",
