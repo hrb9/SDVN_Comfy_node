@@ -1,4 +1,4 @@
-import requests, math, json, os, re, sys, torch, hashlib, subprocess, numpy as np, csv, random
+import requests, math, json, os, re, sys, torch, hashlib, subprocess, numpy as np, csv, random as rd
 import folder_paths, comfy.utils
 from PIL import Image, ImageOps
 from googletrans import LANGUAGES
@@ -231,7 +231,9 @@ class LoadImageFolder:
         return {
             "required": {
                 "folder_path": ("STRING", {"default": "", "multiline": False},),
-                "index": ("INT",{"default":-1,"min":-1}),
+                "number": ("INT", {"default": 1, "min": -1},),
+                "random": ("BOOLEAN", {"default": True},),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
                 "auto_index": ("BOOLEAN", {"default": False, "label_on": "loop", "label_off": "off"},),
             }
         }
@@ -259,20 +261,24 @@ class LoadImageFolder:
                     list_img.append(file_full_path)
         return list_img
 
-    def load_image(self, folder_path, index, auto_index):
+    def load_image(self, folder_path, number, random, seed):
+        index = seed
         list_img = self.list_img_by_path(folder_path)
-        index = index%len(list_img) if auto_index else index
-        if index != -1:
-            image_path = [list_img[index]]
-            i = Image.open(image_path[0])
-            i = [i2tensor(i)]
-        else:
-            i = []
-            image_path = list_img
-            for x in list_img:
-               img = Image.open(x)
-               img = i2tensor(img)
-               i.append(img)
+        index = index%len(list_img)
+        len_img = number if number > 0 else len(list_img)
+        i = []
+        image_path = list_img
+        for x in range(len_img):
+            if random:
+                path = rd.choice(image_path)
+                list_img.remove(path)
+            else:
+                new_index = (index+x)%len(image_path)
+                path = list_img[new_index]
+            img = Image.open(path)
+            img = i2tensor(img)
+            i.append(img)
+
         return (i, image_path,)
     
 class LoadImageUrl:
@@ -301,69 +307,15 @@ class LoadImageUrl:
 
 #Pintrest
 
-def pintrest_fillter(url):
-    id_dic = {}
-    if "/pin/" in url:
-        id = url.split("/pin/")[-1].split("/")[0]
-        id_dic = {"other": [id]}
-    else:
-        id_fillter = [x for x in url.split("https://www.pinterest.com/")[-1].split("/") if x != ""]
-        if len(id_fillter) == 1:
-            id_dic = user_id_filter(id_fillter[0])
-        elif len(id_fillter) == 2:
-            id_dic = {id_fillter[1]:board_id_filter(id_fillter[0], id_fillter[1])}
-        else:
-            print("Not support url")
-            id_dic = None
-    return id_dic 
-
-def pin_content(url):
-    command = ['wget', url, '-O', 'pin.html']
-    subprocess.run(command, check=True, text=True, capture_output=True)
-    with open('pin.html', 'r', encoding='utf-8') as file:
-        html_content = file.read()
-    return html_content
-
-def pin_id_filter(content):
-    pattern = r'"cacheable_id":"(\d+)"'
-    pattern2 = r'href="/pin/(\d+)/"'
-    id = re.findall(pattern, content)
-    id2 = re.findall(pattern2, content)
-    return list(set(id+id2))
-
-def pin_user_filter(content, user):
-    pattern = rf'"url":"/{user}/(.*?)/"'
-    board_id = re.findall(pattern, content)
-    return list(set(board_id))
-
-def pin_board_filter(content, user, board):
-    pattern = rf'href="/{user}/{board}/(.*?)/"'
-    sub_board_id = re.findall(pattern, content)
-    return list(set(sub_board_id))
-
-def board_id_filter(user, board):
-    url = f"https://www.pinterest.com/{user}/{board}/"
-    content = pin_content(url)
-    b_id_list = pin_id_filter(content)
-    return b_id_list
-
-def user_id_filter(user):
-    url = f"https://www.pinterest.com/{user}/"
-    content = pin_content(url)
-    user_dic = {}
-    board_id = pin_user_filter(content, user)
-    for board in board_id:
-        user_dic[board] = board_id_filter(user, board)
-    return user_dic
-
 class LoadPintrest:
 
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
-            "Url": ("STRING", {"default": "", "multiline": False},),
-            "Number": ("INT", {"default": 1, "min": 1},),
-            "Random": ("BOOLEAN", {"default": True},),
+            "url": ("STRING", {"default": "", "multiline": False},),
+            "range": ("STRING", {"default": "1-10", "multiline": False},),
+            "number": ("INT", {"default": 1, "min": 1},),
+            "random": ("BOOLEAN", {"default": True},),
             "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
         }
         }
@@ -372,36 +324,32 @@ class LoadPintrest:
     OUTPUT_IS_LIST = (True,)
     FUNCTION = "load_image_url"
 
-    def load_image_url(s, Url, Number, Random, seed):
-        if "www.pinterest.com" not in Url:
-            Url = "https://www.pinterest.com/" + Url
-        if "https://" not in Url:
-            Url = "https://" + Url
-
-        id_dict = pintrest_fillter(Url)
-        id_list = []
-        for key in id_dict:
-            id_list += id_dict[key]
-        id_target = []
-        if Random:
-            for i in range(Number):
-                id_target.append(random.choice(id_list))
-                id_list.remove(id_target[-1])
+    def pintrest_board_download(s, url, range):
+        input_folder = folder_paths.get_input_directory()
+        id_folder = url.split("https://www.pinterest.com/")[-1]
+        save_folder = os.path.join(input_folder, "pintrest", id_folder)
+        if range != "":
+            command = ['gallery-dl', '--range', range, url, "-D", save_folder]
         else:
-            id_target = id_list[:Number]
-        image_list = []
-        for id in id_target:
-            link = f"https://www.pinterest.com/pin/{id}/"
-            link = run_gallery_dl(link)
-            if 'http' in link:
-                image = Image.open(requests.get(link, stream=True).raw)
-            else:
-                image = Image.open(link)
-            image = i2tensor(image)
-            image_list.append(image)
-        # results = ALL_NODE["PreviewImage"]().save_images(image_list)
-        # results["result"] = (image_list,)
-        return (image_list,)
+            command = ['gallery-dl', url, "-D", save_folder]
+        subprocess.run(command, check=True, text=True, capture_output=True)
+        return save_folder
+    
+    def load_image_url(s, url, range, number, random, seed):
+        if "/" in url:
+            if "www.pinterest.com" not in url:
+                url = "https://www.pinterest.com" + url
+            if "https://" not in url:
+                url = "https://" + url
+        else:
+            url = f'https://www.pinterest.com/search/pins/?q={url.replace(" ", "%20")}'
+        if "/pin/" in url:
+            image = LoadImageUrl().load_image_url(url)["result"][0]
+            image = [image]        
+        else:
+            pin_folder = s.pintrest_board_download(url, range)
+        image = LoadImageFolder().load_image(pin_folder, number, random, seed)[0]
+        return (image,)
 
 class CheckpointLoaderDownload:
     model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib.json")
