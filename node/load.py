@@ -192,6 +192,8 @@ class LoadImage:
             else:
                 i = Image.open(Url)
         else:
+            if image_path == None:
+                return (None, None, None)
             i = Image.open(image_path)
         ii = ImageOps.exif_transpose(i)
         if 'A' in ii.getbands():

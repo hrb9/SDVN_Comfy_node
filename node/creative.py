@@ -263,7 +263,7 @@ class AutoSwitch:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {
+            "optional": {
                 "input1": (any,),
                 "input2": (any,),
                 "input3": (any,),
@@ -276,11 +276,11 @@ class AutoSwitch:
     RETURN_NAMES = ("output",)
     FUNCTION = "switch"
 
-    def switch(s, input1, input2, input3, input4, input5, input6):
+    def switch(s, input1 = None, input2 = None, input3 = None, input4 = None, input5 = None, input6 = None):
         input_list = [input1, input2, input3, input4, input5, input6]
         for i in input_list:
             if i != None:
-                return i
+                return (i,)
         return (None,)
         
 class Logic:
