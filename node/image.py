@@ -310,7 +310,7 @@ class img_adj:
         return {
             "required": {
                 "image": ("IMAGE",),
-                "exposure": ("INT",{"default":0,"min":-5,"max":5,"display":"slider","round": 0.05,"lazy": True}),
+                "exposure": ("INT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
                 "contrast": ("INT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
                 "saturation": ("INT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
                 "vibrance": ("INT",{"default":0,"min":-100,"max":100,"display":"slider","round": 1,"lazy": True}),
@@ -326,7 +326,7 @@ class img_adj:
     FUNCTION = "img_adj"
 
     def img_adj(s, image, exposure, contrast, saturation, vibrance, grain, temp, tint):
-        exposure = exposure/5
+        exposure = exposure/100
         contrast = contrast/100 + 1
         saturation = saturation/100 + 1
         vibrance = vibrance/100
