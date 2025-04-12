@@ -1,7 +1,7 @@
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 import folder_paths
 import comfy.samplers
-import random
+import random, json, os
 
 class AnyType(str):
     """A special class that is always equal in not equal comparisons. Credit to pythongosssss"""
@@ -46,17 +46,28 @@ class quick_menu:
         r_list = [kargs[i] for i in kargs]
         return tuple(r_list)
 
+def none2list(folderlist):
+    list = ["None"]
+    list += folderlist
+    return list
+
 class load_model:
+    model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib.json")
+    with open(model_lib_path, 'r') as json_file:
+        modellist = json.load(json_file)
+    lora_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"lora_lib.json")
+    with open(lora_lib_path, 'r') as json_file:
+        loralist = json.load(json_file)
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                "Checkpoint":(folder_paths.get_filename_list("checkpoints"),),
-                "Lora":(["None",*folder_paths.get_filename_list("loras")],),
-                "Lora2":(["None",*folder_paths.get_filename_list("loras")],),
-                "Lora3":(["None",*folder_paths.get_filename_list("loras")],),
-                "Lora4":(["None",*folder_paths.get_filename_list("loras")],),
-                "Lora5":(["None",*folder_paths.get_filename_list("loras")],),
+                "Checkpoint":(list(set(none2list(folder_paths.get_filename_list("checkpoints") + list(s.modellist)))), {"tooltip": "The name of the checkpoint (model) to load."}),
+                "Lora": (list(set(none2list(folder_paths.get_filename_list("loras") + list(s.loralist)))), {"default": "None", "tooltip": "The name of the LoRA."}),
+                "Lora2": (list(set(none2list(folder_paths.get_filename_list("loras") + list(s.loralist)))), {"default": "None", "tooltip": "The name of the LoRA."}),
+                "Lora3": (list(set(none2list(folder_paths.get_filename_list("loras") + list(s.loralist)))), {"default": "None", "tooltip": "The name of the LoRA."}),
+                "Lora4": (list(set(none2list(folder_paths.get_filename_list("loras") + list(s.loralist)))), {"default": "None", "tooltip": "The name of the LoRA."}),
+                "Lora5": (list(set(none2list(folder_paths.get_filename_list("loras") + list(s.loralist)))), {"default": "None", "tooltip": "The name of the LoRA."}),
                 "Lora_Strength": ("STRING", {"default": "1,1,1,1,1", "multiline": False},),
             }
             }
@@ -65,7 +76,7 @@ class load_model:
     RETURN_NAMES = ("model", "clip", "vae")
     FUNCTION = "auto_generate"
     def auto_generate(s, Checkpoint, Lora_Strength, **kargs):
-        model, clip, vae = ALL_NODE["CheckpointLoaderSimple"]().load_checkpoint(Checkpoint)
+        model, clip, vae = ALL_NODE["SDVN Load Checkpoint"]().load_checkpoint(True, "", "", Checkpoint)
         Lora_Strength = ALL_NODE["SDVN Simple Any Input"]().simple_any(Lora_Strength)[0]
         for index in range(len(kargs)):
             lora = kargs[list(kargs)[index]]

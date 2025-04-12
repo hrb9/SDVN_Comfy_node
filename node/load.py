@@ -367,8 +367,6 @@ class CheckpointLoaderDownload:
                 "Download": ("BOOLEAN", {"default": True},),
                 "Download_url": ("STRING", {"default": "", "multiline": False},),
                 "Ckpt_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
-            },
-            "optional": {
                 "Ckpt_name": (list(set(none2list(folder_paths.get_filename_list("checkpoints") + list(s.modellist)))), {"tooltip": "The name of the checkpoint (model) to load."})
             }
         }
@@ -382,7 +380,7 @@ class CheckpointLoaderDownload:
     CATEGORY = "📂 SDVN"
     DESCRIPTION = "Loads a diffusion model checkpoint, diffusion models are used to denoise latents."
 
-    def load_checkpoint(self, Download, Download_url, Ckpt_url_name, Ckpt_name=None):
+    def load_checkpoint(self, Download, Download_url, Ckpt_url_name, Ckpt_name):
         if not Download or Download_url == '':
             if Ckpt_name in self.modellist:
                 Download = True
