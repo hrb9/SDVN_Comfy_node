@@ -76,7 +76,7 @@ class load_model:
     RETURN_NAMES = ("model", "clip", "vae")
     FUNCTION = "auto_generate"
     def auto_generate(s, Checkpoint, Lora_Strength, **kargs):
-        model, clip, vae = ALL_NODE["SDVN Load Checkpoint"]().load_checkpoint(True, "", "", Checkpoint)
+        model, clip, vae = ALL_NODE["SDVN Load Checkpoint"]().load_checkpoint(True, "", "", Checkpoint)[:3]
         Lora_Strength = ALL_NODE["SDVN Simple Any Input"]().simple_any(Lora_Strength)[0]
         for index in range(len(kargs)):
             lora = kargs[list(kargs)[index]]
