@@ -828,7 +828,7 @@ class inpaint_crop:
                 "image": ("IMAGE",),
                 "mask": ("MASK",),
                 "crop_size": ([512,768,896,1024,1280], {"default": 768}),
-                "padding": ("INT", {"default": 20, "min": 0, "max": 100}),
+                "padding": ("INT", {"default": 0, "min": 0, "max": 100}),
             },
         }
 
