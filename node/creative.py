@@ -894,8 +894,7 @@ class LoadGoogleSheet:
         return {
             "required": {
                 "Url": ("STRING", {"default": ""}),
-                "Row": ("STRING", {"default": "A:A"}),
-                "Col": ("STRING", {"default": "1:1"}),
+                "Cell": ("STRING", {"default": "A1:A1"}),
             }
         }
 
@@ -905,7 +904,7 @@ class LoadGoogleSheet:
     FUNCTION = "load_sheet"
     OUTPUT_IS_LIST = (True,)
 
-    def load_sheet(self, Url, Row, Col):
+    def load_sheet(self, Url, Cell):
         if "https://docs.google.com/spreadsheets/d/" not in Url:
             print("Not a Google Sheet URL, ex: https://docs.google.com/spreadsheets/d/##")
             return ([None],)
@@ -917,16 +916,19 @@ class LoadGoogleSheet:
             gid = "0"
         url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
         df = pd.read_csv(url, header=None)
-
-        min_row = ord(Row.split(":")[0]) - 65
-        max_row = ord(Row.split(":")[-1]) - 65 + 1
-        min_col = int(Col.split(":")[0]) - 1
-        max_col = int(Col.split(":")[-1])
+        min_cell = Cell.split(":")[0]
+        max_cell = Cell.split(":")[-1]
+        match_min = re.match(r"([A-Za-z]+)(\d+)", min_cell)
+        match_max = re.match(r"([A-Za-z]+)(\d+)", max_cell)
+        min_col = ord(match_min.group(1)) - 65
+        min_row = int(match_min.group(2)) - 1
+        max_col = ord(match_max.group(1)) - 64
+        max_row = int(match_max.group(2))
         values = []
         for row in range(min_row, max_row):
             for col in range(min_col, max_col):
                 try:
-                    value = df.iloc[col, row]
+                    value = df.iloc[row, col]
                 except IndexError:
                     value = ""
                 values.append(value)
