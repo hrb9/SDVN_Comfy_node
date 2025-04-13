@@ -835,7 +835,7 @@ class inpaint_crop:
     CATEGORY = "📂 SDVN/💡 Creative"
     RETURN_TYPES = ("STITCH", "IMAGE", "MASK")
     RETURN_NAMES = ("stitch", "cropped_image", "cropped_mask")
-    FUNCTION = "inpaint_crop"
+    FUNCTION = "inpaint"
 
     def inpaint_crop(self, image, mask, crop_size, padding_blur):
         if "InpaintCrop" not in ALL_NODE:
@@ -845,6 +845,15 @@ class inpaint_crop:
         input[0]["crop_size"] = crop_size
         input[0]["padding"] = padding_blur
         return input
+    
+    def inpaint (s, image, mask, crop_size, padding_blur):
+        result = s.inpaint_crop(image, mask, crop_size, padding_blur)
+        image = result[1]
+        mask = result[2]
+        invert_mask = 1.0 - mask
+        alpha_image = ALL_NODE["JoinImageWithAlpha"]().join_image_with_alpha(image, invert_mask)[0]
+        ui = ALL_NODE["PreviewImage"]().save_images(alpha_image)["ui"]
+        return {"ui":ui, "result": result}
     
 class LoopInpaintStitch:
     @classmethod
