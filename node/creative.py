@@ -1,8 +1,9 @@
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 from googletrans import Translator, LANGUAGES
-import torch, os
+import torch, os, re
 import folder_paths
 import nodes
+import pandas as pd
 
 def check_mask(mask_tensor):
     if not isinstance(mask_tensor, torch.Tensor):
@@ -887,6 +888,50 @@ class LoopInpaintStitch:
                 canva = ALL_NODE["SDVN Inpaint Crop"]().inpaint_crop(image, stitchs[index]["mask"], stitchs[index]["crop_size"], stitchs[index]["padding"])[0]["original_image"]
         return (image,)
 
+class LoadGoogleSheet:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "Url": ("STRING", {"default": ""}),
+                "Row": ("STRING", {"default": "A:A"}),
+                "Col": ("STRING", {"default": "1:1"}),
+            }
+        }
+
+    CATEGORY = "📂 SDVN/💡 Creative"
+    RETURN_TYPES = (any,)
+    RETURN_NAMES = ("any",)
+    FUNCTION = "load_sheet"
+    OUTPUT_IS_LIST = (True,)
+
+    def load_sheet(self, Url, Row, Col):
+        if "https://docs.google.com/spreadsheets/d/" not in Url:
+            print("Not a Google Sheet URL, ex: https://docs.google.com/spreadsheets/d/##")
+            return ([None],)
+        sheet_id = Url.split("/")[5]
+        match = re.search(r"gid=(\d+)", Url)
+        if match:
+            gid = match.group(1)
+        else:
+            gid = "0"
+        url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
+        df = pd.read_csv(url, header=None)
+
+        min_row = ord(Row.split(":")[0]) - 65
+        max_row = ord(Row.split(":")[-1]) - 65 + 1
+        min_col = int(Col.split(":")[0]) - 1
+        max_col = int(Col.split(":")[-1])
+        values = []
+        for row in range(min_row, max_row):
+            for col in range(min_col, max_col):
+                try:
+                    value = df.iloc[col, row]
+                except IndexError:
+                    value = ""
+                values.append(value)
+        return (values,)
+
 NODE_CLASS_MAPPINGS = {
     "SDVN Easy IPAdapter weight": Easy_IPA_weight,
     "SDVN Any Input Type": AnyInput,
@@ -913,6 +958,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Dic Convert": dic_convert,
     "SDVN Inpaint Crop": inpaint_crop,
     "SDVN Loop Inpaint Stitch": LoopInpaintStitch,
+    "SDVN Load Google Sheet": LoadGoogleSheet,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -941,4 +987,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Dic Convert": "🔄 Dic Convert",
     "SDVN Inpaint Crop": "⚡️ Crop Inpaint",
     "SDVN Loop Inpaint Stitch": "🔄 Loop Inpaint Stitch",
+    "SDVN Load Google Sheet": "📋 Load Google Sheet",
 }
