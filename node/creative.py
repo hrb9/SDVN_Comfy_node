@@ -828,7 +828,7 @@ class inpaint_crop:
                 "image": ("IMAGE",),
                 "mask": ("MASK",),
                 "crop_size": ([512,768,896,1024,1280], {"default": 768}),
-                "padding": ("INT", {"default": 0, "min": 0, "max": 100}),
+                "padding_blur": ("INT", {"default": 16, "min": 0, "max": 100}),
             },
         }
 
@@ -837,13 +837,13 @@ class inpaint_crop:
     RETURN_NAMES = ("stitch", "cropped_image", "cropped_mask")
     FUNCTION = "inpaint_crop"
 
-    def inpaint_crop(self, image, mask, crop_size, padding):
+    def inpaint_crop(self, image, mask, crop_size, padding_blur):
         if "InpaintCrop" not in ALL_NODE:
             raise Exception("Install node InpaintCrop(https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch)")
-        input = ALL_NODE["InpaintCrop"]().inpaint_crop(image, mask, 20, 1.0, True, 16.0, False, 16.0, "ranged size", "bicubic", 1024, 1024, 1.00, padding, crop_size - 128, crop_size - 128, crop_size, crop_size, None)
+        input = ALL_NODE["InpaintCrop"]().inpaint_crop(image, mask, padding_blur, 1.0, True, padding_blur, False, padding_blur, "ranged size", "bicubic", 1024, 1024, 1.00, 0, crop_size - 128, crop_size - 128, crop_size, crop_size, None)
         input[0]["mask"] = mask
         input[0]["crop_size"] = crop_size
-        input[0]["padding"] = padding
+        input[0]["padding"] = padding_blur
         return input
     
 class LoopInpaintStitch:
