@@ -546,7 +546,7 @@ class SaveTextFile:
             "required": {
                 "content": ("STRING",{"forceInput": True}),
                 "save_name": ("STRING",{"default":"filename.txt"}),
-                "save_dir": (["input","output"],{"default":"input"}),
+                "save_dir": (["input","output","custom"],{"default":"input"}),
                 "custom_dir": ("STRING",{"default":""}),
                 "mode": (["new_line","new_file","join_string","new_first_line","join_first_string"],),
             },
@@ -558,7 +558,7 @@ class SaveTextFile:
 
     def savetxt(self, content, save_name, save_dir, custom_dir, mode):
         if content != "":
-            if custom_dir != "":
+            if save_dir == "custom":
                 if os.path.isfile(custom_dir):
                     path = custom_dir.replace(custom_dir.split('.')[-1],'txt')
                 else:

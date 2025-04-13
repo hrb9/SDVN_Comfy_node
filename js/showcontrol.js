@@ -37,9 +37,31 @@ function toggleWidget(node, widget, show = false, suffix = "") {
 function sdvnshowcontrol(node) {
     if (node.comfyClass === "SDVN Auto Generate") {
         const show = findWidgetByName(node, "AdvSetting")?.value === true;
-        ["cfg", "sampler_name", "scheduler", "FluxGuidance"].forEach(name =>
-            toggleWidget(node, findWidgetByName(node, name), show)
-        );
+        ["cfg", "sampler_name", "scheduler", "FluxGuidance"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
+    }
+    if (node.comfyClass === "SDVN Load Image Ultimate") {
+        const show = findWidgetByName(node, "mode")?.value === "Input folder";
+        ["image"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
+    }
+    if (node.comfyClass === "SDVN Load Image Ultimate") {
+        const show = findWidgetByName(node, "mode")?.value ===  "Custom folder";
+        ["folder_path","number_img"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
+    }
+    if (node.comfyClass === "SDVN Load Image Ultimate") {
+        const show = findWidgetByName(node, "mode")?.value ===  "Url";
+        ["url"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
+    }
+    if (node.comfyClass === "SDVN Load Image Ultimate") {
+        const show = findWidgetByName(node, "mode")?.value ===  "Pintrest";
+        ["pin_url", "range", "number", "random"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
+    }
+    if (node.comfyClass === "SDVN Load Image Ultimate") {
+        const show = findWidgetByName(node, "mode")?.value ===  "Insta";
+        ["insta_url", "index"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
+    }
+    if (node.comfyClass === "SDVN Save Text") {
+        const show = findWidgetByName(node, "save_dir")?.value ===  "custom";
+        ["custom_dir"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
     }
 }
 
@@ -63,7 +85,7 @@ function hookWidgetCallbacks(node) {
 app.registerExtension({
     name: "SDVN.ShowControl",
     nodeCreated(node) {
-        if (node.comfyClass !== "SDVN Auto Generate") return;
+        if (!node.comfyClass.startsWith("SDVN")) return;
         sdvnshowcontrol(node);
         hookWidgetCallbacks(node);
     }

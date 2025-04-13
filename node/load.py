@@ -172,7 +172,7 @@ class LoadImage:
             "required": {
                 "Load_url": ("BOOLEAN", {"default": True},),
                 "Url": ("STRING", {"default": "", "multiline": False},),
-                "image": (sorted(none2list(file_list)), {"image_upload": True})
+                "image": (sorted(none2list(file_list)), {"image_upload": True, "default": "None", "tooltip": "The image to be loaded."}),
             }
         }
 
@@ -182,7 +182,7 @@ class LoadImage:
     RETURN_NAMES = ("image","mask", "img_path",)
     FUNCTION = "load_image"
 
-    def load_image(self, Url, Load_url, image):
+    def load_image(self, Load_url, Url, image):
         image_path = folder_paths.get_annotated_filepath(image)
         image_path = image_path if image != "None" and os.path.exists(image_path) else None
         if Url != '' and Load_url and 'clipspace' not in image:
@@ -203,14 +203,14 @@ class LoadImage:
             mask = torch.zeros((64, 64), dtype=torch.float32, device="cpu")
         image = i2tensor(i)
         results = ALL_NODE["PreviewImage"]().save_images(image)
-        results["result"] = (image,mask.unsqueeze(0), image_path)
+        results["result"] = (image, mask.unsqueeze(0), image_path)
         if image_path != None:
             if 'clipspace' in image_path:
                 del results["ui"]
         return results
 
     @classmethod
-    def IS_CHANGED(self, Url, Load_url, image=None):
+    def IS_CHANGED(self, image="None"):
         image_path = folder_paths.get_annotated_filepath(image)
         if image != "None" and os.path.exists(image_path):
             m = hashlib.sha256()
@@ -219,12 +219,11 @@ class LoadImage:
             return m.digest().hex()
 
     @classmethod
-    def VALIDATE_INPUTS(self, Url, Load_url, image=None):
+    def VALIDATE_INPUTS(self, image="None"):
         image_path = folder_paths.get_annotated_filepath(image)
         if image != "None" and os.path.exists(image_path):
             if not folder_paths.exists_annotated_filepath(image):
                 return "Invalid image file: {}".format(image)
-
         return True
 
 class LoadImageFolder:
@@ -236,7 +235,7 @@ class LoadImageFolder:
                 "number": ("INT", {"default": 1, "min": -1 , "tooltip": "Chuyển sang -1 để load toàn bộ ảnh"}),
                 "random": ("BOOLEAN", {"default": True},),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
-                "auto_index": ("BOOLEAN", {"default": False, "label_on": "loop", "label_off": "off"},),
+                #"auto_index": ("BOOLEAN", {"default": False, "label_on": "loop", "label_off": "off"},),
             }
         }
 
@@ -268,7 +267,7 @@ class LoadImageFolder:
         list_img = self.list_img_by_path(folder_path)
         index = index%len(list_img)
         len_img = number if number > 0 else len(list_img)
-        i = []
+        image = []
         image_path = list_img
         for x in range(len_img):
             if random:
@@ -279,9 +278,11 @@ class LoadImageFolder:
                 path = list_img[new_index]
             img = Image.open(path)
             img = i2tensor(img)
-            i.append(img)
-
-        return (i, image_path,)
+            image.append(img)
+        ui = {"images":[]}
+        for i in image:
+            ui["images"].append(ALL_NODE["PreviewImage"]().save_images(i)["ui"]["images"][0])
+        return {"ui":ui, "result":(image,image_path)}
     
 class LoadImageUrl:
     @classmethod
@@ -353,9 +354,76 @@ class LoadPinterest:
             image = [image]        
         else:
             pin_folder = s.pintrest_board_download(url, range)
-        image = LoadImageFolder().load_image(pin_folder, number, random, seed)[0]
-        return (image,)
+        result = LoadImageFolder().load_image(pin_folder, number, random, seed)
+        return result
 
+class LoadImageUltimate:
+    @classmethod
+    def INPUT_TYPES(s):
+        input_dir = folder_paths.get_input_directory()
+        exclude_folders = ["clipspace", "folder_to_exclude2"]
+        file_list = []
+
+        for root, dirs, files in os.walk(input_dir):
+            # Exclude specific folders
+            dirs[:] = [d for d in dirs if d not in exclude_folders]
+
+            for file in files:
+                file_path = os.path.relpath(
+                    os.path.join(root, file), start=input_dir)
+                # so the filename is processed correctly in widgets.js
+                file_path = file_path.replace("\\", "/")
+                img_type = file_path.split('.')[-1].lower()
+                if img_type in ["jpeg", "webp", "png", "jpg", "bmp"]:
+                    file_list.append(file_path)
+
+        return {"required": {
+            "mode": (["Input folder", "Custom folder", "Url", "Pintrest", "Insta"],),
+            #Input_folder
+            "image": (sorted(none2list(file_list)), {"image_upload": True, "default": "None", "tooltip": "The image to be loaded."}),
+            #Custom_folder
+            "folder_path": ("STRING", {"default": "", "multiline": False},),
+            "number_img": ("INT", {"default": 1, "min": -1 , "tooltip": "Chuyển sang -1 để load toàn bộ ảnh"}),
+            #Url
+            "url": ("STRING", {"default": "", "multiline": False},),
+            #Pintrest
+            "pin_url": ("STRING", {"default": "", "multiline": False},),
+            "range": ("STRING", {"default": "1-10", "multiline": False, "tooltip": "Chuyển sang -1 để tải toàn bộ"},),
+            "number": ("INT", {"default": 1, "min": -1 , "tooltip": "Chuyển sang -1 để load toàn bộ ảnh"}),
+            "random": ("BOOLEAN", {"default": True},),
+            #Insta
+            "insta_url": ("STRING", {"default": "", "multiline": False},),
+            "index": ("INT", {"default": 0}),
+            #seed
+            "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
+        }
+        }
+    
+    CATEGORY = "📂 SDVN"
+    RETURN_TYPES = ("IMAGE",)
+    OUTPUT_IS_LIST = (True,)
+    FUNCTION = "load_image"
+
+    def load_image(s, mode, image, folder_path, number_img, url, pin_url, range, number, random,  insta_url, index, seed):
+        if mode == "Input folder":
+            image = LoadImage().load_image(False, "", image)["result"][0]
+            image = [image]
+        if mode == "Custom folder":
+            image = LoadImageFolder().load_image(folder_path, number_img, False, seed)["result"][0]
+        if mode == "Url":
+            image = LoadImageUrl().load_image_url(url)["result"][0]
+            image = [image]
+        if mode == "Pintrest":
+            image = LoadPinterest().load_image_url(pin_url, range, number, random, seed)["result"][0]
+        if mode == "Insta":
+            insta_url += "--{}".format(index)
+            image = LoadImageUrl().load_image_url(insta_url)["result"][0]
+            image = [image]
+        ui = {"images":[]}
+        for i in image:
+            ui["images"].append(ALL_NODE["PreviewImage"]().save_images(i)["ui"]["images"][0])
+        return {"ui":ui, "result":(image,)}
+    
 class CheckpointLoaderDownload:
     model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib.json")
     with open(model_lib_path, 'r') as json_file:
@@ -1324,6 +1392,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Load Image Folder": LoadImageFolder,
     "SDVN Load Image Url": LoadImageUrl,
     "SDVN LoadPinterest": LoadPinterest,
+    "SDVN Load Image Ultimate": LoadImageUltimate,
     "SDVN CLIP Text Encode": CLIPTextEncode,
     "SDVN Controlnet Apply": AutoControlNetApply,
     "SDVN Inpaint": Inpaint,
@@ -1356,6 +1425,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Load Image Folder": "🏞️ Load Image Folder",
     "SDVN Load Image Url": "📥 Load Image Url",
     "SDVN LoadPinterest": "📥 Load Pinterest",
+    "SDVN Load Image Ultimate": "🏞️ Load Image Ultimate",
     "SDVN CLIP Text Encode": "🔡 CLIP Text Encode",
     "SDVN KSampler": "⌛️ KSampler",
     "SDVN Controlnet Apply": "🎚️ Controlnet Apply",
