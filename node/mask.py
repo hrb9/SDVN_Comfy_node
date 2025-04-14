@@ -148,7 +148,7 @@ class yoloseg:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "model_name": (s.model_list, {"default": "face_yolov8m-seg_60.pt"}),
+                "model_name": (s.model_list, {"default": "face_yolov8n-seg2_60.pt"}),
                 "image": ("IMAGE",),
                 "detect": (["all", "choose", "id"], {"default": "all"}),
                 "label": (list(s.label_dict.keys()), {"default": "0 - person / Hair"}),

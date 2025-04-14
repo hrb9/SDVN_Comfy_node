@@ -1,7 +1,7 @@
 [project]
 name = "sdvn_comfy_node"
-description = "Update Yolo / Mask node"
-version = "1.7"
+description = "Update Remove Background and fix yolo"
+version = "1.7.1"
 license = {file = "LICENSE"}
 dependencies = ["#If MacOs - Please install aria2 manually via brew", "aria2;sys_platform != 'darwin'", "openai", "gallery-dl", "google-generativeai", "googletrans-py"]
 
