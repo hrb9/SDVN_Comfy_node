@@ -151,7 +151,7 @@ class yoloseg:
                 "model_name": (s.model_list, {"default": "face_yolov8m-seg_60.pt"}),
                 "image": ("IMAGE",),
                 "detect": (["all", "choose", "id"], {"default": "all"}),
-                "label": (list(s.label_dict.keys()), {"default": "0 - person"}),
+                "label": (list(s.label_dict.keys()), {"default": "0 - person / Hair"}),
                 "label_id": ("STRING", {"default": "0,1,2"}),
                 "threshold": ("FLOAT", {"default": 0.25, "min": 0.01, "max": 1.0, "step": 0.01},),
             },
