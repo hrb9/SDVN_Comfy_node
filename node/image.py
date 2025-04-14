@@ -4,7 +4,6 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 import platform, math, folder_paths, os, subprocess, cv2
 import torchvision.transforms.functional as F
 os_name = platform.system()
-import torch.nn.functional as FF
 
 def create_image_with_text(text, image_size=(1200, 100), font_size=40, align = "left"):
     image = Image.new('RGB', image_size, color=(255, 255, 255))
@@ -575,71 +574,6 @@ class ICLora_Layout_Crop:
     def ICLora_Layout_Crop(s, crop, image):
         return (ALL_NODE["ImageCrop"]().crop(image, *crop)[0],)
 
-class MaskRegions:
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "mask": ("MASK",),  # Input mask tensor
-            }
-        }
-
-    CATEGORY = "📂 SDVN/🏞️ Image"
-    RETURN_TYPES = ("MASK",)
-    RETURN_NAMES = ("layer_mask",)  
-    OUTPUT_IS_LIST = (True,)
-    FUNCTION = "separate_regions"
-
-    @staticmethod
-    def get_top_left_coords(tensor):
-        coords = (tensor > 0).nonzero(as_tuple=False)
-        if coords.numel() == 0:
-            return (99999, 99999)  # rất xa nếu lỗi
-        _, y, x = coords.min(dim=0).values
-        return (x.item(), y.item())  # sắp theo x trước
-    
-    def separate_regions(s,mask):
-        threshold=0.3
-        max_iter=100
-
-        device = mask.device
-        mask_bin = (mask > threshold).float()  # [1, H, W]
-        mask = mask_bin.clone()
-        
-        regions = []
-        kernel = torch.tensor([[0., 1., 0.],
-                            [1., 1., 1.],
-                            [0., 1., 0.]], device=device).reshape(1, 1, 3, 3)
-
-        while mask.sum() > 0 and len(regions) < max_iter:
-            # Tìm pixel đầu tiên còn lại
-            coords = (mask > 0).nonzero(as_tuple=False)[0]
-            y, x = coords[1], coords[2]
-            
-            # Tạo seed ban đầu
-            seed = torch.zeros_like(mask)
-            seed[0, y, x] = 1.0
-            
-            region = seed.clone()
-            prev = torch.zeros_like(region)
-
-            # Flood-fill bằng convolution
-            while not torch.equal(region, prev):
-                prev = region
-                region = FF.conv2d(region.unsqueeze(0), kernel, padding=1)[0]
-                region = (region > 0).float() * mask  # chỉ lấy phần giao với mask
-
-            regions.append(region.clone())
-
-            # Xoá vùng đã lấy ra khỏi mask
-            mask = mask * (region == 0).float()
-
-        # Tính vị trí (x, y) của mỗi vùng
-        
-        regions_sorted = sorted(regions, key=s.get_top_left_coords)
-        
-        return (regions_sorted,)
-
 NODE_CLASS_MAPPINGS = {
     "SDVN Image Scraper": img_scraper,
     "SDVM Image List Repeat": img_list_repeat,
@@ -654,7 +588,6 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Fill Background": FillBackground,
     "SDVN IC Lora Layout": ICLora_layout,
     "SDVN IC Lora Layout Crop": ICLora_Layout_Crop,
-    "SDVN Mask Regions": MaskRegions,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -671,5 +604,4 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Fill Background": "🎨 Fill Background",
     "SDVN IC Lora Layout": "🧩 IC Lora Layout",
     "SDVN IC Lora Layout Crop": "✂️ IC Lora Layout Crop",
-    "SDVN Mask Regions": "🧩 Mask Regions",
 }

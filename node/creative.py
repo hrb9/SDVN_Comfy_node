@@ -821,73 +821,6 @@ other:output4
             output = SimpleAnyInput().simple_any(d[list(d)[-1]])[0]
         return (output,)
 
-class inpaint_crop:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "image": ("IMAGE",),
-                "mask": ("MASK",),
-                "crop_size": ([512,768,896,1024,1280], {"default": 768}),
-                "padding_blur": ("INT", {"default": 16, "min": 0, "max": 100}),
-            },
-        }
-
-    CATEGORY = "📂 SDVN/💡 Creative"
-    RETURN_TYPES = ("STITCH", "IMAGE", "MASK")
-    RETURN_NAMES = ("stitch", "cropped_image", "cropped_mask")
-    FUNCTION = "inpaint"
-
-    def inpaint_crop(self, image, mask, crop_size, padding_blur):
-        if "InpaintCrop" not in ALL_NODE:
-            raise Exception("Install node InpaintCrop(https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch)")
-        input = ALL_NODE["InpaintCrop"]().inpaint_crop(image, mask, padding_blur, 1.0, True, padding_blur, False, padding_blur, "ranged size", "bicubic", 1024, 1024, 1.00, 0, crop_size - 128, crop_size - 128, crop_size, crop_size, None)
-        input[0]["mask"] = mask
-        input[0]["crop_size"] = crop_size
-        input[0]["padding"] = padding_blur
-        return input
-    
-    def inpaint (s, image, mask, crop_size, padding_blur):
-        result = s.inpaint_crop(image, mask, crop_size, padding_blur)
-        image = result[1]
-        mask = result[2]
-        invert_mask = 1.0 - mask
-        alpha_image = ALL_NODE["JoinImageWithAlpha"]().join_image_with_alpha(image, invert_mask)[0]
-        ui = ALL_NODE["PreviewImage"]().save_images(alpha_image)["ui"]
-        return {"ui":ui, "result": result}
-    
-class LoopInpaintStitch:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "stitchs": ("STITCH",),
-                "inpainted_images": ("IMAGE",),
-            }
-        }
-
-    CATEGORY = "📂 SDVN/💡 Creative"
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("image",)
-    FUNCTION = "inpaint_stitch"
-    INPUT_IS_LIST = True
-
-    def inpaint_stitch(self, stitchs, inpainted_images):
-        canva = stitchs[0]['original_image']
-        index = 0
-        for inpainted_image in inpainted_images:
-            stitch = stitchs[index]
-            print(f'Vòng lặp {index}')
-            stitch['original_image'] = canva
-            del stitch["mask"]
-            del stitch["crop_size"]
-            del stitch["padding"]
-            image = ALL_NODE["InpaintStitch"]().inpaint_stitch(stitchs[index], inpainted_image,  "bislerp")[0]
-            index += 1
-            if index < len(inpainted_images):
-                canva = ALL_NODE["SDVN Inpaint Crop"]().inpaint_crop(image, stitchs[index]["mask"], stitchs[index]["crop_size"], stitchs[index]["padding"])[0]["original_image"]
-        return (image,)
-
 class LoadGoogleSheet:
     @classmethod
     def INPUT_TYPES(s):
@@ -958,8 +891,6 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Filter List": filter_list,
     "SDVN Menu Option": menu_option,
     "SDVN Dic Convert": dic_convert,
-    "SDVN Inpaint Crop": inpaint_crop,
-    "SDVN Loop Inpaint Stitch": LoopInpaintStitch,
     "SDVN Load Google Sheet": LoadGoogleSheet,
 }
 
@@ -987,7 +918,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Simple Any Input": "🔡 Simple Any Input",
     "SDVN Menu Option": "📋 Menu Option",
     "SDVN Dic Convert": "🔄 Dic Convert",
-    "SDVN Inpaint Crop": "⚡️ Crop Inpaint",
-    "SDVN Loop Inpaint Stitch": "🔄 Loop Inpaint Stitch",
     "SDVN Load Google Sheet": "📋 Load Google Sheet",
 }

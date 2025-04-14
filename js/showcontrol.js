@@ -63,6 +63,14 @@ function sdvnshowcontrol(node) {
         const show = findWidgetByName(node, "save_dir")?.value ===  "custom";
         ["custom_dir"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
     }
+    if (node.comfyClass === "SDVN Yolo8 Seg") {
+        const show = findWidgetByName(node, "detect")?.value ===  "choose";
+        ["label"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
+    }
+    if (node.comfyClass === "SDVN Yolo8 Seg") {
+        const show = findWidgetByName(node, "detect")?.value ===  "id";
+        ["label_id"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
+    }
 }
 
 function hookWidgetCallbacks(node) {

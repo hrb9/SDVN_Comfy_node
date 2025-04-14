@@ -210,7 +210,7 @@ class LoadImage:
         return results
 
     @classmethod
-    def IS_CHANGED(self, image="None"):
+    def IS_CHANGED(self, Load_url, Url, image="None"):
         image_path = folder_paths.get_annotated_filepath(image)
         if image != "None" and os.path.exists(image_path):
             m = hashlib.sha256()
@@ -219,7 +219,7 @@ class LoadImage:
             return m.digest().hex()
 
     @classmethod
-    def VALIDATE_INPUTS(self, image="None"):
+    def VALIDATE_INPUTS(self, Load_url, Url, image="None"):
         image_path = folder_paths.get_annotated_filepath(image)
         if image != "None" and os.path.exists(image_path):
             if not folder_paths.exists_annotated_filepath(image):
