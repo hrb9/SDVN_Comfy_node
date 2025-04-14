@@ -19,9 +19,9 @@ base_url = "https://huggingface.co/StableDiffusionVN/yolo/resolve/main/"
 
 def yolo_segment(model, image, threshold, classes):
     image_tensor = image
-    image_np = image_tensor.cpu().numpy() 
+    image_np = image_tensor.squeeze(0).detach().cpu().numpy()
     image = Image.fromarray(
-        (image_np.squeeze(0) * 255).astype(np.uint8)
+        (image_np * 255).astype(np.uint8)
     )
     results = model(image, classes=classes, conf=threshold)
 
@@ -216,7 +216,7 @@ class yoloseg:
         invert_mask = (1.0 - mask).to(image.device)
         alpha_image = ALL_NODE["JoinImageWithAlpha"]().join_image_with_alpha(image, invert_mask)[0]
         ui = ALL_NODE["PreviewImage"]().save_images(alpha_image)["ui"]
-        return {"ui":ui, "result": (yolo_image, mask)}
+        return {"ui":ui, "result": (yolo_image, mask.cpu())}
 
 class MaskRegions:
     @classmethod
@@ -373,7 +373,7 @@ class rmbg:
             # img_no_bg = img_no_bg.convert("RGB")
             img_tensor = torch.from_numpy(np.array(img_no_bg).astype(np.float32) / 255.0)
             result.append(img_tensor)
-        r_img = torch.stack(result, dim=0)
+        r_img = torch.stack(result, dim=0).to(image.device)
         ui = ALL_NODE["PreviewImage"]().save_images(r_img)["ui"]
         return {"ui":ui, "result": (r_img, r_img[:, :, :, 3])}
     
