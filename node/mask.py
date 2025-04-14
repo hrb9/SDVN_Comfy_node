@@ -384,7 +384,7 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SDVN Yolo8 Seg": "🎭 Yolo8 Seg",
+    "SDVN Yolo8 Seg": "🎭 Yolo Seg Mask",
     "SDVN Mask Regions": "🧩 Mask Regions",
     "SDVN Inpaint Crop": "⚡️ Crop Inpaint",
     "SDVN Loop Inpaint Stitch": "🔄 Loop Inpaint Stitch",
