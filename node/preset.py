@@ -120,6 +120,13 @@ class join_parameter:
                     r += [kargs[i]]
         return (r,)
 class auto_generate:
+    model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib_any.json")
+    with open(model_lib_path, 'r') as json_file:
+        modellist = json.load(json_file)
+    list_upscale_model = []
+    for key, value in modellist.items():
+        if value[1] == "UpscaleModel":
+            list_upscale_model.append(key)
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -141,6 +148,7 @@ class auto_generate:
                 "sampler_name": (comfy.samplers.KSampler.SAMPLERS, {"tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
                 "scheduler": (comfy.samplers.KSampler.SCHEDULERS, {"tooltip": "The scheduler controls how noise is gradually removed to form the image."}),
                 "FluxGuidance":  ("FLOAT", {"default": 3.5, "min": 0.0, "max": 100.0, "step": 0.1}),
+                "Upscale_model": (list(set(none2list(folder_paths.get_filename_list("upscale_models")+ s.list_upscale_model))), {"default": "None", }),
             },
             "optional": {
                 "image": ("IMAGE",),
@@ -160,7 +168,7 @@ class auto_generate:
         "SD 1.5": [768, "1.5-BasePrompt", 0.4, 1920],
         "None": [768, "1.5-BasePrompt", 0.4, 1920],
     }
-    def auto_generate(s, model, clip, vae, Prompt, Negative, Active_prompt, Image_size, Steps, Denoise, Inpaint_model, Random_prompt, AdvSetting, cfg, sampler_name, scheduler, FluxGuidance, seed, image = None, mask = None, parameter = None):
+    def auto_generate(s, model, clip, vae, Prompt, Negative, Active_prompt, Image_size, Steps, Denoise, Inpaint_model, Random_prompt, AdvSetting, cfg, sampler_name, scheduler, FluxGuidance, Upscale_model, seed, image = None, mask = None, parameter = None):
         type_model = check_type_model(model)
         type_model = "None" if type_model not in s.model_para else type_model
         print(f"Type model : {type_model}")
@@ -217,7 +225,7 @@ class auto_generate:
             return (img,)
         else:
             try:
-                upscale_model = folder_paths.get_filename_list("upscale_models")[-1]
+                upscale_model = Upscale_model if AdvSetting else folder_paths.get_filename_list("upscale_models")[-1] 
             except:
                 upscale_model = "None"
             print(f"Upscale by {upscale_model}")

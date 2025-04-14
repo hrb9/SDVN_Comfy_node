@@ -37,7 +37,7 @@ function toggleWidget(node, widget, show = false, suffix = "") {
 function sdvnshowcontrol(node) {
     if (node.comfyClass === "SDVN Auto Generate") {
         const show = findWidgetByName(node, "AdvSetting")?.value === true;
-        ["cfg", "sampler_name", "scheduler", "FluxGuidance"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
+        ["cfg", "sampler_name", "scheduler", "FluxGuidance", "Upscale_model"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
     }
     if (node.comfyClass === "SDVN Load Image Ultimate") {
         const show = findWidgetByName(node, "mode")?.value === "Input folder";

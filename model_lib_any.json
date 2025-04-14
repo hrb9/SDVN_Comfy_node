@@ -70,5 +70,16 @@
     "1x_NMKD-BrightenRedux_200k.pth": ["https://huggingface.co/uwg/upscaler/blob/main/ESRGAN/1x_NMKD-BrightenRedux_200k.pth","UpscaleModel"],
     "1x-RGB-max-Denoise-lite-details.pth": ["https://huggingface.co/uwg/upscaler/blob/main/ESRGAN/1x-RGB-max-Denoise-lite-details.pth","UpscaleModel"],
     "4x_NMKD-Superscale-SP_178000_G.pth": ["https://huggingface.co/uwg/upscaler/blob/main/ESRGAN/4x_NMKD-Superscale-SP_178000_G.pth","UpscaleModel"],
-    "WaifuGAN_v3_30000.pth": ["https://huggingface.co/uwg/upscaler/blob/main/ESRGAN/WaifuGAN_v3_30000.pth","UpscaleModel"]
+    "WaifuGAN_v3_30000.pth": ["https://huggingface.co/uwg/upscaler/blob/main/ESRGAN/WaifuGAN_v3_30000.pth","UpscaleModel"],
+    "4x-UltraSharp.ckpt": ["https://huggingface.co/phamhungd/GuoZovya/resolve/main/4x-UltraSharp.ckpt","UpscaleModel"],
+    "4xFaceUpDAT.pth": ["https://huggingface.co/tomjackson2023/upscale_models/blob/main/4xFaceUpDAT.pth","UpscaleModel"],
+    "4xLSDIRplusC.pth": ["https://huggingface.co/tomjackson2023/upscale_models/blob/main/4xLSDIRplusC.pth","UpscaleModel"],
+    "4xLexicaDAT2_otf.pth": ["https://huggingface.co/tomjackson2023/upscale_models/blob/main/4xLexicaDAT2_otf.pth","UpscaleModel"],
+    "4xNomos8kSC.pth": ["https://huggingface.co/tomjackson2023/upscale_models/blob/main/4xNomos8kSC.pth","UpscaleModel"],
+    "4xNomos8kSCHAT-L.pth": ["https://huggingface.co/tomjackson2023/upscale_models/blob/main/4xNomos8kSCHAT-L.pth","UpscaleModel"],
+    "4xNomos8kSCHAT-S.pth": ["https://huggingface.co/tomjackson2023/upscale_models/blob/main/4xNomos8kSCHAT-S.pth","UpscaleModel"],
+    "4x_IllustrationJaNai_V1_DAT2_190k.pth": ["https://huggingface.co/tomjackson2023/upscale_models/blob/main/4x_IllustrationJaNai_V1_DAT2_190k.pth","UpscaleModel"],
+    "8x_RealESRGAN.pth": ["https://huggingface.co/tomjackson2023/upscale_models/blob/main/8x_RealESRGAN.pth","UpscaleModel"],
+    "RealESRGAN_x2plus.pth": ["https://huggingface.co/tomjackson2023/upscale_models/blob/main/RealESRGAN_x2plus.pth","UpscaleModel"],
+    "RealESRGANv2-animevideo-xsx2.pth": ["https://huggingface.co/tomjackson2023/upscale_models/blob/main/RealESRGANv2-animevideo-xsx2.pth","UpscaleModel"]
 }
