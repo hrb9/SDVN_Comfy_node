@@ -142,6 +142,7 @@ class yoloseg:
                 if type_name in ["pt"]:
                     file_list.append(file)
     model_list = list(set(yolo_model_list + file_list))
+    model_list.sort()
     label_dict = label_dict(labelName)
 
     @classmethod
