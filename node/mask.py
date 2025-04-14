@@ -191,6 +191,7 @@ class yoloseg:
         for item in image:
             if len(item.shape) == 3:
                 item = item.unsqueeze(0)  
+            item = item.to(model.device)
 
             image_out,  masks = yolo_segment(model, item, threshold, classes)
 
@@ -212,7 +213,7 @@ class yoloseg:
         if mask.dim() == 3:
             mask = mask.unsqueeze(1)
         mask = mask.squeeze(1)
-        invert_mask = 1.0 - mask
+        invert_mask = (1.0 - mask).to(image.device)
         alpha_image = ALL_NODE["JoinImageWithAlpha"]().join_image_with_alpha(image, invert_mask)[0]
         ui = ALL_NODE["PreviewImage"]().save_images(alpha_image)["ui"]
         return {"ui":ui, "result": (yolo_image, mask)}
