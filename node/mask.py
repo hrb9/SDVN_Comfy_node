@@ -5,6 +5,7 @@ from PIL import Image
 from ultralytics import YOLO
 from torch.hub import download_url_to_file
 import torch.nn.functional as FF
+from rembg import remove
 
 yolo_model_list = ["face_yolov8n-seg2_60.pt", "face_yolov8m-seg_60.pt",
                     "skin_yolov8n-seg_800.pt", "skin_yolov8n-seg_400.pt", "skin_yolov8m-seg_400.pt",
@@ -286,7 +287,7 @@ class inpaint_crop:
             },
         }
 
-    CATEGORY = "📂 SDVN/💡 Creative"
+    CATEGORY = "📂 SDVN/🎭 Mask"
     RETURN_TYPES = ("STITCH", "IMAGE", "MASK")
     RETURN_NAMES = ("stitch", "cropped_image", "cropped_mask")
     FUNCTION = "inpaint"
@@ -319,7 +320,7 @@ class LoopInpaintStitch:
             }
         }
 
-    CATEGORY = "📂 SDVN/💡 Creative"
+    CATEGORY = "📂 SDVN/🎭 Mask"
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("image",)
     FUNCTION = "inpaint_stitch"
@@ -340,12 +341,46 @@ class LoopInpaintStitch:
             if index < len(inpainted_images):
                 canva = ALL_NODE["SDVN Inpaint Crop"]().inpaint_crop(image, stitchs[index]["mask"], stitchs[index]["crop_size"], stitchs[index]["padding"])[0]["original_image"]
         return (image,)
-        
+
+class rmbg:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+            },
+        }
+
+    CATEGORY = "📂 SDVN/🎭 Mask"
+    RETURN_TYPES = ("IMAGE", "MASK")
+    RETURN_NAMES = ("image", "mask")
+    FUNCTION = "remove_background"
+
+    def remove_background(s, image):
+        """
+        Xoá nền ảnh tensor dạng (B, H, W, C), trả về tensor cùng shape đã được xoá nền.
+        """
+        if image.dim() != 4 or image.shape[-1] != 3:
+            raise ValueError("Input phải có shape (B, H, W, 3)")
+
+        result = []
+        for img in image:
+            img_np = (img.cpu().numpy() * 255).astype(np.uint8)
+            img_pil = Image.fromarray(img_np)
+            img_no_bg = remove(img_pil)
+            # img_no_bg = img_no_bg.convert("RGB")
+            img_tensor = torch.from_numpy(np.array(img_no_bg).astype(np.float32) / 255.0)
+            result.append(img_tensor)
+        r_img = torch.stack(result, dim=0)
+        ui = ALL_NODE["PreviewImage"]().save_images(r_img)["ui"]
+        return {"ui":ui, "result": (r_img, r_img[:, :, :, 3])}
+    
 NODE_CLASS_MAPPINGS = {
     "SDVN Yolo8 Seg": yoloseg,
     "SDVN Mask Regions": MaskRegions,
     "SDVN Inpaint Crop": inpaint_crop,
     "SDVN Loop Inpaint Stitch": LoopInpaintStitch,
+    "SDVN Remove Background": rmbg,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -353,4 +388,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Mask Regions": "🧩 Mask Regions",
     "SDVN Inpaint Crop": "⚡️ Crop Inpaint",
     "SDVN Loop Inpaint Stitch": "🔄 Loop Inpaint Stitch",
+    "SDVN Remove Background": "🧼 Remove Background",
 }
