@@ -1,7 +1,7 @@
 from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 import folder_paths
 import os, numpy as np, torch
-from PIL import Image
+from PIL import Image, ImageOps
 from ultralytics import YOLO
 from torch.hub import download_url_to_file
 import torch.nn.functional as FF
@@ -17,118 +17,23 @@ yolo_model_list = ["face_yolov8n-seg2_60.pt", "face_yolov8m-seg_60.pt",
 
 base_url = "https://huggingface.co/StableDiffusionVN/yolo/resolve/main/"
 
-def yolo_segment(model, image, threshold, classes):
-    image_tensor = image
-    image_np = image_tensor.squeeze(0).detach().cpu().numpy()
-    image = Image.fromarray(
-        (image_np * 255).astype(np.uint8)
-    )
-    results = model(image, classes=classes, conf=threshold)
+def i2tensor(i) -> torch.Tensor:
+    i = ImageOps.exif_transpose(i)
+    image = i.convert("RGB")
+    image = np.array(image).astype(np.float32) / 255.0
+    image = torch.from_numpy(image)[None,]
+    return image
 
-    im_array = results[0].plot()  
-    im = Image.fromarray(im_array[..., ::-1])  
-
-    image_tensor_out = torch.tensor(
-        np.array(im).astype(np.float32) / 255.0
-    )  
-    image_tensor_out = torch.unsqueeze(image_tensor_out, 0)
-
-    res_mask=[]
-
-    for result in results:
-        masks = result.masks.data
-        res_mask.append(torch.sum(masks, dim=0))
-    return (image_tensor_out, res_mask)
-
-labelName = {
-    0: "person / Hair",  
-    1: "bicycle / Face",  
-    2: "car / Neck", 
-    3: "motorcycle / Arm",  
-    4: "airplane / Hand", 
-    5: "bus / Back",  
-    6: "train / Leg", 
-    7: "truck / Foot",  
-    8: "boat / Outfit", 
-    9: "traffic light / Person",  
-    10: "fire hydrant / Phone",  
-    11: "stop sign", 
-    12: "parking meter", 
-    13: "bench", 
-    14: "bird",  
-    15: "cat",  
-    16: "dog",  
-    17: "horse",  
-    18: "sheep",  
-    19: "cow",  
-    20: "elephant", 
-    21: "bear",  
-    22: "zebra",  
-    23: "giraffe",  
-    24: "backpack",  
-    25: "umbrella",  
-    26: "handbag",  
-    27: "tie",  
-    28: "suitcase",  
-    29: "frisbee",  
-    30: "skis",  
-    31: "snowboard",  
-    32: "sports ball",  
-    33: "kite",  
-    34: "baseball bat",  
-    35: "baseball glove",  
-    36: "skateboard",  
-    37: "surfboard", 
-    38: "tennis racket",  
-    39: "bottle",  
-    40: "wine glass",  
-    41: "cup",  
-    42: "fork",  
-    43: "knife",  
-    44: "spoon",  
-    45: "bowl",  
-    46: "banana",  
-    47: "apple",  
-    48: "sandwich",  
-    49: "orange",  
-    50: "broccoli",  
-    51: "carrot", 
-    52: "hot dog", 
-    53: "pizza",  
-    54: "donut",  
-    55: "cake",  
-    56: "chair",  
-    57: "couch",  
-    58: "potted plant",  
-    59: "bed",  
-    60: "dining table",  
-    61: "toilet",  
-    62: "tv", 
-    63: "laptop",  
-    64: "mouse",  
-    65: "remote",  
-    66: "keyboard",  
-    67: "cell phone",  
-    68: "microwave",  
-    69: "oven", 
-    70: "toaster", 
-    71: "sink", 
-    72: "refrigerator",  
-    73: "book",
-    74: "clock", 
-    75: "vase",  
-    76: "scissors", 
-    77: "teddy bear",  
-    78: "hair drier",  
-    79: "toothbrush",
-}
-
-def label_dict(labelName):
-    label_dict = {}
-    for key, value in labelName.items():
-        v = f"{key} - {value}"
-        label_dict[v]= key
-    return label_dict
+def tensor2pil(tensor: torch.Tensor) -> Image.Image:
+    if tensor.ndim == 4:
+        tensor = tensor.squeeze(0)
+    if tensor.ndim == 3 and tensor.shape[-1] == 3:
+        np_image = (tensor.numpy() * 255).astype(np.uint8)
+    else:
+        raise ValueError(
+            "Tensor phải có shape [H, W, C] hoặc [1, H, W, C] với C = 3 (RGB).")
+    pil_image = Image.fromarray(np_image)
+    return pil_image
 
 class yoloseg:
 
@@ -143,27 +48,24 @@ class yoloseg:
                     file_list.append(file)
     model_list = list(set(yolo_model_list + file_list))
     model_list.sort()
-    label_dict = label_dict(labelName)
 
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                "model_name": (s.model_list, {"default": "face_yolov8n-seg2_60.pt"}),
                 "image": ("IMAGE",),
-                "detect": (["all", "choose", "id"], {"default": "all"}),
-                "label": (list(s.label_dict.keys()), {"default": "0 - person / Hair"}),
-                "label_id": ("STRING", {"default": "0,1,2"}),
-                "threshold": ("FLOAT", {"default": 0.25, "min": 0.01, "max": 1.0, "step": 0.01},),
+                "model_name": (s.model_list, {"default": "face_yolov8n-seg2_60.pt"}),
+                "score": ("FLOAT", {"default": 0.6, "min": 0.01, "max": 1.0, "step": 0.01},),
+                "id": ("STRING", {"default": ""}),
             },
         }
     
     CATEGORY = "📂 SDVN/🎭 Mask"
     FUNCTION = "yoloseg"
-    RETURN_TYPES = ("IMAGE", "MASK")
-    RETURN_NAMES = ("image", "mask")
+    RETURN_TYPES = ("IMAGE", "MASK", "STRING")
+    RETURN_NAMES = ("image", "mask", "all id")
 
-    def yoloseg(s, model_name, image, detect, label, label_id, threshold):
+    def yoloseg(s, image, model_name, score, id):
         model_folder = s.yolo_dir
         model_path = os.path.join(model_folder, model_name)
         if not os.path.exists(model_folder):
@@ -172,52 +74,34 @@ class yoloseg:
             url = base_url + model_name
             download_url_to_file(url, model_path)
         model = YOLO(model_path)
-        if detect == "all":
-            classes = []
-            for i in range(80):
-                classes.append(i)
-        elif detect == "choose":
-            classes = [s.label_dict[label]]
-        elif detect == "id":
-            classes = []
-            ids = label_id.split(",")
-            for id in ids:
-                id = int(id.strip())
-                if id in s.label_dict.values():
-                    classes.append(id)
+        input = image
+        image = tensor2pil(image.to(model.device))
+        conf = score
+        classes = [int(x) for x in id.split(",")] if id != "" else []
+        r = model(image, classes = None if len(classes) == 0 else classes, conf = conf)[0]
 
-        res_images = []
-        res_masks = []
-        for item in image:
-            if len(item.shape) == 3:
-                item = item.unsqueeze(0)  
-            item = item.to(model.device)
+        for key, value in r.names.items():
+            r.names[key] = f"{key} - {value}"
+        id_list = [v for _ , v in r.names.items()]
+        id_list = '\n'.join(id_list)
+        id_box = r.boxes.cls.int().tolist()
 
-            image_out,  masks = yolo_segment(model, item, threshold, classes)
+        image = Image.fromarray(r.plot()[..., ::-1])
+        image = i2tensor(image)
+        if len(id_box) > 0:
+            mask = r.masks.data
+            mask = torch.sum(mask, dim=0, keepdim=True)
+            mask = FF.interpolate(mask.unsqueeze(0),
+                size=(image.shape[1], image.shape[2]), mode='bilinear', align_corners=False).squeeze(0)
+            invert_mask = (1.0 - mask).to(image.device)
+            alpha_image = ALL_NODE["JoinImageWithAlpha"]().join_image_with_alpha(input, invert_mask)[0]
+            ui = ALL_NODE["PreviewImage"]().save_images(alpha_image)["ui"]
+        else:
+            mask = torch.zeros((1, 64, 64), dtype=torch.float32)
+            ui = ALL_NODE["PreviewImage"]().save_images(image)["ui"]
 
-            resized_masks = []
-            for mask_tensor in masks:
-                resized_mask = torch.nn.functional.interpolate(
-                    mask_tensor.unsqueeze(0).unsqueeze(0),
-                    size=(image_out.shape[1], image_out.shape[2]),
-                    mode='bilinear',
-                    align_corners=False
-                ).squeeze(0).squeeze(0)
-                resized_masks.append(resized_mask)
-            masks = resized_masks
-            
-            res_images.append(image_out)
-            res_masks.extend(masks)
-        yolo_image = torch.cat(res_images, dim=0)
-        mask = torch.stack(res_masks, dim=0)
-        if mask.dim() == 3:
-            mask = mask.unsqueeze(1)
-        mask = mask.squeeze(1)
-        invert_mask = (1.0 - mask).to(image.device)
-        alpha_image = ALL_NODE["JoinImageWithAlpha"]().join_image_with_alpha(image, invert_mask)[0]
-        ui = ALL_NODE["PreviewImage"]().save_images(alpha_image)["ui"]
-        return {"ui":ui, "result": (yolo_image, mask.cpu())}
-
+        return {"ui":ui, "result": (image, mask.cpu(), id_list)}
+       
 class MaskRegions:
     @classmethod
     def INPUT_TYPES(cls):
@@ -370,7 +254,6 @@ class rmbg:
             img_np = (img.cpu().numpy() * 255).astype(np.uint8)
             img_pil = Image.fromarray(img_np)
             img_no_bg = remove(img_pil)
-            # img_no_bg = img_no_bg.convert("RGB")
             img_tensor = torch.from_numpy(np.array(img_no_bg).astype(np.float32) / 255.0)
             result.append(img_tensor)
         r_img = torch.stack(result, dim=0).to(image.device)
