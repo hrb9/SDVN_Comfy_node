@@ -1,7 +1,7 @@
 [project]
 name = "sdvn_comfy_node"
-description = "Update new yolo seg"
-version = "1.7.3"
+description = "Fix inpaint crop"
+version = "1.7.4"
 license = {file = "LICENSE"}
 dependencies = ["#If MacOs - Please install aria2 manually via brew", "aria2;sys_platform != 'darwin'", "openai", "gallery-dl", "google-generativeai", "googletrans-py"]
 

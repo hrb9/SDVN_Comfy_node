@@ -170,26 +170,26 @@ class inpaint_crop:
                 "image": ("IMAGE",),
                 "mask": ("MASK",),
                 "crop_size": ([512,768,896,1024,1280], {"default": 768}),
-                "padding_blur": ("INT", {"default": 16, "min": 0, "max": 100}),
+                "extend": ("FLOAT", {"default": 1.2, "min": 0, "max": 100}),
             },
         }
 
     CATEGORY = "📂 SDVN/🎭 Mask"
-    RETURN_TYPES = ("STITCH", "IMAGE", "MASK")
-    RETURN_NAMES = ("stitch", "cropped_image", "cropped_mask")
+    RETURN_TYPES = ("STITCHER", "IMAGE", "MASK")
+    RETURN_NAMES = ("stitcher", "cropped_image", "cropped_mask")
     FUNCTION = "inpaint"
 
-    def inpaint_crop(self, image, mask, crop_size, padding_blur):
-        if "InpaintCrop" not in ALL_NODE:
-            raise Exception("Install node InpaintCrop(https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch)")
-        input = ALL_NODE["InpaintCrop"]().inpaint_crop(image, mask, padding_blur, 1.0, True, padding_blur, False, padding_blur, "ranged size", "bicubic", 1024, 1024, 1.00, 0, crop_size - 128, crop_size - 128, crop_size, crop_size, None)
+    def inpaint_crop(self, image, mask, crop_size, extend):
+        if "InpaintCropImproved" not in ALL_NODE:
+            raise Exception("Install node InpaintCrop and update (https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch)")
+        input = ALL_NODE["InpaintCropImproved"]().inpaint_crop(image, "bilinear", "bicubic", False, "ensure minimum resolution", 1024, 1024, 2048, 2048, False, 1, 1, 1, 1, 0.1, True, 0, False, 32, extend, True, crop_size, crop_size, 32, mask, None)
         input[0]["mask"] = mask
         input[0]["crop_size"] = crop_size
-        input[0]["padding"] = padding_blur
+        input[0]["extend"] = extend
         return input
     
-    def inpaint (s, image, mask, crop_size, padding_blur):
-        result = s.inpaint_crop(image, mask, crop_size, padding_blur)
+    def inpaint (s, image, mask, crop_size, extend):
+        result = s.inpaint_crop(image, mask, crop_size, extend)
         image = result[1]
         mask = result[2]
         invert_mask = 1.0 - mask
@@ -202,31 +202,27 @@ class LoopInpaintStitch:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "stitchs": ("STITCH",),
+                "stitchers": ("STITCHER",),
                 "inpainted_images": ("IMAGE",),
             }
         }
 
-    CATEGORY = "📂 SDVN/🎭 Mask"
+    CATEGORY = "📂 SDVN/💡 Creative"
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("image",)
     FUNCTION = "inpaint_stitch"
     INPUT_IS_LIST = True
 
-    def inpaint_stitch(self, stitchs, inpainted_images):
-        canva = stitchs[0]['original_image']
+    def inpaint_stitch(self, stitchers, inpainted_images):
+        canva = stitchers[0]['canvas_image']
         index = 0
         for inpainted_image in inpainted_images:
-            stitch = stitchs[index]
             print(f'Vòng lặp {index}')
-            stitch['original_image'] = canva
-            del stitch["mask"]
-            del stitch["crop_size"]
-            del stitch["padding"]
-            image = ALL_NODE["InpaintStitch"]().inpaint_stitch(stitchs[index], inpainted_image,  "bislerp")[0]
+            stitchers[index]['canvas_image'] = canva
+            image = ALL_NODE["InpaintStitchImproved"]().inpaint_stitch(stitchers[index], inpainted_image)[0]
             index += 1
             if index < len(inpainted_images):
-                canva = ALL_NODE["SDVN Inpaint Crop"]().inpaint_crop(image, stitchs[index]["mask"], stitchs[index]["crop_size"], stitchs[index]["padding"])[0]["original_image"]
+                canva = ALL_NODE["SDVN Inpaint Crop"]().inpaint_crop(image, stitchers[index]["mask"], stitchers[index]["crop_size"], stitchers[index]["padding"])[0]["canvas_image"]
         return (image,)
 
 class rmbg:
