@@ -7,5 +7,9 @@
     "ip-adapter-faceid-plusv2_sdxl_lora.safetensors": "https://huggingface.co/StableDiffusionVN/clone/blob/main/Lora/FaceID/ip-adapter-faceid-plusv2_sdxl_lora.safetensors",
     "flux1-canny-dev-lora.safetensors": "https://huggingface.co/StableDiffusionVN/clone/blob/main/Lora/Flux_ControlnetLora/flux1-canny-dev-lora.safetensors",
     "flux1-depth-dev-lora.safetensors": "https://huggingface.co/StableDiffusionVN/clone/blob/main/Lora/Flux_ControlnetLora/flux1-depth-dev-lora.safetensors",
-    "lightning-cfg2-dpmppcfg-8-128.safetensors": "https://huggingface.co/StableDiffusionVN/SDXL/blob/main/StepsLora/lightning-cfg2-dpmppcfg-8-128.safetensors"
+    "lightning-cfg2-dpmppcfg-8-128.safetensors": "https://huggingface.co/StableDiffusionVN/SDXL/blob/main/StepsLora/lightning-cfg2-dpmppcfg-8-128.safetensors",
+    "ace_plus_fft.safetensors": "https://huggingface.co/ali-vilab/ACE_Plus/blob/main/ace_plus_fft.safetensors",
+    "comfyui_subject_lora16.safetensors": "https://huggingface.co/ali-vilab/ACE_Plus/blob/main/subject/comfyui_subject_lora16.safetensors",
+    "comfyui_portrait_lora64.safetensors": "https://huggingface.co/ali-vilab/ACE_Plus/blob/main/portrait/comfyui_portrait_lora64.safetensors",
+    "comfyui_local_lora16.safetensors": "https://huggingface.co/ali-vilab/ACE_Plus/blob/main/local_editing/comfyui_local_lora16.safetensors"
 }
