@@ -13,6 +13,7 @@ yolo_model_list = ["face_yolov8n-seg2_60.pt", "face_yolov8m-seg_60.pt",
                     "hair_yolov8n-seg_60.pt", "flowers_seg_yolov8model.pt", "facial_features_yolo8x-seg.pt", "Anime-yolov8-seg.pt",
                     "yolov8x-seg.pt", "yolov8s-seg.pt", "yolov8n-seg.pt", "yolov8m-seg.pt", "yolov8l-seg.pt",
                     "yolo11s-seg.pt", "yolo11n-seg.pt", "yolo11m-seg.pt", "yolo11l-seg.pt", "yolo11x-seg.pt",
+                    "yolo11l-pose.pt", "yolo11s-pose.pt", "yolo11x-pose.pt", "yolo11s.pt", "yolo11l.pt", "yolo11x.pt"
                     ]
 
 base_url = "https://huggingface.co/StableDiffusionVN/yolo/resolve/main/"
@@ -62,8 +63,8 @@ class yoloseg:
     
     CATEGORY = "📂 SDVN/🎭 Mask"
     FUNCTION = "yoloseg"
-    RETURN_TYPES = ("IMAGE", "MASK", "STRING")
-    RETURN_NAMES = ("image", "mask", "all id")
+    RETURN_TYPES = ("IMAGE", "MASK", "STRING", "INT")
+    RETURN_NAMES = ("image", "mask", "all_id", "num_objects")
 
     def yoloseg(s, image, model_name, score, id):
         model_folder = s.yolo_dir
@@ -77,7 +78,7 @@ class yoloseg:
         input = image
         image = tensor2pil(image.to(model.device))
         conf = score
-        classes = [int(x) for x in id.split(",")] if id != "" else []
+        classes = [int(x.strip()) for x in id.split(",")] if id.strip() != "" else []
         r = model(image, classes = None if len(classes) == 0 else classes, conf = conf)[0]
 
         for key, value in r.names.items():
@@ -85,10 +86,10 @@ class yoloseg:
         id_list = [v for _ , v in r.names.items()]
         id_list = '\n'.join(id_list)
         id_box = r.boxes.cls.int().tolist()
-
+        num_objects = len(id_box)
         image = Image.fromarray(r.plot()[..., ::-1])
         image = i2tensor(image)
-        if len(id_box) > 0:
+        if len(id_box) > 0 and r.masks != None:
             mask = r.masks.data
             mask = torch.sum(mask, dim=0, keepdim=True)
             mask = FF.interpolate(mask.unsqueeze(0),
@@ -100,7 +101,7 @@ class yoloseg:
             mask = torch.zeros((1, 64, 64), dtype=torch.float32)
             ui = ALL_NODE["PreviewImage"]().save_images(image)["ui"]
 
-        return {"ui":ui, "result": (image, mask.cpu(), id_list)}
+        return {"ui":ui, "result": (image, mask.cpu(), id_list, num_objects)}
        
 class MaskRegions:
     @classmethod
