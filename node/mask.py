@@ -222,7 +222,7 @@ class LoopInpaintStitch:
             image = ALL_NODE["InpaintStitchImproved"]().inpaint_stitch(stitchers[index], inpainted_image)[0]
             index += 1
             if index < len(inpainted_images):
-                canva = ALL_NODE["SDVN Inpaint Crop"]().inpaint_crop(image, stitchers[index]["mask"], stitchers[index]["crop_size"], stitchers[index]["padding"])[0]["canvas_image"]
+                canva = ALL_NODE["SDVN Inpaint Crop"]().inpaint_crop(image, stitchers[index]["mask"], stitchers[index]["crop_size"], stitchers[index]["extend"])[0]["canvas_image"]
         return (image,)
 
 class rmbg:
