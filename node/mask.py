@@ -126,40 +126,49 @@ class MaskRegions:
         _, y, x = coords.min(dim=0).values
         return (x.item(), y.item()) 
     
-    def separate_regions(s,mask):
-        threshold=0.3
-        max_iter=100
-
+    def separate_regions(s, mask):
+        threshold = 0.3
+        max_iter = 100
+ 
         device = mask.device
-        mask_bin = (mask > threshold).float()  
+        mask_bin = (mask > threshold).float()
         mask = mask_bin.clone()
-        
+ 
         regions = []
         kernel = torch.tensor([[0., 1., 0.],
-                            [1., 1., 1.],
-                            [0., 1., 0.]], device=device).reshape(1, 1, 3, 3)
-
+                                [1., 1., 1.],
+                                [0., 1., 0.]], device=device).reshape(1, 1, 3, 3)
+ 
         while mask.sum() > 0 and len(regions) < max_iter:
             coords = (mask > 0).nonzero(as_tuple=False)[0]
             y, x = coords[1], coords[2]
-            
+ 
             seed = torch.zeros_like(mask)
             seed[0, y, x] = 1.0
-            
+ 
             region = seed.clone()
             prev = torch.zeros_like(region)
-
+ 
             while not torch.equal(region, prev):
                 prev = region
                 region = FF.conv2d(region.unsqueeze(0), kernel, padding=1)[0]
-                region = (region > 0).float() * mask 
-
+                region = (region > 0).float() * mask
+ 
             regions.append(region.clone())
-
+ 
             mask = mask * (region == 0).float()
-        
+ 
+        def is_large_enough(region):
+            coords = (region > 0).nonzero(as_tuple=False)
+            if coords.numel() == 0:
+                return False
+            y_min, x_min = coords.min(dim=0).values[1:]
+            y_max, x_max = coords.max(dim=0).values[1:]
+            return (y_max - y_min + 1 > 50) and (x_max - x_min + 1 > 50)
+ 
+        regions = [r for r in regions if is_large_enough(r)]
         regions_sorted = sorted(regions, key=s.get_top_left_coords)
-        
+ 
         return (regions_sorted,)
 
 class inpaint_crop:
