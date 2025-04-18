@@ -428,6 +428,8 @@ class CheckpointLoaderDownload:
     model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib.json")
     with open(model_lib_path, 'r') as json_file:
         modellist = json.load(json_file)
+    modellist = list(set(folder_paths.get_filename_list("checkpoints") + list(modellist)))
+    modellist.sort()
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -435,7 +437,7 @@ class CheckpointLoaderDownload:
                 "Download": ("BOOLEAN", {"default": True},),
                 "Download_url": ("STRING", {"default": "", "multiline": False},),
                 "Ckpt_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
-                "Ckpt_name": (list(set(none2list(folder_paths.get_filename_list("checkpoints") + list(s.modellist)))), {"tooltip": "The name of the checkpoint (model) to load."})
+                "Ckpt_name": (none2list(s.modellist), {"tooltip": "The name of the checkpoint (model) to load."})
             }
         }
     RETURN_TYPES = ("MODEL", "CLIP", "VAE", "STRING")
@@ -478,7 +480,8 @@ class LoraLoader:
     model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"lora_lib.json")
     with open(model_lib_path, 'r') as json_file:
         loralist = json.load(json_file)
-
+    loralist = list(set(folder_paths.get_filename_list("loras") + list(loralist)))
+    loralist.sort()
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -486,7 +489,7 @@ class LoraLoader:
                 "Download": ("BOOLEAN", {"default": True},),
                 "Download_url": ("STRING", {"default": "", "multiline": False},),
                 "Lora_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
-                "lora_name": (list(set(none2list(folder_paths.get_filename_list("loras") + list(s.loralist)))), {"default": "None", "tooltip": "The name of the LoRA."}),
+                "lora_name": (none2list(s.loralist), {"default": "None", "tooltip": "The name of the LoRA."}),
             },
             "optional": {
                 "model": ("MODEL", {"tooltip": "The diffusion model the LoRA will be applied to."}),
@@ -718,11 +721,13 @@ class UpscaleImage:
     for key, value in modellist.items():
         if value[1] == "UpscaleModel":
             list_upscale_model.append(key)
+    list_upscale_model = list(set(list_upscale_model+folder_paths.get_filename_list("upscale_models")))
+    list_upscale_model.sort()
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
             "mode": (["Maxsize", "Resize", "Scale"], ),
-            "model_name": (list(set(none2list(folder_paths.get_filename_list("upscale_models")+ s.list_upscale_model))), {"default": "None", }),
+            "model_name": (none2list(s.list_upscale_model), {"default": "None", }),
             "scale": ("FLOAT", {"default": 1, "min": 0, "max": 10, "step": 0.01, }),
             "width": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
             "height": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
@@ -775,11 +780,13 @@ class UpscaleLatentImage:
     for key, value in modellist.items():
         if value[1] == "UpscaleModel":
             list_upscale_model.append(key)
+    list_upscale_model = list(set(list_upscale_model+folder_paths.get_filename_list("upscale_models")))
+    list_upscale_model.sort()
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
             "mode": (["Maxsize", "Resize", "Scale"], ),
-            "model_name": (list(set(none2list(folder_paths.get_filename_list("upscale_models")+ s.list_upscale_model))), {"default": "None", }),
+            "model_name": (none2list(s.list_upscale_model), {"default": "None", }),
             "scale": ("FLOAT", {"default": 2, "min": 0, "max": 10, "step": 0.01, }),
             "width": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
             "height": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
@@ -813,7 +820,6 @@ def preprocessor_list():
                 preprocessor_list += [k]
     return preprocessor_list
 
-
 class AutoControlNetApply:
     model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib_any.json")
     with open(model_lib_path, 'r') as json_file:
@@ -822,12 +828,13 @@ class AutoControlNetApply:
     for key, value in modellist.items():
         if value[1] == "Controlnet":
             list_controlnet_model.append(key)
-
+    list_controlnet_model = list(set(folder_paths.get_filename_list("controlnet") + list_controlnet_model))
+    list_controlnet_model.sort()
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
                              "image": ("IMAGE", ),
-                             "control_net": (list(set(none2list(folder_paths.get_filename_list("controlnet")) + s.list_controlnet_model)),),
+                             "control_net": (none2list(s.list_controlnet_model),),
                              "preprocessor": (preprocessor_list(),),
                              "union_type": (["None","auto"] + list(UNION_CONTROLNET_TYPES.keys()),),
                              "resolution": ("INT", {"default": 512, "min": 512, "max": 2048, "step": 1}),
@@ -1341,6 +1348,34 @@ class DualClipDownload:
         download_model(s.modellist[CLIP_name2][0], CLIP_name2, "text_encoders")
         return ALL_NODE["DualCLIPLoader"]().load_clip(CLIP_name1, CLIP_name2, type, device="default")
     
+class QuadrupleCLIPDownload:
+    model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib_any.json")
+    with open(model_lib_path, 'r') as json_file:
+        modellist = json.load(json_file)
+    list_clip = []
+    for key, value in modellist.items():
+        if value[1] == "CLIP":
+            list_clip.append(key)
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": { 
+                    "CLIP_name1": (s.list_clip,),
+                    "CLIP_name2": (s.list_clip,),
+                    "CLIP_name3": (s.list_clip,),
+                    "CLIP_name4": (s.list_clip,),
+                             }}
+    RETURN_TYPES = ("CLIP",)
+    FUNCTION = "download"
+
+    CATEGORY = "📂 SDVN/📥 Download"
+
+    def download(s, CLIP_name1, CLIP_name2, CLIP_name3, CLIP_name4):
+        download_model(s.modellist[CLIP_name1][0], CLIP_name1, "text_encoders")
+        download_model(s.modellist[CLIP_name2][0], CLIP_name2, "text_encoders")
+        download_model(s.modellist[CLIP_name2][0], CLIP_name3, "text_encoders")
+        download_model(s.modellist[CLIP_name2][0], CLIP_name4, "text_encoders")
+        return ALL_NODE["QuadrupleCLIPLoader"]().load_clip(CLIP_name1, CLIP_name2, CLIP_name3, CLIP_name4)
+    
 class AnyDownloadList:
     model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib_any.json")
     with open(model_lib_path, 'r') as json_file:
@@ -1415,6 +1450,7 @@ NODE_CLASS_MAPPINGS = {
     "SDVN InstantIDModel Download": InstantIDModelDownload,
     "SDVN AnyDownload List": AnyDownloadList,
     "SDVN DualCLIP Download": DualClipDownload,
+    "SDVN QuadrupleCLIP Download": QuadrupleCLIPDownload,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -1448,4 +1484,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN InstantIDModel Download": "📥  InstantIDModel Download",
     "SDVN AnyDownload List": "📥  AnyDownload List",
     "SDVN DualCLIP Download": "📥  DualCLIP Download",
+    "SDVN QuadrupleCLIP Download": "📥  QuadrupleCLIP Download",
 }

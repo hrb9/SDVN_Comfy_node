@@ -1,92 +1,131 @@
 import { app } from "../../scripts/app.js";
 
-let origProps = {};
+const HIDDEN_TYPE = "sdvnhide";
+const origProps = {};
 
-const findWidgetByName = (node, name) => {
-    return node.widgets ? node.widgets.find((w) => w.name === name) : null;
-};
-
-const doesInputWithNameExist = (node, name) => {
-    return node.inputs ? node.inputs.some((input) => input.name === name) : false;
-};
-
-const HIDDEN_TAG = "sdvnhide";
-
-function toggleWidget(node, widget, show = false, suffix = "") {
-    if (!widget || doesInputWithNameExist(node, widget.name)) return;
-            
-    // Store the original properties of the widget if not already stored
+function injectHidden(widget) {
+    if (!widget) return;
     if (!origProps[widget.name]) {
-        origProps[widget.name] = { origType: widget.type, origComputeSize: widget.computeSize };
-    }       
-        
-    const origSize = node.size;
+        origProps[widget.name] = {
+            _type: widget.type,
+            _computeSize: widget.computeSize || (() => [widget.width || 200, 20])
+        };
+    }
 
-    // Set the widget type and computeSize based on the show flag
-    widget.type = show ? origProps[widget.name].origType : HIDDEN_TAG + suffix;
-    widget.computeSize = show ? origProps[widget.name].origComputeSize : () => [0, -4];
-    
-    // Recursively handle linked widgets if they exist
-    widget.linkedWidgets?.forEach(w => toggleWidget(node, w, ":" + widget.name, show));
-        
-    // Calculate the new height for the node based on its computeSize method
-    const newHeight = node.computeSize()[1];
-    node.setSize([node.size[0], newHeight]);
-}   
+    widget.computeSize = () => widget.hidden ? [0, -4] : origProps[widget.name]._computeSize();
+    Object.defineProperty(widget, "type", {
+        configurable: true,
+        get() {
+            return widget.hidden ? HIDDEN_TYPE : origProps[widget.name]._type;
+        },
+        set(val) {
+            origProps[widget.name]._type = val;
+        }
+    });
+}
 
-function sdvnshowcontrol(node) {
-    if (node.comfyClass === "SDVN Auto Generate") {
-        const show = findWidgetByName(node, "AdvSetting")?.value === true;
-        ["cfg", "sampler_name", "scheduler", "FluxGuidance", "Upscale_model"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
+function findWidget(node, name) {
+    return node.widgets?.find(w => w.name === name);
+}
+
+function toggleWidgets(node, showMap = {}) {
+    for (const [name, show] of Object.entries(showMap)) {
+        const widget = findWidget(node, name);
+        if (!widget) continue;
+        injectHidden(widget);
+        widget.hidden = !show;
     }
-    if (node.comfyClass === "SDVN Load Image Ultimate") {
-        const show = findWidgetByName(node, "mode")?.value === "Input folder";
-        ["image"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
-    }
-    if (node.comfyClass === "SDVN Load Image Ultimate") {
-        const show = findWidgetByName(node, "mode")?.value ===  "Custom folder";
-        ["folder_path","number_img"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
-    }
-    if (node.comfyClass === "SDVN Load Image Ultimate") {
-        const show = findWidgetByName(node, "mode")?.value ===  "Url";
-        ["url"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
-    }
-    if (node.comfyClass === "SDVN Load Image Ultimate") {
-        const show = findWidgetByName(node, "mode")?.value ===  "Pintrest";
-        ["pin_url", "range", "number", "random"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
-    }
-    if (node.comfyClass === "SDVN Load Image Ultimate") {
-        const show = findWidgetByName(node, "mode")?.value ===  "Insta";
-        ["insta_url", "index"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
-    }
-    if (node.comfyClass === "SDVN Save Text") {
-        const show = findWidgetByName(node, "save_dir")?.value ===  "custom";
-        ["custom_dir"].forEach(name => toggleWidget(node, findWidgetByName(node, name), show));
+    node.setSize([node.size[0], node.computeSize()[1]]);
+}
+
+function applyVisibilityLogic(node) {
+    try {
+        const modeWidget = findWidget(node, "mode");
+        const mode = modeWidget ? modeWidget.value : null;
+
+        const advWidget = findWidget(node, "AdvSetting");
+        const adv = advWidget ? advWidget.value : null;
+
+        const saveDirWidget = findWidget(node, "save_dir");
+        const saveDir = saveDirWidget ? saveDirWidget.value : null;
+
+        if (node.comfyClass === "SDVN Auto Generate") {
+            toggleWidgets(node, {
+                cfg: adv === true,
+                sampler_name: adv === true,
+                scheduler: adv === true,
+                FluxGuidance: adv === true,
+                Upscale_model: adv === true
+            });
+        }
+
+        if (node.comfyClass === "SDVN Load Image Ultimate") {
+            toggleWidgets(node, {
+                image: mode === "Input folder",
+                folder_path: mode === "Custom folder",
+                number_img: mode === "Custom folder",
+                url: mode === "Url",
+                pin_url: mode === "Pintrest",
+                range: mode === "Pintrest",
+                number: mode === "Pintrest",
+                random: mode === "Pintrest",
+                insta_url: mode === "Insta",
+                index: mode === "Insta"
+            });
+        }
+
+        if (node.comfyClass === "SDVN Save Text") {
+            toggleWidgets(node, {
+                custom_dir: saveDir === "custom"
+            });
+        }
+
+        app.canvas?.draw(true);
+    } catch (e) {
+        console.error("[SDVN.ShowControl] Visibility logic failed:", e, node);
     }
 }
 
-function hookWidgetCallbacks(node) {
-    for (const w of node.widgets || []) {
-        if (typeof w.callback === "function" && !w.__sdvn_callback_wrapped) {
-            const originalCallback = w.callback;
-            w.callback = function (...args) {
-                // Gọi lại callback gốc, giữ đúng ngữ cảnh this
-                if (typeof originalCallback === "function") {
-                    originalCallback.apply(this, args);
-                }
-                // Gọi lại hàm kiểm tra hiển thị
-                sdvnshowcontrol(node);
-            };
-            w.__sdvn_callback_wrapped = true;
+function watchValueChange(widget, node) {
+    if (widget && !widget.__watched) {
+        try {
+            const desc = Object.getOwnPropertyDescriptor(widget, "value");
+            if (!desc || desc.configurable) {
+                widget._value = widget.value;
+                Object.defineProperty(widget, "value", {
+                    get() {
+                        return this._value;
+                    },
+                    set(val) {
+                        this._value = val;
+                        try {
+                            applyVisibilityLogic(node);
+                            app.canvas?.draw(true);
+                        } catch (err) {
+                            console.error("[SDVN.ShowControl] applyVisibilityLogic error:", err);
+                        }
+                    },
+                    configurable: true
+                });
+            }
+        } catch (err) {
+            console.warn(`[SDVN.ShowControl] Không thể hook 'value' cho widget ${widget.name}`, err);
         }
+        widget.__watched = true;
     }
+}
+
+function prepareWidgets(node) {
+    (node.widgets || []).forEach(widget => {
+        watchValueChange(widget, node);
+    });
 }
 
 app.registerExtension({
     name: "SDVN.ShowControl",
     nodeCreated(node) {
-        if (!node.comfyClass.startsWith("SDVN")) return;
-        sdvnshowcontrol(node);
-        hookWidgetCallbacks(node);
+        if (!node.comfyClass?.startsWith("SDVN")) return;
+        prepareWidgets(node);
+        applyVisibilityLogic(node);
     }
 });

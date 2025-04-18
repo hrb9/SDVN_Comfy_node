@@ -127,6 +127,8 @@ class auto_generate:
     for key, value in modellist.items():
         if value[1] == "UpscaleModel":
             list_upscale_model.append(key)
+    list_upscale_model = list(set(list_upscale_model+folder_paths.get_filename_list("upscale_models")))
+    list_upscale_model.sort()
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -148,7 +150,7 @@ class auto_generate:
                 "sampler_name": (comfy.samplers.KSampler.SAMPLERS, {"tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
                 "scheduler": (comfy.samplers.KSampler.SCHEDULERS, {"tooltip": "The scheduler controls how noise is gradually removed to form the image."}),
                 "FluxGuidance":  ("FLOAT", {"default": 3.5, "min": 0.0, "max": 100.0, "step": 0.1}),
-                "Upscale_model": (list(set(none2list(folder_paths.get_filename_list("upscale_models")+ s.list_upscale_model))), {"default": "None", }),
+                "Upscale_model": (none2list(s.list_upscale_model), {"default": "None", }),
             },
             "optional": {
                 "image": ("IMAGE",),
