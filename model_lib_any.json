@@ -3,6 +3,7 @@
     "t5xxl_fp16.safetensors": ["https://huggingface.co/StableDiffusionVN/Flux/blob/main/Clip/t5xxl_fp16.safetensors","CLIP", "sd3"],
     "t5xxl_fp8_e4m3fn.safetensors": ["https://huggingface.co/StableDiffusionVN/Flux/blob/main/Clip/t5xxl_fp8_e4m3fn.safetensors","CLIP", "sd3"],
     "Instant_flux-union.safetensors": ["https://huggingface.co/StableDiffusionVN/Flux/blob/main/Controlnet/Instant_flux-union.safetensors","Controlnet"],
+    "Flux-dev-ControlNet-Union-Pro-v2.safetensors": ["https://huggingface.co/Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro-2.0/blob/main/diffusion_pytorch_model.safetensors","Controlnet"],
     "flux1-redux-dev.safetensors": ["https://huggingface.co/StableDiffusionVN/Flux/blob/main/Redux/flux1-redux-dev.safetensors","StyleModel"],
     "flex1_redux_siglip2_512.safetensors": ["https://huggingface.co/ostris/Flex.1-alpha-Redux/blob/main/flex1_redux_siglip2_512.safetensors","StyleModel"],
     "sigclip_vision_patch14_384.safetensors": ["https://huggingface.co/StableDiffusionVN/Flux/blob/main/Redux/sigclip_vision_patch14_384.safetensors","CLIPVision"],
