@@ -1,131 +1,111 @@
 import { app } from "../../scripts/app.js";
 
-const HIDDEN_TYPE = "sdvnhide";
-const origProps = {};
+function chainCallback(object, property, callback) {
+    if (!object) {
+        console.error("Tried to add callback to non-existent object");
+        return;
+    }
+    if (property in object) {
+        const original = object[property];
+        object[property] = function () {
+            const result = original.apply(this, arguments);
+            callback.apply(this, arguments);
+            return result;
+        };
+    } else {
+        object[property] = callback;
+    }
+}
 
 function injectHidden(widget) {
     if (!widget) return;
-    if (!origProps[widget.name]) {
-        origProps[widget.name] = {
-            _type: widget.type,
-            _computeSize: widget.computeSize || (() => [widget.width || 200, 20])
-        };
-    }
-
-    widget.computeSize = () => widget.hidden ? [0, -4] : origProps[widget.name]._computeSize();
+    widget.computeSize = (target_width) => (widget.hidden ? [0, -4] : [target_width, 20]);
+    widget._type = widget.type;
     Object.defineProperty(widget, "type", {
-        configurable: true,
         get() {
-            return widget.hidden ? HIDDEN_TYPE : origProps[widget.name]._type;
+            return widget.hidden ? "sdvnhide" : widget._type;
         },
         set(val) {
-            origProps[widget.name]._type = val;
+            widget._type = val;
         }
     });
 }
 
-function findWidget(node, name) {
-    return node.widgets?.find(w => w.name === name);
-}
+function addShowControl(nodeType, nodeData) {
+    chainCallback(nodeType.prototype, "onNodeCreated", function () {
+        const node = this;
 
-function toggleWidgets(node, showMap = {}) {
-    for (const [name, show] of Object.entries(showMap)) {
-        const widget = findWidget(node, name);
-        if (!widget) continue;
-        injectHidden(widget);
-        widget.hidden = !show;
-    }
-    node.setSize([node.size[0], node.computeSize()[1]]);
-}
-
-function applyVisibilityLogic(node) {
-    try {
-        const modeWidget = findWidget(node, "mode");
-        const mode = modeWidget ? modeWidget.value : null;
-
-        const advWidget = findWidget(node, "AdvSetting");
-        const adv = advWidget ? advWidget.value : null;
-
-        const saveDirWidget = findWidget(node, "save_dir");
-        const saveDir = saveDirWidget ? saveDirWidget.value : null;
-
-        if (node.comfyClass === "SDVN Auto Generate") {
-            toggleWidgets(node, {
-                cfg: adv === true,
-                sampler_name: adv === true,
-                scheduler: adv === true,
-                FluxGuidance: adv === true,
-                Upscale_model: adv === true
-            });
-        }
-
-        if (node.comfyClass === "SDVN Load Image Ultimate") {
-            toggleWidgets(node, {
-                image: mode === "Input folder",
-                folder_path: mode === "Custom folder",
-                number_img: mode === "Custom folder",
-                url: mode === "Url",
-                pin_url: mode === "Pintrest",
-                range: mode === "Pintrest",
-                number: mode === "Pintrest",
-                random: mode === "Pintrest",
-                insta_url: mode === "Insta",
-                index: mode === "Insta"
-            });
-        }
-
-        if (node.comfyClass === "SDVN Save Text") {
-            toggleWidgets(node, {
-                custom_dir: saveDir === "custom"
-            });
-        }
-
-        app.canvas?.draw(true);
-    } catch (e) {
-        console.error("[SDVN.ShowControl] Visibility logic failed:", e, node);
-    }
-}
-
-function watchValueChange(widget, node) {
-    if (widget && !widget.__watched) {
-        try {
-            const desc = Object.getOwnPropertyDescriptor(widget, "value");
-            if (!desc || desc.configurable) {
-                widget._value = widget.value;
-                Object.defineProperty(widget, "value", {
-                    get() {
-                        return this._value;
-                    },
-                    set(val) {
-                        this._value = val;
-                        try {
-                            applyVisibilityLogic(node);
-                            app.canvas?.draw(true);
-                        } catch (err) {
-                            console.error("[SDVN.ShowControl] applyVisibilityLogic error:", err);
-                        }
-                    },
-                    configurable: true
-                });
+        const showConfigs = {
+            "SDVN Auto Generate": {
+                controller: "AdvSetting",
+                targets: (v) => ({
+                    cfg: v === true,
+                    sampler_name: v === true,
+                    scheduler: v === true,
+                    FluxGuidance: v === true,
+                    Upscale_model: v === true
+                })
+            },
+            "SDVN Load Image Ultimate": {
+                controller: "mode",
+                targets: (v) => ({
+                    image: v === "Input folder",
+                    folder_path: v === "Custom folder",
+                    number_img: v === "Custom folder",
+                    url: v === "Url",
+                    pin_url: v === "Pintrest",
+                    range: v === "Pintrest",
+                    number: v === "Pintrest",
+                    random: v === "Pintrest",
+                    insta_url: v === "Insta",
+                    index: v === "Insta"
+                })
+            },
+            "SDVN Save Text": {
+                controller: "save_dir",
+                targets: (v) => ({
+                    custom_dir: v === "custom"
+                })
             }
-        } catch (err) {
-            console.warn(`[SDVN.ShowControl] Không thể hook 'value' cho widget ${widget.name}`, err);
-        }
-        widget.__watched = true;
-    }
-}
+        };
 
-function prepareWidgets(node) {
-    (node.widgets || []).forEach(widget => {
-        watchValueChange(widget, node);
+        const config = showConfigs[node.comfyClass];
+        if (!config) return;
+
+        const controller = node.widgets?.find(w => w.name === config.controller);
+        if (!controller) return;
+
+        const visibilityMap = config.targets(controller.value);
+        for (const name of Object.keys(visibilityMap)) {
+            const widget = node.widgets?.find(w => w.name === name);
+            if (widget) injectHidden(widget);
+        }
+
+        controller._value = controller.value;
+        Object.defineProperty(controller, "value", {
+            get() {
+                return this._value;
+            },
+            set(val) {
+                this._value = val;
+                const visibility = config.targets(val);
+                for (const [name, visible] of Object.entries(visibility)) {
+                    const widget = node.widgets?.find(w => w.name === name);
+                    if (widget) widget.hidden = !visible;
+                }
+                node.setSize([node.size[0], node.computeSize()[1]]);
+            }
+        });
+
+        controller.value = controller._value;
     });
 }
 
-// app.registerExtension({
-//     name: "SDVN.ShowControl",
-//     nodeCreated(node) {
-//         if (!node.comfyClass?.startsWith("SDVN")) return;
-//         prepareWidgets(node);
-//         applyVisibilityLogic(node);
-//     }
-// });
+app.registerExtension({
+    name: "SDVN.ShowControl",
+    async beforeRegisterNodeDef(nodeType, nodeData, appInstance) {
+        if (!nodeData?.name?.startsWith("SDVN")) return;
+
+        addShowControl(nodeType, nodeData);
+    }
+});
