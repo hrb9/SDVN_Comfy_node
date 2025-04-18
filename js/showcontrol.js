@@ -121,11 +121,11 @@ function prepareWidgets(node) {
     });
 }
 
-app.registerExtension({
-    name: "SDVN.ShowControl",
-    nodeCreated(node) {
-        if (!node.comfyClass?.startsWith("SDVN")) return;
-        prepareWidgets(node);
-        applyVisibilityLogic(node);
-    }
-});
+// app.registerExtension({
+//     name: "SDVN.ShowControl",
+//     nodeCreated(node) {
+//         if (!node.comfyClass?.startsWith("SDVN")) return;
+//         prepareWidgets(node);
+//         applyVisibilityLogic(node);
+//     }
+// });
