@@ -2,10 +2,8 @@ from nodes import NODE_CLASS_MAPPINGS as ALL_NODE
 import folder_paths
 import os, numpy as np, torch
 from PIL import Image, ImageOps
-from ultralytics import YOLO
 from torch.hub import download_url_to_file
 import torch.nn.functional as FF
-from rembg import remove
 
 yolo_model_list = ["face_yolov8n-seg2_60.pt", "face_yolov8m-seg_60.pt",
                     "skin_yolov8n-seg_800.pt", "skin_yolov8n-seg_400.pt", "skin_yolov8m-seg_400.pt",
@@ -67,6 +65,7 @@ class yoloseg:
     RETURN_NAMES = ("image", "mask", "all_id", "num_objects")
 
     def yoloseg(s, image, model_name, score, id):
+        from ultralytics import YOLO
         model_folder = s.yolo_dir
         model_path = os.path.join(model_folder, model_name)
         if not os.path.exists(model_folder):
@@ -177,10 +176,12 @@ class inpaint_crop:
         return {
             "required": {
                 "image": ("IMAGE",),
-                "mask": ("MASK",),
                 "crop_size": ([512,768,896,1024,1280], {"default": 768}),
                 "extend": ("FLOAT", {"default": 1.2, "min": 0, "max": 100}),
             },
+            "optional": {
+                "mask": ("MASK",),
+            }
         }
 
     CATEGORY = "📂 SDVN/🎭 Mask"
@@ -188,7 +189,7 @@ class inpaint_crop:
     RETURN_NAMES = ("stitcher", "cropped_image", "cropped_mask")
     FUNCTION = "inpaint"
 
-    def inpaint_crop(self, image, mask, crop_size, extend):
+    def inpaint_crop(self, image,crop_size, extend,  mask = None):
         if "InpaintCropImproved" not in ALL_NODE:
             raise Exception("Install node InpaintCrop and update (https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch)")
         input = ALL_NODE["InpaintCropImproved"]().inpaint_crop(image, "bilinear", "bicubic", False, "ensure minimum resolution", 1024, 1024, 2048, 2048, False, 1, 1, 1, 1, 0.1, True, 0, False, 32, extend, True, crop_size, crop_size, 32, mask, None)
@@ -197,13 +198,16 @@ class inpaint_crop:
         input[0]["extend"] = extend
         return input
     
-    def inpaint (s, image, mask, crop_size, extend):
-        result = s.inpaint_crop(image, mask, crop_size, extend)
+    def inpaint (s, image, crop_size, extend, mask = None):
+        result = s.inpaint_crop(image, crop_size, extend,  mask)
         image = result[1]
-        mask = result[2]
-        invert_mask = 1.0 - mask
-        alpha_image = ALL_NODE["JoinImageWithAlpha"]().join_image_with_alpha(image, invert_mask)[0]
-        ui = ALL_NODE["PreviewImage"]().save_images(alpha_image)["ui"]
+        mask_out = result[2]
+        if mask != None:
+            invert_mask = 1.0 - mask_out
+            alpha_image = ALL_NODE["JoinImageWithAlpha"]().join_image_with_alpha(image, invert_mask)[0]
+            ui = ALL_NODE["PreviewImage"]().save_images(alpha_image)["ui"]
+        else:
+            ui = ALL_NODE["PreviewImage"]().save_images(image)["ui"]
         return {"ui":ui, "result": result}
     
 class LoopInpaintStitch:
@@ -225,13 +229,15 @@ class LoopInpaintStitch:
     def inpaint_stitch(self, stitchers, inpainted_images):
         canva = stitchers[0]['canvas_image']
         index = 0
+        stit_index = 0
         for inpainted_image in inpainted_images:
             print(f'Vòng lặp {index}')
-            stitchers[index]['canvas_image'] = canva
-            image = ALL_NODE["InpaintStitchImproved"]().inpaint_stitch(stitchers[index], inpainted_image)[0]
+            stitchers[stit_index]['canvas_image'] = canva
+            image = ALL_NODE["InpaintStitchImproved"]().inpaint_stitch(stitchers[stit_index], inpainted_image)[0]
             index += 1
             if index < len(inpainted_images):
-                canva = ALL_NODE["SDVN Inpaint Crop"]().inpaint_crop(image, stitchers[index]["mask"], stitchers[index]["crop_size"], stitchers[index]["extend"])[0]["canvas_image"]
+                stit_index = index if index <= len(stitchers) - 1 else len(stitchers) - 1
+                canva = ALL_NODE["SDVN Inpaint Crop"]().inpaint_crop(image,  stitchers[stit_index]["crop_size"], stitchers[stit_index]["extend"], stitchers[stit_index]["mask"])[0]["canvas_image"]
         return (image,)
 
 class rmbg:
@@ -249,9 +255,7 @@ class rmbg:
     FUNCTION = "remove_background"
 
     def remove_background(s, image):
-        """
-        Xoá nền ảnh tensor dạng (B, H, W, C), trả về tensor cùng shape đã được xoá nền.
-        """
+        from rembg import remove
         if image.dim() != 4 or image.shape[-1] != 3:
             raise ValueError("Input phải có shape (B, H, W, 3)")
 

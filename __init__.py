@@ -7,8 +7,8 @@ def ensure_aria2_installed():
     # 1. Kiểm tra hệ điều hành
 
     if platform.system().lower() != "windows":
-        if platform.system().lower() == "darwin":
-            print("✅ Yêu cầu cài aria2c với MacOs thông qua brew")
+        # if platform.system().lower() == "darwin":
+        #     print("✅ Yêu cầu cài aria2c với MacOs thông qua brew")
         return
 
     # 2. Kiểm tra xem aria2c có sẵn chưa
