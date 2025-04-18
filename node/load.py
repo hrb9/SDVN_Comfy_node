@@ -428,8 +428,8 @@ class CheckpointLoaderDownload:
     model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib.json")
     with open(model_lib_path, 'r') as json_file:
         modellist = json.load(json_file)
-    modellist = list(set(folder_paths.get_filename_list("checkpoints") + list(modellist)))
-    modellist.sort()
+    checkpointlist = list(set(folder_paths.get_filename_list("checkpoints") + list(modellist)))
+    checkpointlist.sort()
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -437,7 +437,7 @@ class CheckpointLoaderDownload:
                 "Download": ("BOOLEAN", {"default": True},),
                 "Download_url": ("STRING", {"default": "", "multiline": False},),
                 "Ckpt_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
-                "Ckpt_name": (none2list(s.modellist), {"tooltip": "The name of the checkpoint (model) to load."})
+                "Ckpt_name": (none2list(s.checkpointlist), {"tooltip": "The name of the checkpoint (model) to load."})
             }
         }
     RETURN_TYPES = ("MODEL", "CLIP", "VAE", "STRING")
@@ -480,8 +480,8 @@ class LoraLoader:
     model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"lora_lib.json")
     with open(model_lib_path, 'r') as json_file:
         loralist = json.load(json_file)
-    loralist = list(set(folder_paths.get_filename_list("loras") + list(loralist)))
-    loralist.sort()
+    lora_full_list = list(set(folder_paths.get_filename_list("loras") + list(loralist)))
+    lora_full_list.sort()
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -489,7 +489,7 @@ class LoraLoader:
                 "Download": ("BOOLEAN", {"default": True},),
                 "Download_url": ("STRING", {"default": "", "multiline": False},),
                 "Lora_url_name": ("STRING", {"default": "model.safetensors", "multiline": False},),
-                "lora_name": (none2list(s.loralist), {"default": "None", "tooltip": "The name of the LoRA."}),
+                "lora_name": (none2list(s.lora_full_list), {"default": "None", "tooltip": "The name of the LoRA."}),
             },
             "optional": {
                 "model": ("MODEL", {"tooltip": "The diffusion model the LoRA will be applied to."}),
@@ -721,13 +721,13 @@ class UpscaleImage:
     for key, value in modellist.items():
         if value[1] == "UpscaleModel":
             list_upscale_model.append(key)
-    list_upscale_model = list(set(list_upscale_model+folder_paths.get_filename_list("upscale_models")))
-    list_upscale_model.sort()
+    list_full_upscale_model = list(set(list_upscale_model+folder_paths.get_filename_list("upscale_models")))
+    list_full_upscale_model.sort()
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
             "mode": (["Maxsize", "Resize", "Scale"], ),
-            "model_name": (none2list(s.list_upscale_model), {"default": "None", }),
+            "model_name": (none2list(s.list_full_upscale_model), {"default": "None", }),
             "scale": ("FLOAT", {"default": 1, "min": 0, "max": 10, "step": 0.01, }),
             "width": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
             "height": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
@@ -780,13 +780,13 @@ class UpscaleLatentImage:
     for key, value in modellist.items():
         if value[1] == "UpscaleModel":
             list_upscale_model.append(key)
-    list_upscale_model = list(set(list_upscale_model+folder_paths.get_filename_list("upscale_models")))
-    list_upscale_model.sort()
+    list_full_upscale_model = list(set(list_upscale_model+folder_paths.get_filename_list("upscale_models")))
+    list_full_upscale_model.sort()
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
             "mode": (["Maxsize", "Resize", "Scale"], ),
-            "model_name": (none2list(s.list_upscale_model), {"default": "None", }),
+            "model_name": (none2list(s.list_full_upscale_model), {"default": "None", }),
             "scale": ("FLOAT", {"default": 2, "min": 0, "max": 10, "step": 0.01, }),
             "width": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
             "height": ("INT", {"default": 1024, "min": 0, "max": 4096, "step": 1, }),
@@ -828,13 +828,13 @@ class AutoControlNetApply:
     for key, value in modellist.items():
         if value[1] == "Controlnet":
             list_controlnet_model.append(key)
-    list_controlnet_model = list(set(folder_paths.get_filename_list("controlnet") + list_controlnet_model))
-    list_controlnet_model.sort()
+    list_full_controlnet_model = list(set(folder_paths.get_filename_list("controlnet") + list_controlnet_model))
+    list_full_controlnet_model.sort()
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
                              "image": ("IMAGE", ),
-                             "control_net": (none2list(s.list_controlnet_model),),
+                             "control_net": (none2list(s.list_full_controlnet_model),),
                              "preprocessor": (preprocessor_list(),),
                              "union_type": (["None","auto"] + list(UNION_CONTROLNET_TYPES.keys()),),
                              "resolution": ("INT", {"default": 512, "min": 512, "max": 2048, "step": 1}),

@@ -1,7 +1,7 @@
 [project]
 name = "sdvn_comfy_node"
-description = "Fix and update to comfy 0.3.29"
-version = "1.7.5"   
+description = "Fix bug and update to comfy 0.3.29"
+version = "1.7.6"   
 license = {file = "LICENSE"}
 dependencies = ["#If MacOs - Please install aria2 manually via brew", "aria2;sys_platform != 'darwin'", "openai", "gallery-dl", "google-generativeai", "googletrans-py"]
 

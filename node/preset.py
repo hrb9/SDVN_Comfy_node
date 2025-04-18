@@ -55,19 +55,23 @@ class load_model:
     model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib.json")
     with open(model_lib_path, 'r') as json_file:
         modellist = json.load(json_file)
+    checkpointlist = list(set(folder_paths.get_filename_list("checkpoints") + list(modellist)))
+    checkpointlist.sort()
     lora_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"lora_lib.json")
     with open(lora_lib_path, 'r') as json_file:
         loralist = json.load(json_file)
+    lora_full_list = list(set(folder_paths.get_filename_list("loras") + list(loralist)))
+    lora_full_list.sort()
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                "Checkpoint":(list(set(none2list(folder_paths.get_filename_list("checkpoints") + list(s.modellist)))), {"tooltip": "The name of the checkpoint (model) to load."}),
-                "Lora": (list(set(none2list(folder_paths.get_filename_list("loras") + list(s.loralist)))), {"default": "None", "tooltip": "The name of the LoRA."}),
-                "Lora2": (list(set(none2list(folder_paths.get_filename_list("loras") + list(s.loralist)))), {"default": "None", "tooltip": "The name of the LoRA."}),
-                "Lora3": (list(set(none2list(folder_paths.get_filename_list("loras") + list(s.loralist)))), {"default": "None", "tooltip": "The name of the LoRA."}),
-                "Lora4": (list(set(none2list(folder_paths.get_filename_list("loras") + list(s.loralist)))), {"default": "None", "tooltip": "The name of the LoRA."}),
-                "Lora5": (list(set(none2list(folder_paths.get_filename_list("loras") + list(s.loralist)))), {"default": "None", "tooltip": "The name of the LoRA."}),
+                "Checkpoint":(none2list(s.checkpointlist), {"tooltip": "The name of the checkpoint (model) to load."}),
+                "Lora": (none2list(s.lora_full_list), {"default": "None", "tooltip": "The name of the LoRA."}),
+                "Lora2": (none2list(s.lora_full_list), {"default": "None", "tooltip": "The name of the LoRA."}),
+                "Lora3": (none2list(s.lora_full_list), {"default": "None", "tooltip": "The name of the LoRA."}),
+                "Lora4": (none2list(s.lora_full_list), {"default": "None", "tooltip": "The name of the LoRA."}),
+                "Lora5": (none2list(s.lora_full_list), {"default": "None", "tooltip": "The name of the LoRA."}),
                 "Lora_Strength": ("STRING", {"default": "1,1,1,1,1", "multiline": False},),
             }
             }
@@ -127,8 +131,8 @@ class auto_generate:
     for key, value in modellist.items():
         if value[1] == "UpscaleModel":
             list_upscale_model.append(key)
-    list_upscale_model = list(set(list_upscale_model+folder_paths.get_filename_list("upscale_models")))
-    list_upscale_model.sort()
+    list_full_upscale_model = list(set(list_upscale_model+folder_paths.get_filename_list("upscale_models")))
+    list_full_upscale_model.sort()
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -150,7 +154,7 @@ class auto_generate:
                 "sampler_name": (comfy.samplers.KSampler.SAMPLERS, {"tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
                 "scheduler": (comfy.samplers.KSampler.SCHEDULERS, {"tooltip": "The scheduler controls how noise is gradually removed to form the image."}),
                 "FluxGuidance":  ("FLOAT", {"default": 3.5, "min": 0.0, "max": 100.0, "step": 0.1}),
-                "Upscale_model": (none2list(s.list_upscale_model), {"default": "None", }),
+                "Upscale_model": (none2list(s.list_full_upscale_model), {"default": "None", }),
             },
             "optional": {
                 "image": ("IMAGE",),
