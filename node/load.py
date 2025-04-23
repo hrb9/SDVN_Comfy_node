@@ -846,6 +846,7 @@ class AutoControlNetApply:
                             "positive": ("CONDITIONING", ),
                             "negative": ("CONDITIONING", ),
                             "vae": ("VAE", ),
+                            "mask": ("MASK", ),
                              }
                 }
 
@@ -855,7 +856,7 @@ class AutoControlNetApply:
 
     CATEGORY = "📂 SDVN"
 
-    def apply_controlnet(self, image, control_net, preprocessor, union_type, resolution, strength, start_percent, end_percent, vae=None, positive = None, negative = None):
+    def apply_controlnet(self, image, control_net, preprocessor, union_type, resolution, strength, start_percent, end_percent, vae=None, positive = None, negative = None, mask = None):
         para = {"controlnet": [image, control_net, preprocessor, union_type, resolution, strength, start_percent, end_percent]}
         if control_net == "None" or positive == None or negative == None:
             return (positive, negative, image, para)
@@ -877,8 +878,10 @@ class AutoControlNetApply:
             control_net = ALL_NODE["ControlNetLoader"]().load_controlnet(control_net)[0]
         if union_type != "None":
             control_net = ALL_NODE["SetUnionControlNetType"]().set_controlnet_type(control_net,union_type)[0]
-        p, n = ALL_NODE["ControlNetApplyAdvanced"]().apply_controlnet(
-            positive, negative, control_net, image, strength, start_percent, end_percent, vae)
+        if mask == None:
+            p, n = ALL_NODE["ControlNetApplyAdvanced"]().apply_controlnet(positive, negative, control_net, image, strength, start_percent, end_percent, vae)
+        else:
+            p, n = ALL_NODE["ControlNetInpaintingAliMamaApply"]().apply_inpaint_controlnet(positive, negative, control_net, vae, image, mask, strength, start_percent, end_percent)
         results = ALL_NODE["PreviewImage"]().save_images(image)
         results["result"] = (p, n, image, para)
         return results
