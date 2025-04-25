@@ -34,21 +34,14 @@ def pil_to_bytesio(image, filename="image.png"):
     buffer.name = filename
     return buffer
 
-def mask_bytesio(mask_tensor, filename="mask_alpha.png"):
-    if mask_tensor == None:
-        return None
-    if mask_tensor.dim() == 3 and mask_tensor.shape[0] == 1:
-        mask_tensor = mask_tensor.squeeze(0)
-    
-    mask_np = (mask_tensor.clamp(0, 1).mul(255).byte().cpu().numpy()) 
-
-    h, w = mask_np.shape
-    rgba_image = Image.new("RGBA", (w, h), (255, 255, 255, 0))
-    alpha_channel = Image.fromarray(mask_np, mode='L')
-    rgba_image.putalpha(alpha_channel)
-
+def mask_bytesio(mask, filename="mask_alpha.png"):
+    mask_img = mask.reshape((-1, 1, mask.shape[-2], mask.shape[-1])).movedim(1, -1).expand(-1, -1, -1, 3)
+    mask_img = tensor2pil(mask_img)
+    mask = ImageOps.invert(mask_img.convert("L"))
+    mask_rgba = mask.convert("RGBA")
+    mask_rgba.putalpha(mask)
     buffer = BytesIO()
-    rgba_image.save(buffer, format="PNG")
+    mask_rgba.save(buffer, format="PNG")
     buffer.seek(0)
     buffer.name = filename  
     return buffer
@@ -157,15 +150,21 @@ def function(input):
         return ([*output],)
 
 model_list = {
-    "Gemini | 2.0 Flash (Img support)" : "gemini-2.0-flash-001",
-    "Gemini | 2.0 Flash Lite (Img support)": "gemini-2.0-flash-lite-preview-02-05",
+    "Gemini | 2.0 Flash (Img support)" : "gemini-2.0-flash",
+    "Gemini | 2.0 Flash Lite (Img support)": "gemini-2.0-flash-lite",
+    "Gemini | 2.5 Pro Preview (Img support)": "gemini-2.5-pro-preview-03-25",
+    "Gemini | 2.5 Flash Preview (Img support)": "gemini-2.5-flash-preview-04-17",
+    "OpenAI | GPT o4-mini (Img support)": "o4-mini",
     "OpenAI | GPT 4-o mini (Img support)": "gpt-4o-mini",
+    "OpenAI | GPT o3 (Img support)": "o3",
+    "OpenAI | GPT o1 (Img support)": "o1",
+    "OpenAI | GPT o1-pro (Img support)": "o1-pro",
     "OpenAI | GPT 4-o (Img support)": "gpt-4o",
-    "Deepseek | R1": "deepseek-chat",
-    "OpenAI | GPT o3-mini": "o3-mini",
-    "OpenAI | GPT o1": "o1",
+    "OpenAI | GPT 4.1 (Img support)": "gpt-4.1",
     "OpenAI | GPT o1-mini": "o1-mini",
+    "OpenAI | GPT o3-mini": "o3-mini",
     "OpenAI | GPT 3.5 Turbo": "gpt-3.5-turbo-0125",
+    "Deepseek | R1": "deepseek-chat",
     "HuggingFace | DeepSeek R1 32B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
     "HuggingFace | DeepSeek R1 1.5B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
     "HuggingFace | Meta Llama-3.2": "meta-llama/Llama-3.2-3B-Instruct",
@@ -304,9 +303,10 @@ class API_DALLE:
         return {
             "required": {
                 "OpenAI_API": ("STRING", {"default": "", "multiline": False, "tooltip": "Get API: https://platform.openai.com/settings/organization/api-keys"}),
-                "size": (['1024x1024', '1024x1792', '1792x1024'],{"default": "1024x1024"}),
+                "size": (['1024x1024', '1024x1792', '1792x1024'],{"default": '1024x1024'}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
                 "prompt": ("STRING", {"default": "", "multiline": True, "placeholder": "Get API: https://platform.openai.com/settings/organization/api-keys"}),
+                "quality": (["standard","hd"], {"default": "standard",}),
                 "translate": (lang_list(),),
             }
         }
@@ -316,7 +316,7 @@ class API_DALLE:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "api_dalle"
 
-    def api_dalle(self, OpenAI_API, size, seed, prompt,translate):
+    def api_dalle(self, OpenAI_API, size, seed, prompt, quality, translate):
         if OpenAI_API == "":
             api_list = api_check()
             OpenAI_API =  api_list["OpenAI"]
@@ -325,22 +325,78 @@ class API_DALLE:
             prompt = cls().get_prompt(prompt, seed, 'No')[0]
         prompt = ALL_NODE["SDVN Translate"]().ggtranslate(prompt,translate)[0]
 
-        width, height = size.split("x")
         client = OpenAI(
             api_key=OpenAI_API
         )
         response = client.images.generate(
             model="dall-e-3",
             prompt=prompt,
-            size=f"{int(width)}x{int(height)}",
-            quality="standard",
-            n=1,
+            size=size,
+            quality=quality,
         )
         image_url = response.data[0].url
-        print(image_url)
         image = ALL_NODE["SDVN Load Image Url"]().load_image_url(image_url)["result"][0]
         return (image,)
 
+class API_DALLE_2:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "OpenAI_API": ("STRING", {"default": "", "multiline": False, "tooltip": "Get API: https://platform.openai.com/settings/organization/api-keys"}),
+                "size": (['auto','256x256', '512x512', '1024x1024'],{"default": "1024x1024"}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
+                "prompt": ("STRING", {"default": "", "multiline": True, "placeholder": "Get API: https://platform.openai.com/settings/organization/api-keys"}),
+                "n": ("INT", {"default": 1, "min": 1, "max": 4}),
+                "translate": (lang_list(),),
+            },
+            "optional": {
+                "image": ("IMAGE",),
+                "mask": ("MASK",)
+            }
+        }
+
+    CATEGORY = "📂 SDVN/💬 API"
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "api_dalle"
+    OUTPUT_IS_LIST = (True,)
+
+    def api_dalle(self, OpenAI_API, size, seed, prompt, n, translate, image = None, mask = None):
+        if OpenAI_API == "":
+            api_list = api_check()
+            OpenAI_API =  api_list["OpenAI"]
+        if "DPRandomGenerator" in ALL_NODE:
+            cls = ALL_NODE["DPRandomGenerator"]
+            prompt = cls().get_prompt(prompt, seed, 'No')[0]
+        prompt = ALL_NODE["SDVN Translate"]().ggtranslate(prompt,translate)[0]
+
+        client = OpenAI(
+            api_key=OpenAI_API
+        )
+        if image != None and mask != None:
+            response = client.images.edit(
+                model="dall-e-2",
+                prompt=prompt,
+                image = pil_to_bytesio(image),
+                n = n,
+                mask = mask_bytesio(mask),
+                size=size,
+            )
+        else:
+            response = client.images.generate(
+                model="dall-e-2",
+                prompt=prompt,
+                size=size,
+                n=n,
+            )
+        images = []
+        for i in range(n):
+            image_url = response.data[i].url
+            image = ALL_NODE["SDVN Load Image Url"]().load_image_url(image_url)["result"][0]
+            images.append(image)
+        return (images,)
+    
 class API_GPT_image:
     @classmethod
     def INPUT_TYPES(s):
@@ -695,20 +751,22 @@ NODE_CLASS_MAPPINGS = {
     "SDVN Run Python Code": run_python_code,
     "SDVN API chatbot": API_chatbot,
     "SDVN DALL-E Generate Image": API_DALLE,
+    "SDVN Dall-E Generate Image 2": API_DALLE_2,
+    "SDVN GPT Image": API_GPT_image, 
     "SDVN IC-Light v2": ic_light_v2,
     "SDVN Joy Caption": joy_caption,
     "SDVN Google Imagen": API_Imagen,
     "SDVN Gemini Flash 2 Image": Gemini_Flash2_Image,
-    "SDVN GPT Image": API_GPT_image, 
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Run Python Code": "👨🏻‍💻 Run Python Code",
     "SDVN API chatbot": "💬 Chatbot",
-    "SDVN DALL-E Generate Image": "🎨 DALL-E",
+    "SDVN DALL-E Generate Image": "🎨 DALL-E 3",
     "SDVN IC-Light v2": "✨ IC-Light v2",
     "SDVN Joy Caption": "✨ Joy Caption",
     "SDVN Google Imagen": "🎨 Google Imagen",
     "SDVN Gemini Flash 2 Image": "🎨 Gemini Flash 2 Image",
-    "SDVN GPT Image": "🎨 GPT Image"
+    "SDVN GPT Image": "🎨 GPT Image",
+    "SDVN Dall-E Generate Image 2": "🎨 DALL-E 2",
 }
