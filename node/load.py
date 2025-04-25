@@ -1418,7 +1418,7 @@ class AnyDownloadList:
         if Type == "IPAdapterModel":
             r = ALL_NODE["SDVN IPAdapterModel Download"]().download(download_link, model_name)[0]
         if Type == "InstatnIDModel":
-            r = ALL_NODE["SDVN InstatnIDModel Download"]().download(download_link, model_name)[0]
+            r = ALL_NODE["SDVN InstantIDModel Download"]().download(download_link, model_name)[0]
         if Type == "StyleModel":
             r = ALL_NODE["SDVN StyleModel Download"]().download(download_link, model_name)[0]
         return  (r,)

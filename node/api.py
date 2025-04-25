@@ -26,6 +26,33 @@ def tensor2pil(tensor: torch.Tensor) -> Image.Image:
     pil_image = Image.fromarray(np_image)
     return pil_image
 
+def pil_to_bytesio(image, filename="image.png"):
+    image = tensor2pil(image)
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    buffer.seek(0)
+    buffer.name = filename
+    return buffer
+
+def mask_bytesio(mask_tensor, filename="mask_alpha.png"):
+    if mask_tensor == None:
+        return None
+    if mask_tensor.dim() == 3 and mask_tensor.shape[0] == 1:
+        mask_tensor = mask_tensor.squeeze(0)
+    
+    mask_np = (mask_tensor.clamp(0, 1).mul(255).byte().cpu().numpy()) 
+
+    h, w = mask_np.shape
+    rgba_image = Image.new("RGBA", (w, h), (255, 255, 255, 0))
+    alpha_channel = Image.fromarray(mask_np, mode='L')
+    rgba_image.putalpha(alpha_channel)
+
+    buffer = BytesIO()
+    rgba_image.save(buffer, format="PNG")
+    buffer.seek(0)
+    buffer.name = filename  
+    return buffer
+
 def lang_list():
     lang_list = ["None"]
     for i in LANGUAGES.items():
@@ -156,19 +183,13 @@ preset_prompt = {
     ]
 }
 
-def dic2list(dic):
-    l = []
-    for i in dic:
-        l += [i]
-    return l
-
 class API_chatbot:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                "chatbot": (dic2list(model_list),),
-                "preset": (dic2list(preset_prompt),),
+                "chatbot": (list(model_list),),
+                "preset": (list(preset_prompt),),
                 "APIkey": ("STRING", {"default": "", "multiline": False, "tooltip": """
 Get API Gemini: https://aistudio.google.com/app/apikey
 Get API OpenAI: https://platform.openai.com/settings/organization/api-keys
@@ -315,12 +336,96 @@ class API_DALLE:
             quality="standard",
             n=1,
         )
-        cls = ALL_NODE["SDVN Load Image Url"]
         image_url = response.data[0].url
         print(image_url)
-        image = cls().load_image_url(image_url)["result"][0]
+        image = ALL_NODE["SDVN Load Image Url"]().load_image_url(image_url)["result"][0]
         return (image,)
 
+class API_GPT_image:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "OpenAI_API": ("STRING", {"default": "", "multiline": False, "tooltip": "Get API: https://platform.openai.com/settings/organization/api-keys"}),
+                "size": (["auto",'1024x1024', '1536x1024', '1024x1536'],{"default": "auto"}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
+                "prompt": ("STRING", {"default": "", "multiline": True, "placeholder": "Get API: https://platform.openai.com/settings/organization/api-keys"}),
+                "quality": (["auto","low","medium","high"], {"default": "medium",}),
+                "background": (["opaque","transparent"], {"default": "opaque",}),
+                "n": ("INT", {"default": 1, "min": 1, "max": 4}),
+                "translate": (lang_list(),),
+            },
+            "optional": {
+                "image": ("IMAGE",),
+                "mask": ("MASK",)
+            }
+        }
+
+    CATEGORY = "📂 SDVN/💬 API"
+
+    RETURN_TYPES = ("IMAGE",)
+    INPUT_IS_LIST = True
+    OUTPUT_IS_LIST = (True,)
+    FUNCTION = "API_GPT_image"
+
+    def API_GPT_image(self, OpenAI_API, size, seed, prompt, quality, background, n, translate, image = None, mask = None):
+        OpenAI_API = OpenAI_API[0]
+        size = size[0]
+        seed = seed[0]
+        prompt = prompt[0]
+        quality = quality[0]
+        background = background[0]
+        n = n[0]
+
+        translate = translate[0]
+        if OpenAI_API == "":
+            api_list = api_check()
+            OpenAI_API =  api_list["OpenAI"]
+        if "DPRandomGenerator" in ALL_NODE:
+            prompt = ALL_NODE["DPRandomGenerator"]().get_prompt(prompt, seed, 'No')[0]
+        prompt = ALL_NODE["SDVN Translate"]().ggtranslate(prompt,translate)[0]
+            
+        client = OpenAI(
+            api_key=OpenAI_API
+        )
+        if image == None:
+            result = client.images.generate(
+                model="gpt-image-1",
+                prompt=prompt,
+                size = size,
+                quality = quality,
+                background = background,
+                moderation = "low",
+                n = n
+            )
+        elif mask == None:
+            result = client.images.edit(
+                model="gpt-image-1",
+                prompt=prompt,
+                size = size,
+                quality = quality,
+                image = [pil_to_bytesio(img) for img in image],
+                n = n,
+            )
+        else:
+            result = client.images.edit(
+                model="gpt-image-1",
+                prompt=prompt,
+                size = size,
+                quality = quality,
+                image = pil_to_bytesio(image[0]),
+                n = n,
+                mask = mask_bytesio(mask[0]),
+            )
+        images = []
+        for i in range(n):
+            image_base64 = result.data[i].b64_json
+            image_bytes = base64.b64decode(image_base64)
+            image_pil = Image.open(BytesIO(image_bytes))
+            image_ten = i2tensor(image_pil)
+            images.append(image_ten)
+        return (images,)
+    
 class Gemini_Flash2_Image:
     @classmethod
     def INPUT_TYPES(s):
@@ -593,7 +698,8 @@ NODE_CLASS_MAPPINGS = {
     "SDVN IC-Light v2": ic_light_v2,
     "SDVN Joy Caption": joy_caption,
     "SDVN Google Imagen": API_Imagen,
-    "SDVN Gemini Flash 2 Image": Gemini_Flash2_Image, 
+    "SDVN Gemini Flash 2 Image": Gemini_Flash2_Image,
+    "SDVN GPT Image": API_GPT_image, 
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -603,5 +709,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN IC-Light v2": "✨ IC-Light v2",
     "SDVN Joy Caption": "✨ Joy Caption",
     "SDVN Google Imagen": "🎨 Google Imagen",
-    "SDVN Gemini Flash 2 Image": "🎨 Gemini Flash 2 Image"
+    "SDVN Gemini Flash 2 Image": "🎨 Gemini Flash 2 Image",
+    "SDVN GPT Image": "🎨 GPT Image"
 }

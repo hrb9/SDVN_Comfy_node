@@ -1,7 +1,7 @@
 [project]
 name = "sdvn_comfy_node"
-description = "Support controlnet inpaint flux"
-version = "1.7.7"   
+description = "Support gpt image"
+version = "1.0.0"   
 license = {file = "LICENSE"}
 dependencies = ["#If MacOs - Please install aria2 manually via brew", "aria2;sys_platform != 'darwin'", "openai", "gallery-dl", "google-generativeai", "googletrans-py"]
 

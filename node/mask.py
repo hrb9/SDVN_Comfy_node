@@ -73,7 +73,15 @@ class yoloseg:
         if not os.path.exists(model_path):
             url = base_url + model_name
             download_url_to_file(url, model_path)
-        model = YOLO(model_path)
+        try:
+            model = YOLO(model_path)
+        except Exception as e:
+            if "weights_only" in str(e) or "SegmentationModel" in str(e):
+                from ultralytics.nn.tasks import SegmentationModel
+                torch.serialization.add_safe_globals({'SegmentationModel': SegmentationModel})
+                model = YOLO(model_path)
+            else:
+                raise e
         input = image
         image = tensor2pil(image.to(model.device))
         conf = score
