@@ -136,6 +136,8 @@ class AnyInput:
             input = input.split(',')
         elif output_list == "line":
             input = input.splitlines()
+        if len(input) > 1:
+            input = [item for item in input if not item.startswith("#")]
         input = [i.strip() for i in input]
         f = [*input]
         i = [*input]
