@@ -116,7 +116,8 @@ class AnyInput:
     # INPUT_IS_LIST = True
     OUTPUT_IS_LIST = (True, True, True, True)
     CATEGORY = "📂 SDVN/💡 Creative"
-    RETURN_TYPES = ("STRING", "FLOAT", "INT", "BOOLEAN")
+    RETURN_TYPES = (any, "FLOAT", "INT", "BOOLEAN")
+    RETURN_NAMES = ("STRING", "FLOAT", "INT", "BOOLEAN")
     FUNCTION = "any_return"
 
     def any_return(self, input, output_list, translate, seed, in1 = None, in2 = None, in3 = None, in4 = None):
