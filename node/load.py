@@ -424,6 +424,23 @@ class LoadImageUltimate:
             ui["images"].append(ALL_NODE["PreviewImage"]().save_images(i)["ui"]["images"][0])
         return {"ui":ui, "result":(image,)}
     
+    @classmethod
+    def IS_CHANGED(self, mode, image, folder_path, number_img, url, pin_url, range, number, random,  insta_url, index, seed):
+        image_path = folder_paths.get_annotated_filepath(image)
+        if image != "None" and os.path.exists(image_path):
+            m = hashlib.sha256()
+            with open(image_path, 'rb') as f:
+                m.update(f.read())
+            return m.digest().hex()
+
+    @classmethod
+    def VALIDATE_INPUTS(self, mode, image, folder_path, number_img, url, pin_url, range, number, random,  insta_url, index, seed):
+        image_path = folder_paths.get_annotated_filepath(image)
+        if image != "None" and os.path.exists(image_path):
+            if not folder_paths.exists_annotated_filepath(image):
+                return "Invalid image file: {}".format(image)
+        return True 
+
 class CheckpointLoaderDownload:
     model_lib_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),"model_lib.json")
     with open(model_lib_path, 'r') as json_file:
@@ -622,6 +639,11 @@ ModelType_list = {
     "SD 1.5 Hyper": [1.0, "euler_ancestral", "sgm_uniform"],
     "SDXL Hyper": [1.0, "euler_ancestral", "sgm_uniform"],
     "SDXL Lightning": [1.0, "dpmpp_2m_sde", "sgm_uniform"],
+    "HiDream": [5.0, "uni_pc", "simple"],
+    "HiDream-Dev": [1.0, "lcm", "normal"],
+    "HiDream-Fast": [1.0, "lcm", "normal"],
+    "WAN21": [6.0,"uni_pc", "simple"],
+    "HunyuanVideo": [1.0, "euler", "simple"],
 }
 
 StepsType_list = {
@@ -632,6 +654,7 @@ StepsType_list = {
     "Hyper 4steps": 4,
     "Flux dev turbo (hyper 8steps)": 8,
     "Flux schnell": 4,
+    "HiDream-Fast": 16,
 }
 
 def check_type_model(m):
@@ -1267,7 +1290,7 @@ class CLIPDownload:
         return {"required": { 
                     "Download_url": ("STRING", {"default": "", "multiline": False},),
                     "Url_name": ("STRING", {"default": "model.safetensors", "multiline": False}),
-                    "type": (["stable_diffusion", "stable_cascade", "sd3", "stable_audio", "mochi", "ltxv", "pixart", "cosmos", "lumina2", "wan"],)
+                    "type": (["stable_diffusion", "stable_cascade", "sd3", "stable_audio", "mochi", "ltxv", "pixart", "cosmos", "lumina2", "wan", "hidream"],)
                              }}
     RETURN_TYPES = ("CLIP",)
     FUNCTION = "download"
@@ -1339,7 +1362,7 @@ class DualClipDownload:
         return {"required": { 
                     "CLIP_name1": (s.list_clip,),
                     "CLIP_name2": (s.list_clip,),
-                    "type": (["sdxl", "sd3", "flux", "hunyuan_video"], ),
+                    "type": (["sdxl", "sd3", "flux", "hunyuan_video", "hidream"], ),
                              }}
     RETURN_TYPES = ("CLIP",)
     FUNCTION = "download"
