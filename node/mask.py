@@ -228,7 +228,7 @@ class LoopInpaintStitch:
             }
         }
 
-    CATEGORY = "📂 SDVN/💡 Creative"
+    CATEGORY = "📂 SDVN/🎭 Mask"
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("image",)
     FUNCTION = "inpaint_stitch"

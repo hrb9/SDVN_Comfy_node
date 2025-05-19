@@ -488,12 +488,13 @@ def list_txt_path(file_path):
 
 def get_name_file(file_path):
     list_txt = list_txt_path(file_path)
-    try:
+    if len(list_txt) == 0:
+        return ["None"]
+    else:
         for i in list_txt:
             list_txt[list_txt.index(i)] = i.replace(f"{file_path}/","")
+        list_txt = ["None"] + list_txt
         return list_txt
-    except:
-        return ["None"]
 
 class LoadTextFile:
     @classmethod
