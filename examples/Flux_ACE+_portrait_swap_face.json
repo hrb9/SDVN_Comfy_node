@@ -2,7 +2,7 @@
   "id": "5b04d04b-86a5-4576-875d-8685864a1f56",
   "revision": 0,
   "last_node_id": 85,
-  "last_link_id": 279,
+  "last_link_id": 281,
   "nodes": [
     {
       "id": 58,
@@ -33,11 +33,12 @@
       "outputs": [],
       "title": "vae",
       "properties": {
-        "cnr_id": "cg-use-everywhere",
+        "aux_id": "chrisgoringe/cg-use-everywhere",
         "ver": "5e7a8cd9bb2860e8bfb2559088d43be52090e0e8",
         "Node name for S&R": "Anything Everywhere",
         "group_restricted": 0,
         "color_restricted": 0,
+        "cnr_id": "cg-use-everywhere",
         "widget_ue_connectable": {}
       },
       "widgets_values": []
@@ -86,9 +87,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "sdvn_comfy_node",
+        "aux_id": "StableDiffusionVN/SDVN_Comfy_node",
         "ver": "5805722442996199ac20a14e024f5b1614cb246f",
         "Node name for S&R": "SDVN Load Checkpoint",
+        "cnr_id": "sdvn_comfy_node",
         "widget_ue_connectable": {}
       },
       "widgets_values": [
@@ -146,9 +148,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "sdvn_comfy_node",
+        "aux_id": "StableDiffusionVN/SDVN_Comfy_node",
         "ver": "5805722442996199ac20a14e024f5b1614cb246f",
         "Node name for S&R": "SDVN Apply Style Model",
+        "cnr_id": "sdvn_comfy_node",
         "widget_ue_connectable": {}
       },
       "widgets_values": [
@@ -209,9 +212,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "sdvn_comfy_node",
+        "aux_id": "StableDiffusionVN/SDVN_Comfy_node",
         "ver": "5805722442996199ac20a14e024f5b1614cb246f",
         "Node name for S&R": "SDVN Load Lora",
+        "cnr_id": "sdvn_comfy_node",
         "widget_ue_connectable": {}
       },
       "widgets_values": [
@@ -291,9 +295,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "sdvn_comfy_node",
+        "aux_id": "StableDiffusionVN/SDVN_Comfy_node",
         "ver": "5805722442996199ac20a14e024f5b1614cb246f",
         "Node name for S&R": "SDVN Inpaint",
+        "cnr_id": "sdvn_comfy_node",
         "widget_ue_connectable": {}
       },
       "widgets_values": [
@@ -367,9 +372,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "sdvn_comfy_node",
+        "aux_id": "StableDiffusionVN/SDVN_Comfy_node",
         "ver": "5805722442996199ac20a14e024f5b1614cb246f",
         "Node name for S&R": "SDVN IC Lora Layout",
+        "cnr_id": "sdvn_comfy_node",
         "widget_ue_connectable": {}
       },
       "widgets_values": [
@@ -435,9 +441,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "sdvn_comfy_node",
+        "aux_id": "StableDiffusionVN/SDVN_Comfy_node",
         "ver": "5805722442996199ac20a14e024f5b1614cb246f",
         "Node name for S&R": "SDVN KSampler",
+        "cnr_id": "sdvn_comfy_node",
         "widget_ue_connectable": {}
       },
       "widgets_values": [
@@ -448,7 +455,7 @@
         8,
         "euler",
         "normal",
-        911618192943502,
+        445781276658562,
         "randomize",
         false,
         1024,
@@ -492,9 +499,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "sdvn_comfy_node",
+        "aux_id": "StableDiffusionVN/SDVN_Comfy_node",
         "ver": "5805722442996199ac20a14e024f5b1614cb246f",
         "Node name for S&R": "SDVN IC Lora Layout Crop",
+        "cnr_id": "sdvn_comfy_node",
         "widget_ue_connectable": {}
       },
       "widgets_values": []
@@ -535,9 +543,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "sdvn_comfy_node",
+        "aux_id": "StableDiffusionVN/SDVN_Comfy_node",
         "ver": "5805722442996199ac20a14e024f5b1614cb246f",
         "Node name for S&R": "SDVN Loop Inpaint Stitch",
+        "cnr_id": "sdvn_comfy_node",
         "widget_ue_connectable": {}
       },
       "widgets_values": []
@@ -593,9 +602,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "sdvn_comfy_node",
+        "aux_id": "StableDiffusionVN/SDVN_Comfy_node",
         "ver": "5805722442996199ac20a14e024f5b1614cb246f",
         "Node name for S&R": "SDVN Inpaint Crop",
+        "cnr_id": "sdvn_comfy_node",
         "widget_ue_connectable": {}
       },
       "widgets_values": [
@@ -653,9 +663,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "sdvn_comfy_node",
+        "aux_id": "StableDiffusionVN/SDVN_Comfy_node",
         "ver": "5805722442996199ac20a14e024f5b1614cb246f",
         "Node name for S&R": "SDVN Load Lora",
+        "cnr_id": "sdvn_comfy_node",
         "widget_ue_connectable": {}
       },
       "widgets_values": [
@@ -710,9 +721,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "sdvn_comfy_node",
+        "aux_id": "StableDiffusionVN/SDVN_Comfy_node",
         "ver": "5805722442996199ac20a14e024f5b1614cb246f",
         "Node name for S&R": "SDVN CLIP Text Encode",
+        "cnr_id": "sdvn_comfy_node",
         "widget_ue_connectable": {}
       },
       "widgets_values": [
@@ -720,7 +732,7 @@
         "",
         "None",
         "english",
-        198175488231528,
+        629723102596126,
         "randomize"
       ]
     },
@@ -772,9 +784,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "sdvn_comfy_node",
+        "aux_id": "StableDiffusionVN/SDVN_Comfy_node",
         "ver": "5805722442996199ac20a14e024f5b1614cb246f",
         "Node name for S&R": "SDVN Yolo8 Seg",
+        "cnr_id": "sdvn_comfy_node",
         "widget_ue_connectable": {}
       },
       "widgets_values": [
@@ -847,12 +860,15 @@
       ],
       "outputs": [],
       "properties": {
-        "cnr_id": "sdvn_comfy_node",
+        "aux_id": "StableDiffusionVN/SDVN_Comfy_node",
         "ver": "5805722442996199ac20a14e024f5b1614cb246f",
         "Node name for S&R": "SDVN Any Show",
+        "cnr_id": "sdvn_comfy_node",
         "widget_ue_connectable": {}
       },
-      "widgets_values": []
+      "widgets_values": [
+        "0 - hair\n1 - face\n2 - neck\n3 - arm\n4 - hand\n5 - back\n6 - leg\n7 - foot\n8 - outfit\n9 - phone\n10 - hat\n11 - shoe"
+      ]
     },
     {
       "id": 60,
@@ -887,54 +903,6 @@
       ]
     },
     {
-      "id": 28,
-      "type": "SDVN Load Image",
-      "pos": [
-        -659,
-        944
-      ],
-      "size": [
-        270,
-        382.00006103515625
-      ],
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "links": [
-            197,
-            255
-          ]
-        },
-        {
-          "name": "mask",
-          "type": "MASK",
-          "links": []
-        },
-        {
-          "name": "img_path",
-          "type": "STRING",
-          "links": null
-        }
-      ],
-      "properties": {
-        "cnr_id": "sdvn_comfy_node",
-        "ver": "5805722442996199ac20a14e024f5b1614cb246f",
-        "Node name for S&R": "SDVN Load Image",
-        "widget_ue_connectable": {}
-      },
-      "widgets_values": [
-        true,
-        "https://www.pinterest.com/pin/42362052739238133/",
-        "Margo Blouse _ Women's Sleeveless Button-Down Top _ 100% Organic Cotton _ Brown _ Something to Hold.jpeg",
-        "image"
-      ]
-    },
-    {
       "id": 69,
       "type": "SDVN Load Image",
       "pos": [
@@ -946,7 +914,7 @@
         382.00006103515625
       ],
       "flags": {},
-      "order": 2,
+      "order": 1,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -970,15 +938,65 @@
         }
       ],
       "properties": {
-        "cnr_id": "sdvn_comfy_node",
+        "aux_id": "StableDiffusionVN/SDVN_Comfy_node",
         "ver": "5805722442996199ac20a14e024f5b1614cb246f",
         "Node name for S&R": "SDVN Load Image",
+        "cnr_id": "sdvn_comfy_node",
         "widget_ue_connectable": {}
       },
       "widgets_values": [
         true,
         "",
         "Ảnh màn hình 2025-05-08 lúc 10.42.45.png",
+        "image"
+      ]
+    },
+    {
+      "id": 28,
+      "type": "SDVN Load Image",
+      "pos": [
+        -659,
+        944
+      ],
+      "size": [
+        270,
+        382.00006103515625
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            197,
+            255
+          ]
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": []
+        },
+        {
+          "name": "img_path",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "aux_id": "StableDiffusionVN/SDVN_Comfy_node",
+        "ver": "5805722442996199ac20a14e024f5b1614cb246f",
+        "Node name for S&R": "SDVN Load Image",
+        "cnr_id": "sdvn_comfy_node",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        true,
+        "https://www.pinterest.com/pin/42362052739238133/",
+        "None",
         "image"
       ]
     }
@@ -1221,10 +1239,10 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.786535781326515,
+      "scale": 0.7150325284786504,
       "offset": [
-        -72.4736355755319,
-        -110.92767427140325
+        754.447246702475,
+        -31.425711552467643
       ]
     },
     "ue_links": [
@@ -1250,8 +1268,8 @@
       "SDVN_Comfy_node": "d5ae4f45bb4c11f02eb407418e9b4e01fa3036de"
     },
     "links_added_by_ue": [
-      278,
-      279
+      280,
+      281
     ],
     "frontendVersion": "1.19.9"
   },

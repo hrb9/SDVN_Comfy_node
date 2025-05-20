@@ -1,7 +1,7 @@
 [project]
 name = "sdvn_comfy_node"
-description = "Update guide README.md and Example workflow"
-version = "1.9.0"   
+description = "Update guide README.md and Example workflow, image cover"
+version = "1.9.1"   
 license = {file = "LICENSE"}
 dependencies = ["#If MacOs - Please install aria2 manually via brew", "aria2;sys_platform != 'darwin'", "openai", "gallery-dl", "google-generativeai", "googletrans-py"]
 
