@@ -450,12 +450,12 @@ ___
 
 # Example
 
-![](Example/wf3.png)
-![](Example/wf9.png)
-![](Example/wf15.png)
-![](Example/wf16.png)
-![](Example/wf17.png)
-![](Example/wf21.png)
+![](examples/wf3.png)
+![](examples/wf9.png)
+![](examples/wf15.png)
+![](examples/wf16.png)
+![](examples/wf17.png)
+![](examples/wf21.png)
 
 ___
 
