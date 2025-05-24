@@ -247,49 +247,17 @@ class LoopInpaintStitch:
                 stit_index = index if index <= len(stitchers) - 1 else len(stitchers) - 1
                 canva = ALL_NODE["SDVN Inpaint Crop"]().inpaint_crop(image,  stitchers[stit_index]["crop_size"], stitchers[stit_index]["extend"], stitchers[stit_index]["mask"])[0]["canvas_image"]
         return (image,)
-
-class rmbg:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "image": ("IMAGE",),
-            },
-        }
-
-    CATEGORY = "📂 SDVN/🎭 Mask"
-    RETURN_TYPES = ("IMAGE", "MASK")
-    RETURN_NAMES = ("image", "mask")
-    FUNCTION = "remove_background"
-
-    def remove_background(s, image):
-        from rembg import remove
-        if image.dim() != 4 or image.shape[-1] != 3:
-            raise ValueError("Input phải có shape (B, H, W, 3)")
-
-        result = []
-        for img in image:
-            img_np = (img.cpu().numpy() * 255).astype(np.uint8)
-            img_pil = Image.fromarray(img_np)
-            img_no_bg = remove(img_pil)
-            img_tensor = torch.from_numpy(np.array(img_no_bg).astype(np.float32) / 255.0)
-            result.append(img_tensor)
-        r_img = torch.stack(result, dim=0).to(image.device)
-        ui = ALL_NODE["PreviewImage"]().save_images(r_img)["ui"]
-        return {"ui":ui, "result": (r_img, r_img[:, :, :, 3])}
     
 NODE_CLASS_MAPPINGS = {
     "SDVN Yolo8 Seg": yoloseg,
     "SDVN Mask Regions": MaskRegions,
     "SDVN Inpaint Crop": inpaint_crop,
-    "SDVN Loop Inpaint Stitch": LoopInpaintStitch,
-    "SDVN Remove Background": rmbg,
+    "SDVN Loop Inpaint Stitch": LoopInpaintStitch
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "SDVN Yolo8 Seg": "🎭 Yolo Seg Mask",
     "SDVN Mask Regions": "🧩 Mask Regions",
     "SDVN Inpaint Crop": "⚡️ Crop Inpaint",
-    "SDVN Loop Inpaint Stitch": "🔄 Loop Inpaint Stitch",
-    "SDVN Remove Background": "🧼 Remove Background",
+    "SDVN Loop Inpaint Stitch": "🔄 Loop Inpaint Stitch"
 }
