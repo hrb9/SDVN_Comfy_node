@@ -342,6 +342,10 @@ class LoadPinterest:
         return save_folder
     
     def load_image_url(s, url, range, number, random, seed):
+        if "pinterest.com/pin/" in url:
+            r = LoadImageUrl().load_image_url(url)
+            result = {"ui": r["ui"], "result": ([r["result"][0]],)}
+            return result
         if "/" in url:
             if "www.pinterest.com" not in url:
                 url = "https://www.pinterest.com" + url
