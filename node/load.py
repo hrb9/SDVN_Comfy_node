@@ -318,7 +318,7 @@ class LoadPinterest:
             "url": ("STRING", {"default": "", "multiline": False},),
             "range": ("STRING", {"default": "1-10", "multiline": False, "tooltip": "Chuyển sang -1 để tải toàn bộ"},),
             "number": ("INT", {"default": 1, "min": -1 , "tooltip": "Chuyển sang -1 để load toàn bộ ảnh"}),
-            "random": ("BOOLEAN", {"default": True},),
+            "random": ("BOOLEAN", {"default": False},),
             "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "The random seed"}),
         }
         }
@@ -394,7 +394,7 @@ class LoadImageUltimate:
             "pin_url": ("STRING", {"default": "", "multiline": False},),
             "range": ("STRING", {"default": "1-10", "multiline": False, "tooltip": "Chuyển sang -1 để tải toàn bộ"},),
             "number": ("INT", {"default": 1, "min": -1 , "tooltip": "Chuyển sang -1 để load toàn bộ ảnh"}),
-            "random": ("BOOLEAN", {"default": True},),
+            "random": ("BOOLEAN", {"default": False},),
             #Insta
             "insta_url": ("STRING", {"default": "", "multiline": False},),
             "index": ("INT", {"default": 0}),
