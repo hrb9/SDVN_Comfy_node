@@ -883,8 +883,8 @@ class AutoControlNetApply:
 
     CATEGORY = "📂 SDVN"
 
-    def apply_controlnet(self, image, control_net, preprocessor, union_type, resolution, strength, start_percent, end_percent, vae=None, positive = None, negative = None, mask = None):
-        para = {"controlnet": [image, control_net, preprocessor, union_type, resolution, strength, start_percent, end_percent]}
+    def apply_controlnet(self, image, control_net, preprocessor, union_type, resolution, strength, start_percent, end_percent, mask = None, vae=None, positive = None, negative = None):
+        para = {"controlnet": [image, control_net, preprocessor, union_type, resolution, strength, start_percent, end_percent, mask]}
         if control_net == "None" or positive == None or negative == None:
             return (positive, negative, image, para)
         if preprocessor == "InvertImage":
