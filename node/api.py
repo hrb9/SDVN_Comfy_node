@@ -152,7 +152,7 @@ def function(input):
 model_list = {
     "Gemini | 2.0 Flash (Img support)" : "gemini-2.0-flash",
     "Gemini | 2.0 Flash Lite (Img support)": "gemini-2.0-flash-lite",
-    "Gemini | 2.5 Pro Preview (Img support)": "gemini-2.5-pro-preview-03-25",
+    "Gemini | 2.5 Pro Preview (Img support)": "gemini-2.5-pro-preview-05-06",
     "Gemini | 2.5 Flash Preview (Img support)": "gemini-2.5-flash-preview-04-17",
     "OpenAI | GPT o4-mini (Img support)": "o4-mini",
     "OpenAI | GPT 4-o mini (Img support)": "gpt-4o-mini",
@@ -562,7 +562,7 @@ class API_Imagen:
         prompt = ALL_NODE["SDVN Translate"]().ggtranslate(prompt,translate)[0]
         client = genai.Client(api_key=Gemini_API)
         response = client.models.generate_images(
-            model='imagen-3.0-generate-002',
+            model='imagen-4.0-generate-preview-05-20',
             prompt=prompt,
             config=types.GenerateImagesConfig(
                 number_of_images= 1,
