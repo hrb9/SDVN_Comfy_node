@@ -151,9 +151,13 @@ def function(input):
 
 model_list = {
     "Gemini | 2.0 Flash (Img support)" : "gemini-2.0-flash",
+    "Gemini (Vertex AI) | 2.0 Flash (Img support)" : "gemini-2.0-flash",
     "Gemini | 2.0 Flash Lite (Img support)": "gemini-2.0-flash-lite",
+    "Gemini (Vertex AI) | 2.0 Flash Lite (Img support)": "gemini-2.0-flash-lite",
     "Gemini | 2.5 Pro Preview (Img support)": "gemini-2.5-pro-preview-05-06",
+    "Gemini (Vertex AI) | 2.5 Pro Preview (Img support)": "gemini-2.5-pro-preview-05-06",
     "Gemini | 2.5 Flash Preview (Img support)": "gemini-2.5-flash-preview-04-17",
+    "Gemini (Vertex AI) | 2.5 Flash Preview (Img support)": "gemini-2.5-flash-preview-04-17",
     "OpenAI | GPT o4-mini (Img support)": "o4-mini",
     "OpenAI | GPT 4-o mini (Img support)": "gpt-4o-mini",
     "OpenAI | GPT o3 (Img support)": "o3",
@@ -200,7 +204,9 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
                 "translate": (lang_list(),),
             },
             "optional": {
-                "image": ("IMAGE", {"tooltip": "The for gemini model"})
+                "image": ("IMAGE", {"tooltip": "The for gemini model"}),
+                "project": ("STRING", {"default": "", "multiline": False, "tooltip": "Google Cloud Project ID for Vertex AI"}),
+                "location": ("STRING", {"default": "", "multiline": False, "tooltip": "Google Cloud Location for Vertex AI (e.g., us-central1)"})
             }
         }
 
@@ -209,7 +215,7 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
     RETURN_TYPES = ("STRING",)
     FUNCTION = "api_chatbot"
 
-    def api_chatbot(self, chatbot, preset, APIkey, seed, main_prompt, sub_prompt, translate, image=None):
+    def api_chatbot(self, chatbot, preset, APIkey, seed, main_prompt, sub_prompt, translate, image=None, project=None, location=None):
         if APIkey == "":
             api_list = api_check()
             if api_check() != None:
@@ -230,21 +236,28 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
         sub_prompt = ALL_NODE["SDVN Translate"]().ggtranslate(sub_prompt,translate)[0]
         prompt = f"{main_prompt}.{sub_prompt}"
         model_name = model_list[chatbot]
-        if 'Gemini' in chatbot:
-            prompt += preset_prompt[preset][0]["content"] if preset != "None" else ""
+        
+        answer = "" # Initialize answer
+        client = None # Initialize client
+
+        if "Gemini (Vertex AI)" in chatbot and project and location:
+            client = genai.Client(vertexai=True, project=project, location=location)
+        elif "Gemini" in chatbot: # This covers "Gemini | ..." and "Gemini (Vertex AI) | ..." if project/location are missing for the latter
             client = genai.Client(api_key=APIkey)
+        
+        if client: # If client is initialized (i.e., it's a Gemini model)
+            current_prompt = prompt + (preset_prompt[preset][0]["content"] if preset != "None" else "")
             if image == None:
                 response = client.models.generate_content(
                     model=model_name,
-                    contents=[prompt])
+                    contents=[current_prompt])
             else:
-                image = tensor2pil(image)
+                image_pil = tensor2pil(image)
                 response = client.models.generate_content(
                     model=model_name,
-                    contents=[prompt, image])
+                    contents=[current_prompt, image_pil])
             answer = response.text
-        if "HuggingFace" in chatbot:
-            answer = ""
+        elif "HuggingFace" in chatbot:
             client = OpenAI(
                 base_url="https://api-inference.huggingface.co/v1/", api_key=APIkey)
             messages = [
@@ -260,9 +273,9 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
                 stream=True
             )
             for chunk in stream:
-                answer += chunk.choices[0].delta.content
-        if "OpenAI" in chatbot:
-            answer = ""
+                if chunk.choices[0].delta.content is not None: # Ensure content is not None
+                    answer += chunk.choices[0].delta.content
+        elif "OpenAI" in chatbot:
             client = OpenAI(
                 api_key=APIkey)
             if image != None:
@@ -281,9 +294,9 @@ Get API HugggingFace: https://huggingface.co/settings/tokens
             for chunk in stream:
                 if chunk.choices[0].delta.content is not None:
                     answer += chunk.choices[0].delta.content
-            if image != None:
+            if image != None and answer: # Check if answer is not empty
                 answer = answer.split('return True')[-1]
-        if "Deepseek" in chatbot:
+        elif "Deepseek" in chatbot:
             client = OpenAI(api_key=APIkey, base_url="https://api.deepseek.com")
             response = client.chat.completions.create(
                 model = model_name,
